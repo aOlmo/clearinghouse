@@ -1,0 +1,235 @@
+{% extends "control/control_base.html" %}
+
+{% block title %}
+Help - GENI
+{% endblock title %}
+
+{% block style %}
+{{ block.super }}
+<link href="{{ MEDIA_URL }}css/help.css" rel="stylesheet" type="text/css" />
+{% endblock style %}
+
+{% block nav_help %}
+<td class="active">Help</td>
+{% endblock nav_help %}
+
+{% block content %}
+	<div id="main">
+		<div id="middle">
+			<div id="toc">
+				<h3>Table of Contents</h3>
+				<ul>
+					<li><a href="#whatisgeni">What is GENI</a></li>
+					<li><a href="#whatisgeni">What is Seattle</a></li>
+					<li><a href="#howtouse">How to use the GENI portal</a></li>
+					<ul>
+						<li><a href="#profile">Profile : User keys, port, and other information</a></li>
+						<li><a href="#mygeni">My GENI : Inspecting donations, managing resource shares</a></li>
+						<li><a href="#myvessels">My Vessels : Managing vessels -- acquiring and releasing vessel resources</a></li>
+						<li><a href="#getdonations">Get Donations : Donating to the platform</a></li>
+					</ul>
+					<li><a href="#contact">Who to contact for more help</a></li>
+				</ul>
+			</div>
+			<h2><a name="whatisgeni">What is GENI</a></h2>
+			<p>
+			
+			  GENI is a web-based portal for managing <a
+			    href="https://seattle.cs.washington.edu/">Seattle</a>
+			   resources. These resources are donated by
+			   users who install Seattle on their
+			   machines. In return these users are allowed
+			   to use resources donated by others. GENI
+			   enables users of donated resources to
+			   acquire nodes around the world on which
+			   they can then execute programs written in
+			   <a
+			    href="https://seattle.cs.washington.edu/wiki/RepyTutorial">Repy</a>,
+			   the Seattle platform programming language.
+			   Our current policy is that if you donate
+			   10% of resources on your computer, you can
+			   trade these donated resources in for 1% of
+			   resources on 10 other computers. Using
+			   GENI, users can also share their resources
+			   with other GENI users, and to perform a
+			   variety of other tasks. For more
+			   information about about how GENI fits with
+			   the rest of the Seattle platform, see <a
+			    href="https://seattle.cs.washington.edu/wiki/SeattleComponents">this
+			   page</a>. </p>
+
+			<h2><a name="howtouse">How to use the GENI portal</a></h2>
+			
+			<p>The GENI portal is divided into four
+			  sections, each of which can be accessed
+			  through a tab at the top of the
+			  page. Remember to maintain account security
+			  and to always
+			  <strong>Log Out</strong> of your session by clicking on
+			  the Logout link at the top right of the page.
+			</p>
+
+			<p>The remainder of this section describes the
+			  various functions accessed via each of the
+			  tabs.
+			</p>
+
+			<h3><a name="profile">Profile : User keys, port, and other
+			information</a></h3>
+
+			
+			<p>Here you you can manage your GENI account
+			and find out meta information necessary for
+			you to write programs for Seattle.</p>
+
+
+			<ul>
+			  <li><strong>Download the toolkit.</strong> The toolkit
+			  includes the Seattle shell which you will
+			  need to run programs on your acquired
+			  vessels. For more information on how to use
+			  the Seattle shell, see <a href="https://seattle.cs.washington.edu/wiki/SeattleShell">this page</a>.
+			  </li>
+
+			  <li><strong>Download the public and private
+			  keys.</strong> You will need these two key files
+			  to access your acquired vessels. Once you
+			  download them, place the two key files in
+			  the same directory as Seattle shell you
+			  downloaded with the Seattle toolkit
+			  above. <p class="warning">For better security we recommend
+			  that you download and delete your private
+			  key from the server. Always store your
+			  private key in a secure location. </p>
+			  </li>
+
+			  <li><strong>User Port.</strong> Each user is allocated
+			  unique UDP and TCP port resources. The
+			  port number you see on this page is a port
+			  number you will be able to use in your Seattle
+			  programs.  </li>
+			</ul>
+
+			<h3><a name="mygeni">My GENI : Inspecting donations, managing resource shares</a></h3>
+			
+			<p>This page helps you visualize and manage
+			your Seattle resources, as well as the create,
+			modify, and delete resource shares with other
+			Seattle users.</p>
+
+			<ul>
+
+			  <li><strong>My Credits</strong> displays the total
+			  resources you have at your disposal (number
+			  of vessels you may acquire). It also
+			  attributes these resources to either
+			  donations made by users who have installed
+			  your Seattle installers, or by users who
+			  have shared their resources with you.</li>
+
+			  <li><strong>Resource usage</strong> displays how the
+			  resources available to you are being
+			  used. Some of these will be used by you
+			  ('Me'), others will be used by users with
+			  whom you've shared your resources.</li>
+			  
+			  <li><strong>Managing shares.</strong> You can
+			  <strong>create</strong> new shares with Seattle users
+			  by clicking on 'share' on the bottom left of
+			  the page in the box labeled as 'Free'. You
+			  can <strong>delete</strong> existing shares, by
+			  clicking the 'X' in the share box you would
+			  like to remove. You can <strong>modify</strong> an
+			  existing share by clicking on the share
+			  box. This will allow you to change the
+			  percent of resources allocated to the
+			  share.</li>
+
+			  <li><strong>Getting more vessels.</strong> Besides
+			  sharing your resources, you make also redeem
+			  your available resources as vessels. You can
+			  do so by clicking 'get' in the box labeled
+			  as 'Free'. At this point you will be
+			  redirected to the 'My Vessels' tab (see below).
+
+			  
+			</ul>
+			
+			<h3><a name="myvessels">My Vessels : Managing vessels -- acquiring and releasing vessel resources</a></h3>
+			
+			<p>On this page you can see more detailed
+			information about your acquired vessels, such
+			as their IP addresses, and how long you have
+			before the vessels are released. This page
+			also allows you to acquire more vessel
+			resources.</p>
+
+			<ul>
+
+			  <li><strong>Vessel Information.</strong> For each
+			  vessel that you acquire, you will see a
+			  record in the table on this page that tells
+			  you the <strong>vessel id</strong> which is the same
+			  id that your seash session will display when
+			  you browse your vessels. You will also see
+			  the <strong>vessel status</strong> which will tell you
+			  whether the vessel is in the correct
+			  state. Also you will see an <strong>expires
+			  in</strong> time value which indicates how long
+			  you have before the vessel will be returned
+			  back into the Seattle pool for use by other
+			  users.</li>
+
+			  <li><strong>Getting more vessels.</strong>
+
+			  Above the table with vessel information,
+			  you'll see a form in which you can select
+			  the number of vessels that you would like to
+			  acquire, and the type of network environment
+			  you would like to have between the acquired
+			  vessels. There are three choices for the
+			  environment: </li>
+
+			  <ul>
+
+			    <li><strong>WAN</strong> : Wide area network. The vessels
+			    will be as spread out as possible.</li>
+			    
+			    <li><strong>LAN</strong> : Local area network. The vessels
+			    will be on the same local network. </li>
+
+			    <li><strong>Random</strong> : A random selection of
+			    vessels, and an unpredictable network
+			    environment.</li>
+			    
+			  </ul>
+
+			</ul>
+			
+			<h3><a name="getdonations">Get Donations : Donating to the platform</a></h3>
+
+			<p>
+
+			  This page contains links to Seattle
+			  installers for different platforms: Windows,
+			  OS X, and Linux. These installers donate the
+			  resources on a machine to your account. To
+			  simplify distribution of these installers,
+			  this page also includes a link at the top
+			  that you can email to people who might help
+			  you by installing Seattle and contributing
+			  resources on their machines on your behalf.
+			  This link points to a page that
+			  contains the same set of installers, and a
+			  help page that explains what is involved in
+			  donating to the Seattle platform.
+
+			</p>
+
+			{% include "common/help_contact.html" %}
+			
+		</div>
+	</div>
+
+
+{% endblock content %}

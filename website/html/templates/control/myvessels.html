@@ -1,0 +1,86 @@
+{% extends "control/control_base.html" %}
+
+{% block title %}
+My Vessels - GENI
+{% endblock title %}
+
+{% block style %}
+{{ block.super }}
+<link href="{{ MEDIA_URL }}css/myvessels.css" rel="stylesheet" type="text/css" />
+{% endblock style %}
+
+{% block script %}
+{{ block.super }}
+<script type="text/javascript" src="{{ MEDIA_URL}}scripts/myvessels.js" charset="utf-8"></script>
+{% endblock script %}
+
+{% block nav_myvessels %}
+<td class="active">My Vessels</td>
+{% endblock nav_myvessels %}
+
+{% block content %}
+	<div id="main">
+		<div id="middle">
+			<div id="getresources">
+			  {% ifnotequal get_form None %}
+				<form method="POST" action="{% url get_resources %}">
+				  <span id="caption">Get more resources</span>
+					<font color="red">	{{ get_form.num.errors }}</font>
+					<font color="red">	{{ get_form.env.errors }}</font>
+					<span>Number of vessels</span>
+					{{ get_form.num }}
+					<span>Environment</span>
+					{{ get_form.env }}
+					<input type="submit" value="Get" />
+				</form>
+			  {% else %}
+			        <div id="action_other"> Donate more
+	nodes to acquire more resources. </div>
+			  {% endifnotequal %}
+				
+			  {% ifnotequal action_summary "" %}
+				<div id="action_summary"> {{ action_summary }} <a id="expand" href="#">[+]</a></div>
+			  {% endifnotequal %}
+
+			  {% ifnotequal action_explanation "" %}
+				<div id="action_detail"> Details: {{ action_explanation }} </div>
+			  {% endifnotequal %}
+				
+			</div>
+			<table class="vessels">
+				<tr class="odd">
+					  {% ifnotequal num_vessels 0 %}
+					  <th>
+					  <form method="POST" action="{% url del_all_resources %}">
+						<input type="submit" value="remove all"> </input>
+					  </form>
+					  </th>
+					  {% endifnotequal %}
+					<th>Vessel ID</td>
+					<th>Vessel Status</td>
+					<th>Expires in</td>
+				</tr>
+			{% if my_vessels %}
+				{% for vmap in my_vessels %}
+  				<tr class="{% cycle 'odd' 'even' %}">
+  					<td>
+  					  <form method="POST" action="{% url del_resource %}">
+  					<input type="submit" value="remove"> </input>
+  					<input type="hidden" name="delresource_{{ vmap.id }}"> </input>
+  					  </form>
+  					</td>
+  					<td> {{ vmap.vessel_port.vessel.donation.ip }}:{{ vmap.vessel_port.vessel.donation.port }}:{{ vmap.vessel_port.vessel.name }} </td>
+  					<td> {{ vmap.vessel_port.vessel.status }} </td>
+  					<td> {{ vmap.time_remaining }} </td>
+  				</tr>
+  				{% endfor %}
+  			{% else %}
+				<tr class="even"><td colspan="4">You have no acquired resources<td></tr>
+  			{% endif %}
+				
+			</table>
+		</div>
+	</div>
+
+{% endblock content %}
+

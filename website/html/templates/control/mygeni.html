@@ -1,0 +1,97 @@
+{% extends "control/control_base.html" %}
+
+{% block title %}
+My GENI - GENI
+{% endblock title %}
+
+{% block style %}
+{{ block.super }}
+<link href="{{ MEDIA_URL }}css/mygeni.css" rel="stylesheet" type="text/css" />
+{% endblock style %}
+
+{% block script %}
+{{ block.super }}
+<script type="text/javascript" src="{{ MEDIA_URL}}scripts/jquery.tooltip.js" charset="utf-8"></script>
+<script type="text/javascript" src="{{ MEDIA_URL}}scripts/mygeni.js" charset="utf-8"></script>
+{% endblock script %}
+
+{% block nav_mygeni %}
+<td class="active">My GENI</td>
+{% endblock nav_mygeni %}
+
+{% block content %}
+	<div id="main">
+		<div id="middle">
+			<div class="bar">
+				<span class="vesselstatus" id="vesselscredits"></span>
+				<h3>My Credits (donated by)</h3>
+				<table class="credits">
+					<tr id="credits"></tr>
+				</table>
+				<table class="names">
+					<tr id="creditnames"></tr>
+				</table>
+				<table id="creditotherstable" class="users">
+					<caption>Other donated resources</caption>
+					<tr class="header">
+						<th>Username</td>
+						<th>Percent</td>
+					</tr>
+				</table>
+			</div>
+		
+			<div class="bar">
+				<span class="vesselstatus" id="vesselsavailable"></span>
+				<h3>Resource Usage (used by)</h3>
+				<table class="usage">
+					<tr id="usage"></tr>
+				</table>
+				<table class="names">
+					<tr id="usagenames"></tr>
+				</table>
+				<table id="usageotherstable" class="users">
+					<caption>Resource shared by others</caption>
+					<tr class="header">
+						<th>Username</td>
+						<th>Percent</td>
+						<th>Actions</td>
+					</tr>
+				</table>
+			</div>
+					
+			<div id="overlay"></div>
+			<div id="dialogframe">
+				<div id="getresourcesdialog">
+					<span class="vesselstatus"></span>
+					<h3>Get more resources</h3>
+					<span>Number of vessels</span>
+					<select name="num" id="numvessels">
+					</select>
+					<br />
+					<span>Environment</span>
+					<select name="env" id="environment">
+						<option value="1">LAN</option>
+						<option value="2">WAN</option>
+						<option value="3">Random</option>
+					</select>
+					<br />
+					<button class="cancel">Cancel</button>
+					<button id="getresourcesaction">Get</button>
+				</div>
+				<div id="shareresourcesdialog">
+					<h3>Share resources</h3>
+					<span>Username</span>
+					<input id="username" type="text" />
+					<br />
+					<span>Percent</span>
+					<input id="percent" type="text" />
+					<br />
+					<button class="cancel">Cancel</button>
+					<button id="shareresources">Share</button>
+				</div>
+			</div>
+		
+		</div>
+	</div>
+	
+{% endblock content %}

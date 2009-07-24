@@ -1,42 +1,46 @@
 """
-Author: Justin Samuel
+<Program>
+  lockserver_daemon.py
 
-Start Date: 30 June 2009
+<Started>
+  30 June 2009
 
-Description:
+<Author>
+  Justin Samuel
 
-This is the XML-RPC Lockserver that is used by various components of
-SeattleGeni.
+<Purpose>
+  This is the XML-RPC Lockserver that is used by various components of
+  SeattleGeni.
  
-Two lock types are supported: 'user' and 'node'.
+  Two lock types are supported: 'user' and 'node'.
  
-Multiple of the same lock type ('user' or 'node') can be requested at
-the same time, but a single lock acquisition request cannot include
-requests for both types of locks.
+  Multiple of the same lock type ('user' or 'node') can be requested at
+  the same time, but a single lock acquisition request cannot include
+  requests for both types of locks.
  
-Clients first request a session identifier from the lockserver and
-then make requests for acquiring and releasing locks using that
-session identifier. It is the client's responsibility to release any
-lock they have acquired and to let the lockserver know when they
-are finished with their session (that is, when they have released
-all of their locks and do not plan to acquire more locks in the
-same session).
+  Clients first request a session identifier from the lockserver and
+  then make requests for acquiring and releasing locks using that
+  session identifier. It is the client's responsibility to release any
+  lock they have acquired and to let the lockserver know when they
+  are finished with their session (that is, when they have released
+  all of their locks and do not plan to acquire more locks in the
+  same session).
  
-Clients are denied lock acquisition requests as follows:
-  * If the client's session already holds 'user' locks and the client is
-    requesting 'user' locks.
-  * If the client's session already holds 'node' locks.
-  * If the client's session has any pending (unfulfilled) lock requests.
+  Clients are denied lock acquisition requests as follows:
+    * If the client's session already holds 'user' locks and the client is
+      requesting 'user' locks.
+    * If the client's session already holds 'node' locks.
+    * If the client's session has any pending (unfulfilled) lock requests.
 
-That is, a client must (in a given session) request and obtain user locks
-before requesting node locks if the client intends to hold both kinds of
-locks at the same time.
+  That is, a client must (in a given session) request and obtain user locks
+  before requesting node locks if the client intends to hold both kinds of
+  locks at the same time.
  
-If clients hold both user locks and node locks, the locks can be released
-in any order. As per the restrictions on lock acquisition, though, the
-client won't be able to obtain additional node locks until they have
-released all of the node locks they hold. They will also not be able
-to obtain additional user locks until they have released all of their locks.
+  If clients hold both user locks and node locks, the locks can be released
+  in any order. As per the restrictions on lock acquisition, though, the
+  client won't be able to obtain additional node locks until they have
+  released all of the node locks they hold. They will also not be able
+  to obtain additional user locks until they have released all of their locks.
 
 
 XML-RPC Interface:
@@ -144,59 +148,57 @@ Details of the "lockdict" format:
     {'x':['bob']}      # 'x' is not a valid locktype (only 'user' and 'node')
  
  
-Notes: 
+<Notes> 
+  The lock type of 'global' has not been implemented as there is no clear need
+  for it at this time and it would increase complexity.
  
-The lock type of 'global' has not been implemented as there is no clear need
-for it at this time and it would increase complexity.
+  The lockserver does not perform special handling of requests that disconnect
+  from the server during a lock acquisition request. The client's session will
+  ultimately be granted the locks (assuming it was a valid request).
  
-The lockserver does not perform special handling of requests that disconnect
-from the server during a lock acquisition request. The client's session will
-ultimately be granted the locks (assuming it was a valid request).
- 
-This implementation does not allow an individual session to make additional
-lock acquisition requests while an existing lock acquisition request by the
-same session is unfulfilled. It doesn't seem like it would be correct
-behavior on behalf of a client to do so, so it's not supported. One case
-where this might be an issue is with parallelized work by the same client
-code using the same session id.
- 
- 
-General overview of the code: 
- 
-The functions that can be called through the xmlrpc interface are the the 
-public functions in the class called LockserverPublicFunctions. Each of those 
-functions sanitizes user input, obtains a global datalock (of which there is 
-one in the entire module), and calls a helper function to do the actual work. 
-The helper function for any public xmlrpc function named MyFunction is of the
-format do_my_function. The global datalock is not used anywhere but
-in the methods of LockserverPublicFunctions. All other code that modifies
-global data assumes that the global datalock is held.
- 
-Each session is only allowed to make one call to AcquireLocks at a time.
-This is enforced by disallowing AcquireLocks setting a boolean flag in
-the data for that session to indicate the session has a pending AcquireLocks
-request.
- 
-The blocking of request threads when all locks are not yet available is
-handled through the use of threading.Event() objects. Each session has
-a single Event() object. A single Event per session is adequate because
-each session is only allowed to make one AcquireLocks call at a time.
-The AcquireLocks call will wait on the session's Event object until
-it has been set, which is the signal that all of the requested locks
-have been acquired for that session. The event can either be set/signaled
-as a result of the AcquireLocks call (if all of the locks are available
-at the time of the request) or by ReleaseLocks calls made by any session
-(if a lock that is released leaves the blocked AcquireLocks request
-with no more locks needing to be acquired).
+  This implementation does not allow an individual session to make additional
+  lock acquisition requests while an existing lock acquisition request by the
+  same session is unfulfilled. It doesn't seem like it would be correct
+  behavior on behalf of a client to do so, so it's not supported. One case
+  where this might be an issue is with parallelized work by the same client
+  code using the same session id.
  
  
-General todo's in order or priority:
+  General overview of the code: 
  
-TODO: Test to find out how many blocked threads can be supported.
-TODO: Test that a blocked lock request will not disconnect if it
-      is blocked for a very long time.
-TODO: Write more integration tests (at least to test invalid requests).
-TODO: Write a simple benchmark script.
+  The functions that can be called through the xmlrpc interface are the the 
+  public functions in the class called LockserverPublicFunctions. Each of those 
+  functions sanitizes user input, obtains a global datalock (of which there is 
+  one in the entire module), and calls a helper function to do the actual work. 
+  The helper function for any public xmlrpc function named MyFunction is of the
+  format do_my_function. The global datalock is not used anywhere but
+  in the methods of LockserverPublicFunctions. All other code that modifies
+  global data assumes that the global datalock is held.
+ 
+  Each session is only allowed to make one call to AcquireLocks at a time.
+  This is enforced by disallowing AcquireLocks setting a boolean flag in
+  the data for that session to indicate the session has a pending AcquireLocks
+  request.
+ 
+  The blocking of request threads when all locks are not yet available is
+  handled through the use of threading.Event() objects. Each session has
+  a single Event() object. A single Event per session is adequate because
+  each session is only allowed to make one AcquireLocks call at a time.
+  The AcquireLocks call will wait on the session's Event object until
+  it has been set, which is the signal that all of the requested locks
+  have been acquired for that session. The event can either be set/signaled
+  as a result of the AcquireLocks call (if all of the locks are available
+  at the time of the request) or by ReleaseLocks calls made by any session
+  (if a lock that is released leaves the blocked AcquireLocks request
+  with no more locks needing to be acquired).
+ 
+
+<TODOs>
+  TODO: Test to find out how many blocked threads can be supported.
+  TODO: Test that a blocked lock request will not disconnect if it
+        is blocked for a very long time.
+  TODO: Write more integration tests (at least to test invalid requests).
+  TODO: Write a simple benchmark script.
 """
 
 import sys

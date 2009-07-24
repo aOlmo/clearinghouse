@@ -1,0 +1,65 @@
+{% extends "accounts/accounts_base.html" %}
+
+{% block title %}
+Profile - GENI
+{% endblock title %}
+
+{% block script %}
+{{ block.super }}
+<script type="text/javascript" src="{{ MEDIA_URL}}scripts/register.js" charset="utf-8"></script>
+{% endblock script %}
+
+{% block nav_register %}
+<td class="active">Register</td>
+{% endblock nav_register %}
+
+{% block content %}
+	<div id="main">
+		<div id="middle">
+		  <form action="{% url register %}" method="POST" enctype="multipart/form-data">
+
+		  {% if form.username.errors or form.password1.errors or form.password2.errors or form.affiliation.errors or form.pubkey.errors %}
+		  <p class="warning">
+		  Please correct the following:</p>
+		  {% endif %}
+
+		  <table class="login">
+		    <tr>
+		      <td class="key"> {{ form.username.label_tag }}</td>
+		      <td class="value">{{ form.username }}</td>
+		      <td>{{ form.username.errors }}</td>
+		    </tr>
+		    <tr>
+		      <td class="key">{{ form.password1.label_tag }}</td>
+		      <td class="value">{{ form.password1 }}</td>
+		      <td>{{ form.password1.errors }}</td>
+		    </tr>
+		    <tr>
+		      <td class="key">{{ form.password2.label_tag }}</td>
+		      <td class="value">{{ form.password2 }}</td>
+		      <td>{{ form.password2.errors }}</td>
+		    </tr>
+		    <tr>
+		      <td class="key">{{ form.affiliation.label_tag }}</td>
+		      <td class="value">{{ form.affiliation }}</td>
+		      <td>{{ form.affiliation.errors }}
+		    </tr>
+		    <tr>
+		      <td class="key">{{ form.pubkey.label_tag }}</td>
+		      <td class="value">{{ form.gen_upload_choice }}</td>
+		      <td>{{ form.pubkey.errors }}</td>
+		    </tr>
+			  <tr id="uploadkey">
+			    <td class="key"></td>
+				  <td class="value">{{ form.pubkey }}</td>
+			  </tr>
+		    <tr>
+		      <td class="key"></td>
+		      <td class="value"><input type="submit" value="Register" /></td>
+		    </tr>
+		  </table>
+		  </form>
+
+		</div>
+	</div>
+{% endblock content %}

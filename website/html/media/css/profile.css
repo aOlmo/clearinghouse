@@ -1,0 +1,38 @@
+
+/******************************
+* STYLE FOR PROFILE PAGE
+*******************************/
+
+table.profile {
+    margin-top: 20px;
+    border-collapse: collapse;
+	border-spacing: 0;
+	width: 70%;
+}
+
+table.profile tr td.key {
+    text-align: right;
+    height: 30px;
+    width: 150px;
+    font-weight: bold;
+}
+
+table.profile tr td.value {
+    padding-left: 15px;   
+}
+
+#download {
+    float: right;
+    border: 2px solid #666;
+    background-color: #fff;
+    padding: 10px;
+    margin-top: 20px;
+    margin-right: 0px;
+    text-align: center;
+    font-weight: bold;
+}
+
+#download a img {
+    width: 150px;
+}
+

@@ -1,0 +1,80 @@
+{% extends "control/control_base.html" %}
+
+{% block style %}
+{{ block.super }}
+<link href="{{ MEDIA_URL }}css/profile.css" rel="stylesheet" type="text/css" />
+{% endblock style %}
+
+{% block title %}
+Profile - GENI
+{% endblock title %}
+
+{% block nav_profile %}
+<td class="active">Profile</td>
+{% endblock nav_profile %}
+
+{% block content %}
+	<div id="main">
+		<div id="middle">
+			
+			<div id="download">
+				<a href="http://seattlegeni.cs.washington.edu/dist/demokit.zip"><img src="{{ MEDIA_URL }}images/download_toolkit.jpg" /></a>
+			</div>
+			
+			<table class="profile">
+				<tr class="odd">
+					<td class="key">Username</td>
+					<td class="value">{{ user.username }}</td>
+				</tr>
+				<tr class="even">
+					<td class="key">Affiliation</td>
+					<td class="value">{{ geni_user.affiliation }}</td>
+				</tr>
+				<tr class="odd">
+					<td class="key">Port</td>
+					<td class="value"> {{ geni_user.port }}</td>
+				</tr>
+				<tr class="even">
+					<td class="key">Public Key</td>
+					<td class="value">
+					  <form method="POST" action="{% url pub_key %}"> 
+						<input type="submit" value="Download" />
+					  </form>
+					</td>
+				</tr>
+				{% ifnotequal geni_user.privkey "" %}
+				<tr class="odd">
+				  <td class="key">Private Key</td>
+				  <td class="value"><a href="#">
+				      <form class="inline" method="POST" action="{% url priv_key %}"> 
+					<input type="submit" value="Download" /></p>
+				    </form>
+				  </td>
+				</tr>
+				<tr class="even">
+				  <td class="key">Delete your private key</td>
+				  <td class="value">
+				    <form class="inline" method="POST" action="{% url del_priv %}" target="#"> 
+				      <input type="hidden" name="keyToDelete" value={{ user.username }}> </input>
+				      <input id="delete" type="submit" value="Delete"> </input>
+				    </form>
+				  </td>
+				</tr>
+				<tr class="odd">
+					<td colspan="2">
+					    <p class="warning"> For better
+					      security we recommend that you
+					      download and delete your
+					      private key from the
+					      server. Always store your
+					      private key in a secure
+					      location.</p>
+					</td>
+				</tr>
+				{% endifnotequal %}
+			</table>
+		</div>
+	</div>
+
+{% endblock content %}
+

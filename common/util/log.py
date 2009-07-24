@@ -1,0 +1,165 @@
+"""
+<Program>
+  log.py
+
+<Started>
+  6 July 2009
+
+<Author>
+  Justin Samuel
+
+<Purpose>
+  This module provides logging functionality to be used within seattlegeni.
+  All seattlegeni code should log through this module rather than using
+  print() or directly using the repy logging module. This ensures that only
+  one module (this one) determines where log messages actually go for all
+  of seattlegeni. (This module may in turn use the repy logging module, but
+  client code should be unaware of that.)
+  
+  Logging output done by this module will try to include a request_id with
+  each log message so that it is possible to differentiate multiple requests
+  or threads running at the same time.
+  
+  Currently, our custom django middleware at website/middleware/logrequest.py
+  calls log_start_request() when a new request comes in.
+  
+  Using this module from outside of a django website means that client code
+  should first call log_start_request() or set_request_id() if it wants
+  log messages from a thread to be logged with an identifier.
+"""
+
+import random
+import threading
+import time
+
+
+
+
+
+# We use a thread-local data store for tracking the request identifier
+# so that we can log the associated request id even when the request
+# object isn't among a function's arguments.
+request_context = threading.local()
+
+# Set the default request_id value to "-". This is what will be logged
+# when this module is used to log messages without calling either
+# log_start_request() or set_request_id().
+request_context.request_id = "-"
+
+LOG_LEVEL_DEBUG = 1
+LOG_LEVEL_INFO = 2
+LOG_LEVEL_ERROR = 3
+LOG_LEVEL_CRITICAL = 4
+LOG_LEVEL_NONE = 5
+
+# Default log level of DEBUG.
+loglevel = LOG_LEVEL_DEBUG
+
+
+
+
+
+def debug(message):
+  if loglevel <= LOG_LEVEL_DEBUG:
+    print _get_time() + " DEBUG " + request_context.request_id + " " + str(message)
+
+
+
+
+
+def info(message):
+  if loglevel <= LOG_LEVEL_INFO:
+    print _get_time() + " INFO " + request_context.request_id + " " + str(message)
+
+
+
+
+
+def error(message):
+  if loglevel <= LOG_LEVEL_ERROR:
+    print _get_time() + " ERROR " + request_context.request_id + " " + str(message)
+
+
+
+
+
+def critical(message):
+  if loglevel <= LOG_LEVEL_CRITICAL:
+    print _get_time() + " CRITICAL " + request_context.request_id + " " + str(message)
+
+
+
+
+
+def _get_time():
+  return time.strftime("[%d/%b/%Y %H:%M:%S]")
+
+
+
+
+
+def log_start_request(request):
+  """
+  Create a unique request id and store it in request_context if it isn't
+  already set there. This way it will be available to future log calls.
+  """
+  request_id = _generate_request_id_from_request(request)
+  set_request_id(request_id)
+
+  messagelist = []
+
+  messagelist.append("Request started.")
+  
+  # See http://docs.djangoproject.com/en/dev/ref/request-response/ for a list
+  # of attributes of the HttpRequest object that we could potentially log.
+  messagelist.append(request.method)
+  messagelist.append(request.path)
+  
+  # We ignore the fact that there could be query string variables in a POST request.
+  if request.method == "GET":
+    messagelist.append(str(request.GET))
+  else:
+    messagelist.append(str(request.POST))
+  
+  if request.user.is_authenticated():
+    # TODO: log just the username
+    messagelist.append(str(request.user))
+  else:
+    messagelist.append("-")
+  
+  # TODO: don't log a submitted password.
+  
+  info(' '.join(messagelist))
+  # TODO: log the request variables, excluding password.
+
+
+
+
+
+def set_request_id(request_id):
+  """
+  Sets the request id. This will be used in all future log messages performed
+  by the current thread.
+  """
+  request_context.request_id = str(request_id)
+
+
+
+
+
+def _generate_request_id_from_request(request):
+  """
+  Create a unique tag for the request, to make it easier to follow its log
+  entries.
+  
+  Based on the idea from:
+  http://www.fairviewcomputing.com/blog/2008/03/05/django-request-logging/
+  """
+  # If Apache's mod_unique_id is in use, use that. Otherwise, create one.
+  if request.META.has_key('UNIQUE_ID'):
+    return str(request.META['UNIQUE_ID'])
+  else:
+    RANDMIN = 100000000
+    RANDMAX = 999999999
+    return str(random.randint(RANDMIN, RANDMAX))
+

@@ -1,0 +1,47 @@
+{% extends "accounts/accounts_base.html" %}
+
+{% block title %}
+Login - GENI
+{% endblock title %}
+
+{% block script %}
+{{ block.super }}
+<script type="text/javascript" src="{{ MEDIA_URL}}scripts/login.js" charset="utf-8"></script>
+{% endblock script %}
+
+{% block nav_login %}
+<td class="active">Login</td>
+{% endblock nav_login %}
+
+{% block content %}
+	<div id="main">
+		<div id="middle">
+		  <form method="post" action="{% url login %}">
+		  {% if err %}
+		  <p class="warning">{{ err }}</p><br>
+		  {% endif %}
+		  {% if msg %}
+		  <p class="message">{{ msg }}</p><br>
+		  {% endif %}
+
+		  <table class="login">
+		    <tr>
+		      <td class="key"> {{ form.username.label_tag }} </td>
+		      <td class="value"> {{ form.username }} </td>
+		    </tr>
+		    <tr>
+		      <td class="key"> {{ form.password.label_tag }} </td>
+		      <td class="value"> {{ form.password }} </td>
+		    </tr>
+		    <tr>
+		      <td class="key"></td>
+		      <td class="value"><input type="submit" value="Login" /></td>
+		      <input type="hidden" name="next" value="{{ next }}" />
+		      <input type="hidden" name="jsenabled" value="false" id="jsenabled" />
+		    </tr>
+		  </table>    
+		  </form>
+		  
+		</div>
+	</div>
+{% endblock content %}
