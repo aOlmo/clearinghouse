@@ -195,12 +195,17 @@ def _do_acquire_vessel(lockserver_handle, geniuser, vessel):
   # Lock the vessel.
   lockserver.lock_node(lockserver_handle, node_id)
   try:
+    # TODO: We should query the db now that we hold the lock to find out if the
+    #       state of the node/vessel is what we expect.
+    
     # This will raise a UnableToAcquireResourcesException if it fails (e.g if
     # the node is down). We want to allow the exception to be passed up to
     # the caller.
     backend.acquire_vessel(geniuser, vessel)
     
     # Update the database to reflect the successful vessel acquisition.
+    # TODO: This needs to be committed to the db immediately if we are
+    #       releasing the lock on the node here.
     maindb.record_acquired_vessel(geniuser, vessel)
     
     return vessel
@@ -251,10 +256,17 @@ def _do_release_vessel(lockserver_handle, vessel):
   # Lock the vessel.
   lockserver.lock_node(lockserver_handle, node_id)
   try:
+    # TODO: We should query the db now that we hold the lock to find out if the
+    #       state of the node/vessel is what we expect. For example, what if
+    #       the vessel was already released before we got the lock and another
+    #       user acquired the node before we got the lock?
+    
     # This will not raise an exception, even if the node the vessel is on is down.
     backend.release_vessel(vessel)
     
     # Update the database to reflect the release of the vessel.
+    # TODO: This needs to be committed to the db immediately if we are
+    #       releasing the lock on the node here.
     maindb.record_released_vessel(vessel)
     
   finally:
