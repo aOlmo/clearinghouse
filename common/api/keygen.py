@@ -19,11 +19,27 @@ from seattlegeni.common.util.decorators import log_function_call
 
 
 
-KEYDAEMON_HOST = "localhost"
+KEYDAEMON_HOST = "127.0.0.1"
 
-KEYDAEMON_PORT = "250"
+KEYDAEMON_PORT = "8030"
+
+
 
 
 @log_function_call
-def generate_keypair(keydaemon_host=KEYDAEMON_HOST, keydaemon_port=KEYDAEMON_PORT):
+def generate_keypair():
+  """
+  <Purpose>
+    Obtain a new (unused) public/private keypair.
+  <Arguments>
+    None
+  <Exceptions>
+    TODO: need to revist this
+  <Side Effects>
+    Requests a key from the keygen daemon.
+  <Returns>
+    A tuple in the format (pubkey, privkey).
+  """
+  
+  # TODO: implement
   return ('TODO', 'TODO')

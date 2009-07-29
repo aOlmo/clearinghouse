@@ -203,14 +203,13 @@ Details of the "lockdict" format:
 
 import sys
 
-# This is the standard python logging module, not the repy logging module.
-# TODO: Add a check that this looks like the standard logging module
-#       just in case the repy one is before the standard libs in the path.
-import logging
+from seattlegeni.common.util import log
 
 # Use threading.Lock directly instead of repy's getlock() to ease testing
 # by not depending on repy. We also use threading.Event().
 import threading
+
+import traceback
 
 # These are used to build a single-threaded XMLRPC server.
 import SocketServer
@@ -224,9 +223,6 @@ import random
 # The port that we'll listen on.
 LISTENPORT = 8010
 
-# The level of detail to log.
-LOG_LEVEL = logging.DEBUG
-
 # Session ids will be random numeric strings between these two values, inclusive.
 MIN_SESSION_ID = 1000000
 MAX_SESSION_ID = 9999999
@@ -236,16 +232,6 @@ MAX_SESSION_ID = 9999999
 # Whether the lockserver encountered an error. The server server thread will
 # use this to decide whether to exit.
 lockserver_had_error = False
-
-# Configure the logger. Have it print the time with each logged message.
-# See python docs for the logging module for an explanation of log format.
-LOG_FORMAT = "%(asctime)-15s  %(levelname)s  %(message)s"
-logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
-  
-# The 'log' object is what we'll use for all logging. Using "log" instead of
-# the "logging" module in our code makes it so we can change this to a Logger
-# object if needed.
-log = logging
 
 # A mutex for access to all shared data.
 datalock = threading.Lock()
@@ -934,6 +920,12 @@ class LockserverPublicFunctions(object):
     global lockserver_had_error
       
     try:
+      # Set a unique request id for this thread for log messages.
+      # We don't try to use the session id for the log request id because
+      # there isn't always a session id and we don't know it early enough
+      # even where there is one.
+      log.set_request_id()
+      
       # Get the requested function (making sure it exists).
       try:
         func = getattr(self, method)
@@ -944,7 +936,7 @@ class LockserverPublicFunctions(object):
       return func(*args)
     
     except LockserverInvalidRequestError:
-      log.error("The lockserver was used incorrectly: " + str(sys.exc_info()[1]))
+      log.error("The lockserver was used incorrectly: " + traceback.format_exc())
       raise
     
     except:
@@ -953,7 +945,7 @@ class LockserverPublicFunctions(object):
       # lockserver in this case rather than risk incorrect locking behavior.
       
       # TODO: this should probably send an email or otherwise make noise.
-      log.critical("The lockserver had an internal error and is exiting.", exc_info=True)
+      log.critical("The lockserver had an internal error and is exiting." + traceback.format_exc())
       
       # This will tell the server thread to exit.
       lockserver_had_error = True

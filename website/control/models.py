@@ -26,6 +26,7 @@ from django.contrib.auth.models import User as DjangoUser
 
 
 
+
 class GeniUser(DjangoUser):
   """
   Defines the GeniUser model. A GeniUser record represents a SeattleGeni user.
@@ -46,22 +47,20 @@ class GeniUser(DjangoUser):
   affiliation = models.CharField("Affiliation", max_length=500)
   
   # The user's public key which they use for communicating with nodes.
-  # Note that the key is stored as a string of decimal numbers, so the
-  # max_length of 1000 means a key with a max length 1000 when represented as
-  # decimal numbers (not 1000 bits).
-  # Note that the max is 1000 because that is sufficiently large and is also
-  # the largest allowable index in mysql.
-  user_pubkey = models.CharField("GeniUser's public key", max_length=1000, db_index=True)
+  # Note that the key is stored as a string "e n" where e and n are
+  # decimal numbers. Because of this, max_length != max bits in the key.
+  # TODO: need to provide manual index sql command to be run after syncdb,
+  # as the field length is too long for the whole field to be indexed.
+  user_pubkey = models.CharField("GeniUser's public key", max_length=2048, db_index=True)
   
   # The user's private key which they use for communicating with nodes.
   # This is not stored in the Key DB because the website needs access to it and
   # it is not used by us. The private key will only be stored when the the user
   # has had us generate their keys. The user will be encouraged through the
   # website to download this private key and have us delete our copy of it.
-  # Note that the key is stored as a string of decimal numbers, so the
-  # max_length of 1000 means a key with a max length 1000 when represented as
-  # decimal numbers (not 1000 bits).
-  user_privkey = models.CharField("GeniUser's private key [!]", max_length=1000)
+  # Note that the key is stored as a string "d p q" where d, p, and q are
+  # decimal numbers. Because of this, max_length != max bits in the key.
+  user_privkey = models.CharField("GeniUser's private key [!]", max_length=4096, null=True)
   
   # This is not a cryptographic key. This is an API key that we generate which
   # can be used by the user with the public SeattleGeni XML-RPC interface.
@@ -72,12 +71,11 @@ class GeniUser(DjangoUser):
   # The public key new donations use to indicate the donation is by this user.
   # The corresponding private key is always stored in the Key DB and is
   # accessible using this public key. The user never sees their donor keys.
-  # Note that the key is stored as a string of decimal numbers, so the
-  # max_length of 1000 means a key with a max length 1000 when represented as
-  # decimal numbers (not 1000 bits).
-  # Note that the max is 1000 because that is sufficiently large and is also
-  # the largest allowable index in mysql.
-  donor_pubkey = models.CharField("Donor public Key", max_length=1000, db_index=True)
+  # Note that the key is stored as a string "e n" where e and n are
+  # decimal numbers. Because of this, max_length != max bits in the key.
+  # TODO: need to provide manual index sql command to be run after syncdb,
+  # as the field length is too long for the whole field to be indexed.
+  donor_pubkey = models.CharField("Donor public Key", max_length=2048, db_index=True)
   
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)
@@ -124,13 +122,12 @@ class Node(models.Model):
   # If they were deleted from the database, we wouldn't have the owner key to
   # be able to contact them if they came back online later.
   is_active = models.BooleanField(db_index=True)
-  
+
   # The SeattleGeni's owner key for this node. The private key is always stored
   # in the Key DB and is accessible using this public key.
-  # Note that the key is stored as a string of decimal numbers, so the
-  # max_length of 1000 means a key with a max length 1000 when represented as
-  # decimal numbers (not 1000 bits).
-  owner_pubkey = models.CharField("Owner public key", max_length=1000)
+  # Note that the key is stored as a string "e n" where e and n are
+  # decimal numbers. Because of this, max_length != max bits in the key.
+  owner_pubkey = models.CharField("Owner public key", max_length=2048)
 
   # The extra vessel will (at least in the near future) have the node's free
   # resources assigned to it, so the name needs to be known in order to do
@@ -212,7 +209,7 @@ class Vessel(models.Model):
   node = models.ForeignKey(Node, db_index=True)
 
   # The name used to refer to the vessel when communicating with the nodemanager.
-  name = models.CharField("Vessel name", max_length=8)
+  name = models.CharField("Vessel name", max_length=50)
   
   # If this vessel has been acquired by a user, this is the user who acquired
   # it. This will be a null/None value if the vessel is not currently acquired
@@ -223,8 +220,12 @@ class Vessel(models.Model):
   date_acquired = models.DateTimeField("Date acquired", null=True, db_index=True)
   
   # The date after which the vessel should be taken away from the user who has
-  # acquired it. 
+  # acquired it.
   date_expires = models.DateTimeField("Date that acquisition expires", null=True, db_index=True)
+    
+  # The vessel is marked as dirty if it needs to be reset, etc. before it can
+  # be acquired.
+  is_dirty = models.BooleanField(db_index=True)
     
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)

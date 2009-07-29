@@ -20,8 +20,6 @@ from seattlegeni.common.api import backend
 from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import maindb
 
-from seattlegeni.common.util import assertions
-
 from seattlegeni.common.util.decorators import log_function_call
 
 
@@ -53,7 +51,7 @@ def acquire_wan_vessels(lockserver_handle, geniuser, vesselcount):
   """
   
   # Get a randomized list of vessels where no two vessels are on the same subnet.
-  vessel_list = maindb.get_available_wan_vessels(vesselcount)
+  vessel_list = maindb.get_available_wan_vessels(geniuser, vesselcount)
   
   return _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_list)
 
@@ -86,7 +84,7 @@ def acquire_lan_vessels(lockserver_handle, geniuser, vesselcount):
   """
   
   # Get a randomized list that itself contains lists of vessels on the same subnet.
-  subnet_vessel_list = maindb.get_available_lan_vessels_by_subnet(vesselcount)
+  subnet_vessel_list = maindb.get_available_lan_vessels_by_subnet(geniuser, vesselcount)
   
   # This case is a little more involved than with wan or rand vessels. If we
   # fail to get the number of desired vessels from one subnet, we need to try
@@ -133,7 +131,7 @@ def acquire_rand_vessels(lockserver_handle, geniuser, vesselcount):
   
   # Get a randomized list of vessels where there are no guarantees about whether
   # the list includes wan vessels, lan vessels, vessels on the same subnet, etc.
-  vessel_list = maindb.get_available_rand_vessels(vesselcount)
+  vessel_list = maindb.get_available_rand_vessels(geniuser, vesselcount)
   
   return _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_list)
 
@@ -151,6 +149,8 @@ def _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_
   
   Returns the list of acquired vessels if successful.
   """
+  
+  # TODO: parallelize vessel acquisition
 
   # Make sure there are sufficient vessels to even try to fulfill the request.
   if len(vessel_list) < vesselcount:
@@ -192,7 +192,7 @@ def _do_acquire_vessel(lockserver_handle, geniuser, vessel):
   
   node_id = maindb.get_node_identifier_from_vessel(vessel)
 
-  # Lock the vessel.
+  # Lock the node that this vessel is on.
   lockserver.lock_node(lockserver_handle, node_id)
   try:
     # TODO: We should query the db now that we hold the lock to find out if the
@@ -204,14 +204,12 @@ def _do_acquire_vessel(lockserver_handle, geniuser, vessel):
     backend.acquire_vessel(geniuser, vessel)
     
     # Update the database to reflect the successful vessel acquisition.
-    # TODO: This needs to be committed to the db immediately if we are
-    #       releasing the lock on the node here.
     maindb.record_acquired_vessel(geniuser, vessel)
     
     return vessel
     
   finally:
-    # Unlock the user.
+    # Unlock the node.
     lockserver.unlock_node(lockserver_handle, node_id)
 
 
@@ -265,8 +263,6 @@ def _do_release_vessel(lockserver_handle, vessel):
     backend.release_vessel(vessel)
     
     # Update the database to reflect the release of the vessel.
-    # TODO: This needs to be committed to the db immediately if we are
-    #       releasing the lock on the node here.
     maindb.record_released_vessel(vessel)
     
   finally:

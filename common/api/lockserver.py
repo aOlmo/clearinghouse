@@ -71,7 +71,7 @@ from seattlegeni.common.util.decorators import log_function_call
 
 
 # The default lockserver url to use.
-LOCKSERVER_URL = "http://localhost:8010"
+LOCKSERVER_URL = "http://127.0.0.1:8010"
 
 # Constants to prevent unnoticed typos in the code below.
 REQUEST_TYPE_LOCK = 'lock'

@@ -76,11 +76,11 @@ def log_function_call(func):
     
     try:
       result = func(*args, **kwargs)
-      log.info('Returning from %s: %s' % (func.__name__, str(result)))
+      log.debug('Returning from %s (module %s): %s' % (func.__name__, func.__module__, str(result)))
       return result
     
     except Exception, e:
-      log.info('Exception from %s: %s' % (func.__name__, str(e)))
+      log.debug('Exception from %s (module %s): %s' % (func.__name__, func.__module__, str(e)))
       raise
     
   return do_logging_func_call
@@ -107,11 +107,11 @@ def log_function_call_without_return(func):
     
     try:
       result = func(*args, **kwargs)
-      log.info('Returning from %s: [Not logging return value]' % (func.__name__))
+      log.debug('Returning from %s (module %s): [Not logging return value]' % (func.__name__, func.__module__))
       return result
     
     except Exception, e:
-      log.info('Exception from %s: %s' % (func.__name__, str(e)))
+      log.debug('Exception from %s (module %s): %s' % (func.__name__, func.__module__, str(e)))
       raise
   
   return do_logging_func_call
@@ -134,16 +134,16 @@ def log_function_call_without_arguments(func):
   
   # The name "do_logging_func_call" is never seen anywhere but here.
   def do_logging_func_call(*args, **kwargs):
-    log.info('Calling: %s (module %s), args: [Not logging], kwargs: [Not logging].' %
+    log.debug('Calling: %s (module %s), args: [Not logging], kwargs: [Not logging].' %
              (func.__name__, func.__module__))
     
     try:
       result = func(*args, **kwargs)
-      log.info('Returning from %s: %s' % (func.__name__, str(result)))
+      log.debug('Returning from %s (module %s): %s' % (func.__name__, func.__module__, str(result)))
       return result
     
     except Exception, e:
-      log.info('Exception from %s: %s' % (func.__name__, str(e)))
+      log.debug('Exception from %s (module %s): %s' % (func.__name__, func.__module__, str(e)))
       raise
   
   return do_logging_func_call
@@ -173,16 +173,16 @@ def log_function_call_and_only_first_argument(func):
   
   # The name "do_logging_func_call" is never seen anywhere but here.
   def do_logging_func_call(*args, **kwargs):
-    log.info('Calling: %s (module %s), 1st arg: %s, other args: [Not logging].' % 
+    log.debug('Calling: %s (module %s), 1st arg: %s, other args: [Not logging].' % 
              (func.__name__, func.__module__, str(_get_cleaned_args(args)[0])))
     
     try:
       result = func(*args, **kwargs)
-      log.info('Returning from %s: %s' % (func.__name__, str(result)))
+      log.debug('Returning from %s (module %s): %s' % (func.__name__, func.__module__, str(result)))
       return result
     
     except Exception, e:
-      log.info('Exception from %s: %s' % (func.__name__, str(e)))
+      log.debug('Exception from %s (module %s): %s' % (func.__name__, func.__module__, str(e)))
       raise
   
   return do_logging_func_call
@@ -196,7 +196,7 @@ def _log_call_info(func, args, kwargs):
   # both log_function_call and log_function_call_without_return.
   
   # TODO: clean up this line
-  log.info('Calling: %s (module %s), args: %s, kwargs: %s.' %
+  log.debug('Calling: %s (module %s), args: %s, kwargs: %s.' %
            (func.__name__, func.__module__, str(_get_cleaned_args(args)), str(_get_cleaned_args(kwargs))))
 
 

@@ -30,8 +30,7 @@
 
 import random
 import threading
-import time
-
+from datetime import datetime
 
 
 
@@ -44,7 +43,7 @@ request_context = threading.local()
 # Set the default request_id value to "-". This is what will be logged
 # when this module is used to log messages without calling either
 # log_start_request() or set_request_id().
-request_context.request_id = "-"
+DEFAULT_REQUEST_ID = "-"
 
 LOG_LEVEL_DEBUG = 1
 LOG_LEVEL_INFO = 2
@@ -59,9 +58,17 @@ loglevel = LOG_LEVEL_DEBUG
 
 
 
+def set_log_level(level):
+  global loglevel
+  loglevel = level
+
+
+
+
+
 def debug(message):
   if loglevel <= LOG_LEVEL_DEBUG:
-    print _get_time() + " DEBUG " + request_context.request_id + " " + str(message)
+    print _get_time() + " DEBUG " + _get_request_id() + " " + str(message)
 
 
 
@@ -69,7 +76,7 @@ def debug(message):
 
 def info(message):
   if loglevel <= LOG_LEVEL_INFO:
-    print _get_time() + " INFO " + request_context.request_id + " " + str(message)
+    print _get_time() + " INFO " + _get_request_id() + " " + str(message)
 
 
 
@@ -77,7 +84,7 @@ def info(message):
 
 def error(message):
   if loglevel <= LOG_LEVEL_ERROR:
-    print _get_time() + " ERROR " + request_context.request_id + " " + str(message)
+    print _get_time() + " ERROR " + _get_request_id() + " " + str(message)
 
 
 
@@ -85,14 +92,19 @@ def error(message):
 
 def critical(message):
   if loglevel <= LOG_LEVEL_CRITICAL:
-    print _get_time() + " CRITICAL " + request_context.request_id + " " + str(message)
+    print _get_time() + " CRITICAL " + _get_request_id() + " " + str(message)
 
 
+
+def _get_request_id():
+  if not hasattr(request_context, 'request_id'):
+    request_context.request_id = DEFAULT_REQUEST_ID
+  return request_context.request_id
 
 
 
 def _get_time():
-  return time.strftime("[%d/%b/%Y %H:%M:%S]")
+  return "[" + datetime.now().isoformat(' ') + "]"
 
 
 
@@ -136,12 +148,24 @@ def log_start_request(request):
 
 
 
-def set_request_id(request_id):
+def set_request_id(request_id=None):
   """
   Sets the request id. This will be used in all future log messages performed
   by the current thread.
   """
+  if request_id is None:
+    request_id = _generate_request_id()
+    
   request_context.request_id = str(request_id)
+
+
+
+
+
+def _generate_request_id():
+  RANDMIN = 100000000
+  RANDMAX = 999999999
+  return str(random.randint(RANDMIN, RANDMAX))
 
 
 
@@ -159,7 +183,5 @@ def _generate_request_id_from_request(request):
   if request.META.has_key('UNIQUE_ID'):
     return str(request.META['UNIQUE_ID'])
   else:
-    RANDMIN = 100000000
-    RANDMAX = 999999999
-    return str(random.randint(RANDMIN, RANDMAX))
+    return _generate_request_id()
 

@@ -32,6 +32,9 @@
   functions, set_backend_authcode() must be called by the script first.
 """
 
+import traceback
+
+import xmlrpclib
 
 from seattlegeni.common.exceptions import *
 
@@ -39,9 +42,30 @@ from seattlegeni.common.util.decorators import log_function_call
 
 
 
-BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = "http://127.0.0.1:8020"
 
+# This is not a thread-local variable. There isn't any case where one thread
+# in a process will have this authcode and another won't. So, we don't make
+# the client code pass around a handle just for this.
 backend_authcode = None
+
+
+
+
+
+def _get_backend_proxy():
+  return xmlrpclib.ServerProxy(BACKEND_URL)
+
+
+
+
+def _do_backend_request(func, *args):
+  try:
+    return func(*args)
+  except xmlrpclib.Fault:
+    raise ProgrammerError("The backend rejected the request: " + traceback.format_exc())
+  except xmlrpclib.ProtocolError:
+    raise InternalError("Unable to communicate with the backend: " + traceback.format_exc())
 
 
 
@@ -63,16 +87,24 @@ def set_backend_authcode(authcode):
 
 @log_function_call
 def acquire_vessel(geniuser, vessel):
-  # TODO: implement
-  raise UnableToAcquireResourcesError
-
+  # Acquiring a vessel is just setting the userkeylist to include only this
+  # user's key.
+  func = _get_backend_proxy().SetVesselUsers
+  args = (vessel.node.node_identifier, vessel.name, [geniuser.user_pubkey])
+  
+  _do_backend_request(func, *args)
+    
 
 
 
 
 @log_function_call
 def release_vessel(vessel):
-  # TODO: implement
+  # This is actually a noop. The reason for this is because the backend doesn't
+  # perform immediate action because of a released vessel. Instead, the client
+  # code will user maindb.record_released_vessel() and the database change
+  # resulting from that will cause the cleanup thread in the backend to do
+  # anything it needs to do.
   pass
 
 
@@ -94,39 +126,48 @@ def generate_key(keydecription):
   <Returns>
     The public key part of the key pair.
   """
-  # TODO: implement
-  return "generate_key() Not implemented"
+  func = _get_backend_proxy().GenerateKey
+  args = (keydecription,)
+  
+  return _do_backend_request(func, *args)
 
 
 
 
 
 @log_function_call
-def set_vessel_users(vessel):
-  # TODO: implement
-  pass
+def set_vessel_user_keylist(vessel, userkeylist):
+  func = _get_backend_proxy().SetVesselUsers
+  args = (vessel.node.node_identifier, vessel.name, userkeylist)
+  
+  _do_backend_request(func, *args)
 
 
 
 
 
 @log_function_call
-def set_vessel_owner(vessel, pubkey):
+def set_vessel_owner_key(vessel, ownerkey):
   """
   pubkey must be a valid key stored in the keydb.
   """
   # Having this method available to the website means that if the website is
   # compromised, then the attacker can try to change the vessel owner for
-  # all vessels. One option would be to require passing to the backend a
-  # some form of authorization info to indicate that the client code is
-  # authorized to call this function. Instead, let's just make sure we
-  # can find the pubkey in the keydb. By doing that check, we'll need to
-  # use the keydb api, which is something the website won't be able to do
-  # successfully. By doing this, we'll avoid complicating the backend api.
+  # all vessels. So, we need to authenticate with the backend by including
+  # the backend_authcode in the request.
 
-  # TODO: implement
+  if backend_authcode is None:
+    raise ProgrammerError("You must call set_backend_authcode(authcode) before calling this function.")
 
+  func = _get_backend_proxy().SetVesselOwner
+  args = (backend_authcode, vessel.node.node_identifier, vessel.name, ownerkey)
+  
+  _do_backend_request(func, *args)
 
+  # TODO: the client code needs to update the database to reflect the new owner
+  #       key. Need to make this clear in the function docstring.
+
+  
 
 
 
@@ -137,10 +178,23 @@ def split_vessel(vessel, desiredresourcedata):
     Raises ??? if unable to split the vessel because there aren't enough
     resources available to do the split.
   <Returns>
-    Returns a tuple of (newvesselname1, newvesselname2) where newvesselname1
-    has the leftovers and newvesselname2 is of the size requested.
+    Returns a tuple of (newvessel1, newvessel2) where newvessel1
+    has the leftovers and newvessel2 is of the size requested. These are both
+    vessel objects.
   """
-  # TODO: implement
+  # This seems like a privileged operation, so the backend_authcode must be
+  # provided in the request.
+  
+  if backend_authcode is None:
+    raise ProgrammerError("You must call set_backend_authcode(authcode) before calling this function.")
+  
+  func = _get_backend_proxy().SplitVessel
+  args = (backend_authcode, vessel.node.node_identifier, vessel.name, desiredresourcedata)
+  
+  _do_backend_request(func, *args)
+  
+  # TODO: the client code needs to update the database to reflect the split.
+  #       Need to make this clear in the function docstring.
 
 
 
@@ -151,8 +205,20 @@ def join_vessels(firstvessel, secondvessel):
   """
   The first vessel will retain the user keys and  therefore the state.
   <Returns>
-    A string that is the name of the combined vessel (which will turn out to
-    be firstvessel).
+    The firstvessel (a new object that will reflect any database changes since
+    the joining of the two vessels).
   """
-  # TODO: implement
+  # This seems like a privileged operation, so the backend_authcode must be
+  # provided in the request.
+  
+  if backend_authcode is None:
+    raise ProgrammerError("You must call set_backend_authcode(authcode) before calling this function.")
+  
+  func = _get_backend_proxy().JoinVessels
+  args = (backend_authcode, firstvessel.node.node_identifier, firstvessel.name, secondvessel.name)
+  
+  _do_backend_request(func, *args)
+  
+  # TODO: the client code needs to update the database to reflect the join. 
+  #       Need to make this clear in the function docstring.
 

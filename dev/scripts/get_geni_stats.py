@@ -1,9 +1,14 @@
+#!/usr/bin/env python
 """
 Prints information about the data in the database.
 
 Currently this doesn't give much info, but it would be nice to expand it to
 into a more general db querying module or package.
+
+Call this script with a -v flag to get verbose output.
 """
+
+import sys
 
 from seattlegeni.common.api import maindb
 
@@ -21,6 +26,10 @@ from seattlegeni.website.control.models import VesselUserAccessMap
 from seattlegeni.common.util import log
 log.loglevel = log.LOG_LEVEL_ERROR
 
+verbose = False
+
+if len(sys.argv) == 2 and sys.argv[1] == '-v':
+  verbose = True
 
 number_of_users_with_acquired_vessels = 0
 
@@ -30,6 +39,8 @@ for user in GeniUser.objects.all():
   if len(acquired_vessels) > 0:
     number_of_users_with_acquired_vessels += 1
     print str(user) + " has acquired " + str(len(acquired_vessels)) + " vessels."
-    print "  " + str(acquired_vessels)
+    if verbose:
+      print "  " + str(acquired_vessels)
 
 print "There are " +  str(number_of_users_with_acquired_vessels) + " users who have acquired vessels."
+

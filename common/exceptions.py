@@ -41,11 +41,11 @@ class SeattleGeniError(Exception):
 
 
 
-class UserInputError(SeattleGeniError):
+class InvalidRequestError(SeattleGeniError):
   """
-  Indicates that some of the user input is invalid. This could be due
-  trying to register a username that is taken, providing an invalid
-  key, etc.
+  Indicates that a requested action was invalid. This is an intentionally
+  generic error. This error should be raised with a message that clearly
+  explains what was invalid.
   """
 
 
@@ -57,9 +57,9 @@ class ProgrammerError(SeattleGeniError):
   with a message that clearly explains what the programmer did wrong
   (for example, they passed an argument of the wrong type into a function).
   """
+  
 
-
-
+  
 class InternalError(SeattleGeniError):
   """
   Indicates that some part of the geni system failed. E.g., a communication
@@ -70,10 +70,18 @@ class InternalError(SeattleGeniError):
 
 
 
-class InvalidUserError(SeattleGeniError):
+class NodemanagerCommunicationError(SeattleGeniError):
   """
-  Indicates that a specified user does not exist.
+  Indicates a failure in communication with a nodemanager.
   """
+
+
+
+class DoesNotExistError(SeattleGeniError):
+  """
+  Indicates that some requested data/record does not exist.
+  """
+
 
 
 
