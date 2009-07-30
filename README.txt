@@ -1,46 +1,115 @@
-= Running SeattleGeni for Local Development =
+= Deploying and running SeattleGeni =
 
-Note: the following steps will change as soon as we start using other seattle
-code to do public key validation by the html frontend, and possibly for other
-reasons, too.
+  * Do initial preparation:
 
-  * Install django. http://docs.djangoproject.com/en/dev/topics/install/
+    * Install django. http://docs.djangoproject.com/en/dev/topics/install/
 
-  * Checkout the seattle trunk from svn.
+    * Checkout the seattle trunk from svn.
   
-  * cd trunk/seattlegeni/website
-  
-  * If desired, edit settings.py to use a mysql database if you don't want to
-    develop with sqlite (you'll need to create a mysql database by the name
-    you specify, in that case, as it won't be created for you).
+    * Deploy all necessary files to a directory of your choice. The directory
+      you deploy to should be the name of a directory that does not yet exist.
+      For example:
     
-  * Set your environment variables:
-  
-      export PYTHONPATH=$PYTHONPATH:/path/to/trunk
-      export DJANGO_SETTINGS_MODULE='seattlegeni.website.settings'
+      python ./trunk/seattlegeni/deploymentscripts/deploy_seattlegeni.py ./trunk /tmp/deploy
     
-  * Create the database structure:
+    * Change to the seattlegeni directory that is in the directory you deployed
+      to. For example:
+    
+        cd /tmp/deploy/seattlegeni
+    
+      Note: all future steps/instructions will assume you are in this directory.
+
+
+  * Start the website:
+
+    * Create a mysql database for seattlegeni (e.g. called `seattlegeni`).
   
-      python manage.py syncdb
+    * Edit website/settings.py and specify the name of the seattlegeni
+      database, as well as the database username, password, etc.
+      Also set a long, random string the value of SECRET_KEY.
+    
+      Note: using sqlite will not work for everything, but it should work for
+      most things if that's more convenient during development.
       
-    You can use the following if you don't want to be prompted about creating
-    an administrator account:
+    * TODO: describe what needs to be change din settings.py for a production
+      launch.
     
-      python manage.py syncdb --noinput
+    * Set your environment variables:
+  
+        export PYTHONPATH=$PYTHONPATH:/tmp/deploy
+        export DJANGO_SETTINGS_MODULE='seattlegeni.website.settings'
+    
+    * Create the database structure:
+  
+        python website/manage.py syncdb
+      
+      You can use the following if you don't want to be prompted about creating
+      an administrator account:
+    
+        python website/manage.py syncdb --noinput
    
-  * Start the django development webserver:
+    * For development, start the django development webserver:
   
-      python manage.py runserver
+        python website/manage.py runserver
       
-    TODO: if the new backend ends up being port 8000 still, at some point
-    these instructions will need to change to have the django webserver
-    listen on something other than port 8000.
+      You will now have a local development server running on port 8000.
       
-  * In a new shell, start the lockserver:
+    * For production, setup to run through apache:
+    
+      TODO: add information on setting up to run through apache
+      
+      
+  * Start the lockserver:
+      
+    * Set your environment variables:
   
-      python lockserver/lockserver_daemon.py
+        export PYTHONPATH=$PYTHONPATH:/tmp/deploy
+
+      Note: we don't need to set the DJANGO_SETTINGS_MODULE environment
+      variable for the lockserver, but it won't hurt if you do it.
       
-You will likely want to populate the database with some data for testing.
+    * In a new shell, start the lockserver:
+  
+        python lockserver/lockserver_daemon.py
+      
+      
+  * Start the backend (including setting up the key database)
+      
+    * Create a database for the key database (e.g. called `keydb`)
+  
+    * Make sure that the file keydb/config.py is not readable by the user the
+      website is running as (this is only something to worry about for production
+      launch, if you are just developing or testing, this is not required.)
+
+    * Edit the file keydb/config.py and set the database information for the key
+      database.
+    
+    * Create the key database structure by executing the contents of the file
+      keydb/schema.sql on the new key database you created.
+      
+        mysql -u[username] -p --database=[keydbname] < keydb/schema.sql
+
+    * Set your environment variables:
+  
+        export PYTHONPATH=$PYTHONPATH:/tmp/deploy
+        export DJANGO_SETTINGS_MODULE='seattlegeni.website.settings'
+
+    * In a new shell, start the backend_daemon from the backend directory
+      (because the repy files need to be in the directory it is run from):
+  
+        cd backend
+        python backend_daemon.py
+      
+      
+  * Start the polling daemons:
+  
+    * Set your environment variables:
+  
+        export PYTHONPATH=$PYTHONPATH:/tmp/deploy
+        export DJANGO_SETTINGS_MODULE='seattlegeni.website.settings'
+  
+    * TODO: add information on running the polling daemons
+      
 
 ------------------------------------------------------------------------------
 

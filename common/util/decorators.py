@@ -80,6 +80,7 @@ def log_function_call(func):
       return result
     
     except Exception, e:
+      # TODO: Log exception type, not just the message
       log.debug('Exception from %s (module %s): %s' % (func.__name__, func.__module__, str(e)))
       raise
     

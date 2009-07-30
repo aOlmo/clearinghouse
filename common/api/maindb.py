@@ -471,6 +471,28 @@ def get_node(node_identifier):
 
 
 
+
+@log_function_call
+def get_vessel(node_identifier, vesselname):
+  assert_str(node_identifier)
+  assert_str(vesselname)
+
+  try:
+    vessel = Vessel.objects.get(node__node_identifier=node_identifier, name=vesselname)
+    
+  except django.core.exceptions.ObjectDoesNotExist:
+    raise DoesNotExistError("There is no vessel with the node identifier: " + 
+                            str(node_identifier) + " and vessel name: " + vesselname)
+    
+  except django.core.exceptions.MultipleObjectsReturned:
+    raise InternalError("Multiple records returned when looking up a vessel by node identifier and vessel name.")
+  
+  return vessel
+
+
+
+
+
 @log_function_call
 def get_acquired_vessels(geniuser):
   assert_geniuser(geniuser)

@@ -84,6 +84,12 @@ class DoesNotExistError(SeattleGeniError):
 
 
 
+class InvalidPublicKeyError(SeattleGeniError):
+  """
+  Indicates that a public key was used which is not a valid public key.
+  """
+
+
 
 class UsernameAlreadyExistsError(SeattleGeniError):
   """

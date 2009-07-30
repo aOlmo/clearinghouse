@@ -39,6 +39,8 @@ from seattlegeni.common.api import keygen
 from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import maindb
 
+from seattlegeni.common.util import crypto
+
 from seattlegeni.common.util.assertions import *
 
 from seattlegeni.common.util.decorators import log_function_call
@@ -72,7 +74,6 @@ def register_user(username, password, email, affiliation, pubkey=None):
     TODO: InvalidPasswordError
     TODO: InvalidEmailError
     TODO: InvalidAffiliationError
-    TODO: InvalidPubkeyError
   <Side Effects>
     The user record in the django db is created as well as a user record in the
     corresponding user profile table that stores our custom information. A port
@@ -108,6 +109,8 @@ def register_user(username, password, email, affiliation, pubkey=None):
     if pubkey is None:
       (pubkey, privkey) = keygen.generate_keypair()
     else:
+      if not crypto.is_valid_pubkey_string(pubkey):
+        raise InvalidPublicKeyError
       privkey = None
     
     # Generate a donor key for this user. This is done through the backend
@@ -563,4 +566,49 @@ def release_all_vessels(geniuser):
     lockserver.destroy_lockserver_handle(lockserver_handle)
 
 
+
+
+
+def get_vessel_list(vesselhandle_list):
+  """
+  <Exceptions>
+    Raises DoesNotExistError
+  """
+  assert_list_of_str(vesselhandle_list)
+  
+  vessel_list = []
+  
+  for vesselhandle in vesselhandle_list:
+    if len((vesselhandle.split(":"))) != 2:
+      raise InvalidRequestError("Invalid vesselhandle: " + vesselhandle)
+    
+    (nodeid, vesselname) = vesselhandle.split(":")
+    vessel = maindb.get_vessel(nodeid, vesselname)
+    vessel_list.append(vessel)
+    
+  return vessel_list
+
+
+  
+
+
+def get_vessel_infodict_list(vessel_list):
+  
+  infodict_list = []
+  
+  for vessel in vessel_list:
+    vessel_info = {}
+    
+    vessel_info["node_id"] = maindb.get_node_identifier_from_vessel(vessel)
+    node = maindb.get_node(vessel_info["node_ip"])
+    
+    vessel_info["node_ip"] = node.last_known_ip
+    vessel_info["node_port"] = node.last_known_port
+    vessel_info["vessel_id"] = vessel.name
+    
+    vessel_info["handle"] = vessel_info["node_id"] + ":" + vessel.name
+    
+    infodict_list.append(vessel_info)
+    
+  return infodict_list
 
