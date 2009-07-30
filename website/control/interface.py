@@ -600,7 +600,7 @@ def get_vessel_infodict_list(vessel_list):
     vessel_info = {}
     
     vessel_info["node_id"] = maindb.get_node_identifier_from_vessel(vessel)
-    node = maindb.get_node(vessel_info["node_ip"])
+    node = maindb.get_node(vessel_info["node_id"])
     
     vessel_info["node_ip"] = node.last_known_ip
     vessel_info["node_port"] = node.last_known_port
