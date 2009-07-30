@@ -37,78 +37,242 @@ from seattlegeni.common.util.decorators import log_function_call
 # All of the work that needs to be done is passed through the controller interface.
 from seattlegeni.website.control import interface
 
-
+# Used for raising xmlrpc faults
+import xmlrpclib
 
 class PublicXMLRPCFunctions(object):
   
 
   @staticmethod
   @log_function_call
-  def acquire_resources():
-    return "acquire_resources"
+  def acquire_resources(auth, rspec):
+    """
+    <Purpose>
+      Acquires resources for users over XMLRPC. 
+    <Arguments>
+      auth
+        An authorization dict of the form {'username':username, 'password':password}
+      rspec
+        A resource specificiation dict of the form {'rspec_type':type, 'number_of_nodes':num}
+    <Exceptions>
+      Raises xmlrpclib Fault objects:
+        100, "GENIOpError" for internal errors.
+        103, "GENINotEnoughCredits" if user has insufficient vessel credits to complete request.
+    <Returns>
+      A list of 'info' dictionaries, each 'infodict' contains acquired vessel info.
+    """
+    geni_user = _auth(auth)
+    
+    resource_type = rspec['rspec_type']
+    num_vessels = rspec['number_of_nodes']
+    acquired_vessels = []
+    
+    # validate rspec data
+    if not isinstance(resource_type, str) or not isinstance(resource_num, int):
+      raise xmlrpclib.Fault(102, "GENIInvalidUserInput: rspec has invalid data types.")
+    
+    if (resource_type != "lan" and resource_type != "wan" and \
+    resource_type != "random") or resource_num < 1:
+      raise xmlrpclib.Fault(102, "GENIInvalidUserInput: rspec has invalid values.")
+      
+    # since acquired_vessels expects rand instead of random
+    if resource_type == 'random':
+      resource_type = 'rand'
+    
+    try:
+      acquired_vessels = interface.acquire_vessels(geni_user, num_vessels, resource_type)
+    except DoesNotExistError:
+      raise xmlrpclib.Fault(100, "GENIOpError: Internal GENI Error! Recieved a DoesNotExistError while calling interface.acquire_vessels")
+    except UnableToAcquireResourcesError, err:
+      raise xmlrpclib.Fault(100, "GENIOpError: Internal GENI Error! Unable to fulfill vessel acquire request at this given time. Please try again later.")
+    except InsufficientUserResourcesError, err:
+      raise xmlrpclib.Fault(103, "GENINotEnoughCredits: You do not have enough vessel credits to acquire the number of vessels requested.")
+    except ProgrammerError, err:
+      raise xmlrpclib.Fault(100, "GENIOpError: Internal GENI Error! Recieved a ProgrammerError while calling interface.acquire_vessels. Details: " + str(err)) 
+    
+    # since acquire_vessels returns a list of Vessel objects, we
+    # need to convert them into a list of 'info' dictionaries.
+    return interface.get_vessel_infodict_list(acquired_vessels)
   
-  
+
 
   @staticmethod
   @log_function_call
-  def release_resources():
-    return "release_resources"
+  def release_resources(auth, vesselhandle_list):
+    """
+    <Purpose>
+      Release resources for a user over XMLRPC.
+    <Arguments>
+      auth
+        An authorization dict of the form {'username':username, 'password':password}
+      vesselhandle_list
+        A list of vessel handles
+    <Exceptions>
+      Raises xmlrpclib Fault objects:
+        100, "GENIOpError" for internal GENI errors.
+        102, "GENIInvalidUserInput" if a user provides invalid vessel handles.
+    <Returns>
+      0 on success. Raises a fault otherwise.
+    """
+    geni_user = _auth(auth)
+  
+    #TODO: validate vessel_list.
+    #if not isinstance(vessel_list, list):
+    #  raise TypeError("Invalid data types in handle list.")
+    
+    # since we're given a list of vessel 'handles', we need to convert them to a 
+    # list of actual Vessel objects; as release_vessels_of_user expects Vessel objs.
+    try:
+      list_of_vessel_objs = interface.get_vessel_list(vesselhandle_list)
+    except DoesNotExistError:
+      # given handle refers to a non-existant vessel
+      # throw a fault?
+      pass
+    
+    try:
+      interface.release_vessels(geni_user, list_of_vessel_objs)
+    except DoesNotExistError:
+      raise xmlrpclib.Fault(100, "GENIOpError: Internal GENI Error! Caught a DoesNotExistError while calling interface.release_vessels")
+    except InvalidRequestError, err:
+      # vessel exists but isn't valid for you to use.
+      raise xmlrpclib.Fault(102, "GENIInvalidUserInput: Tried to release a vessel that didn't belong to you. Details: " + str(err))
+    
+    return 0
   
   
   
   @staticmethod
   @log_function_call
   def get_resource_info(auth):
-# For example (this is not correct, just conceptual):
-#    # I'd imagine you'd have a helper function that would get the geniuser
-#    # and would throw some Fault or Error if the auth info isn't valid,
-#    # rather than repeat this in every function.
-#    username = auth["username"]
-#    password = auth["password"]
-#    geniuser = interface.get_user_with_password(username, password)
-#    if geniuser is None:
-#      # Not sure if this is the right way when doing this through django.
-#      return xmlrpclib.FaultOrWhatever("Invalid authorization credentials.")
-#    
-#    resource_list = interface.get_vessels_acquired_by_user(geniuser)
-#    resource_list = []
-#    for resource_item in resource_query_set:
-#      resources_list.append(resource_item.name)
-#      
-#    return resources_list
-    pass
+    """
+    <Purpose>
+      Gets a user's acquired vessels over XMLRPC.
+    <Arguments>
+      auth
+        An authorization dict of the form {'username':username, 'password':password}
+    <Exceptions>
+      None.
+    <Returns>
+      A list of 'info' dictionaries, each 'infodict' contains vessel info.
+    """
+    geni_user = _auth(auth)
+    user_vessels = interface.get_acquired_vessels(geni_user)
+    return interface.get_vessel_infodict_list(user_vessels)
   
   
   @staticmethod
   @log_function_call
-  def get_account_info():
-    return "get_account_info"
+  def get_account_info(auth):
+    """
+    <Purpose>
+      Gets a user's account info for a client over XMLRPC.
+    <Arguments>
+      auth
+        An authorization dict of the form {'username':username, 'password':password}
+    <Exceptions>
+      None.
+    <Returns>
+      A dictionary containing account info.
+    """
+    geni_user = _auth(auth)
+    user_port = geni_user.usable_vessel_port
+    user_name = geni_user.username
+    urlinstaller = ""
+    private_key_exists = True
+    if geni_user.user_privkey == "":
+      private_key_exists = False
+    # unsure how to get this data
+    max_vessel = 0
+    user_affiliation = geni_user.affiliation
+    infodict = {'user_port':user_port, 'user_name':user_name, 
+                'urlinstaller':urlinstaller, 'private_key_exists':private_key_exists, 
+                'max_vessel':max_vessel, 'user_affiliation':user_affiliation}
+    return infodict
   
   
   
   @staticmethod
   @log_function_call
-  def get_public_key():
-    return "get_public_key"
+  def get_public_key(auth):
+    # Gets a user's public key.
+    geni_user = _auth(auth)
+    return geni_user.user_pubkey
   
   
   
   @staticmethod
   @log_function_call
-  def get_private_key():
-    return "get_private_key"
+  def get_private_key(auth):
+    # Gets a user's private key.
+    geni_user = _auth(auth)
+    return geni_user.user_privkey
   
   
   
   @staticmethod
   @log_function_call
-  def delete_private_key():
-    return "delete_private_key"
+  def delete_private_key(auth):
+    """
+    <Purpose>
+      Deletes a user's private key for a client over XMLRPC.
+    <Arguments>
+      auth
+        An authorization dict of the form {'username':username, 'password':password}
+    <Exceptions>
+      Raises xmlrpclib Fault Objects:
+        104, "GENIKeyAlreadyRemoved" if the user's privkey was already removed.
+    <Returns>
+      Returns True on success, raises a fault otherwise.
+    """
+    geni_user = _auth(auth)
+    if geni_user.user_privkey == "":
+      raise xmlrpclib.Fault(104, "GENIKeyAlreadyRemoved: Your private key has already been removed.")
+    interface.delete_private_key(geni_user)
+    return True
   
   
   
   @staticmethod
   @log_function_call
-  def authcheck():
-    return "authcheck"
+  def authcheck(auth):
+    """
+    <Purpose>
+      Checks a user's authorization details.
+    <Arguments>
+      auth
+        An authorization dict of the form {'username':username, 'password':password}
+    <Exceptions>
+      None.
+    <Returns>
+      Returns 0 on valid auth credentials, -1 otherwise.
+    """
+    username = auth['username']
+    password = auth['password']
+    geni_user = interface.get_user_with_password(username, password)
+    if geni_user == None:
+      return -1
+    else:
+      return 0
 
+
+@log_function_call
+def _auth(auth):
+  """
+  <Purpose>
+    Internally used function that performs actual authorization.
+  <Arguments>
+    auth
+      An authorization dict of the form {'username':username, 'password':password}
+  <Exceptions>
+    Raises xmlrpclib Fault Objects:
+      101, "GENIAuthError" if user auth fails.
+  <Returns>
+    On successful authentication, returns a geniuser object. Raises a fault otherwise.
+  """
+  username = auth['username']
+  password = auth['password']
+  try:
+    geni_user = interface.get_user_with_password(username, password)
+  except DoesNotExistError:
+    raise xmlrpclib.Fault(101, "GENIAuthError: User auth failed.")
+  return geni_user
