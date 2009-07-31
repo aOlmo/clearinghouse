@@ -121,15 +121,16 @@ def main():
 
   # Warn the user if the provided deploy directory exists and if it should be replaced.
   # We actually rename rather than remove the old one, just to be paranoid.
+  replace_deployment_dir = False
   if os.path.isdir(deployroot):
     print "WARNING: existing directory found at directory to deploy: " + deployroot
     ans = raw_input("Backup and replace this directory (copying config files to the new deployment)? [y/n]")
-    replace = str.lower(ans) == 'y'
-    if not replace:
+    replace_deployment_dir = str.lower(ans) == 'y'
+    if not replace_deployment_dir:
       exit_with_message(2, "You chose not to replace the directory.")
     else:
       print
-      renameddir = deployroot.rstrip('/').rstrip('\\') + '.' + str(time.time())
+      renameddir = deployroot.rstrip('/').rstrip('\\') + '.bak.' + str(time.time())
       print "Renaming existing directory " + deployroot + " to " + renameddir
       shutil.move(deployroot, renameddir)
 
@@ -156,7 +157,7 @@ def main():
   
   # If we replaced an existing directory, then copy the config files from the
   # old deployment to the new one.
-  if replace:
+  if replace_deployment_dir:
     # The website settings files.
     old_settings_path = os.path.join(renameddir, "seattlegeni", "website", "settings.py")
     new_settings_path = os.path.join(seattlegeni_deploy_dir, "website", "settings.py")
