@@ -35,9 +35,15 @@
       launch.
     
     * Set your environment variables:
-  
-        export PYTHONPATH=$PYTHONPATH:/tmp/deploy
+
+        export PYTHONPATH=$PYTHONPATH:/tmp/deploy:/tmp/deploy/seattle
         export DJANGO_SETTINGS_MODULE='seattlegeni.website.settings'
+        
+      Node: the /tmp/deploy path entry is to make available the two packages
+      'seattlegeni' and 'seattle' which the deployment script created in the
+      /tmp/deploy directory. The /tmp/deploy/seattle path item is to ensure
+      that repyhelper can find repy files in the python path, as the repy files
+      were placed in this directory by the deployment script.
     
     * Create the database structure:
   
@@ -91,7 +97,7 @@
 
     * Set your environment variables:
   
-        export PYTHONPATH=$PYTHONPATH:/tmp/deploy
+        export PYTHONPATH=$PYTHONPATH:/tmp/deploy:/tmp/deploy/seattle
         export DJANGO_SETTINGS_MODULE='seattlegeni.website.settings'
 
     * In a new shell, start the backend_daemon from the backend directory
@@ -105,7 +111,7 @@
   
     * Set your environment variables:
   
-        export PYTHONPATH=$PYTHONPATH:/tmp/deploy
+        export PYTHONPATH=$PYTHONPATH:/tmp/deploy:/tmp/deploy/seattle
         export DJANGO_SETTINGS_MODULE='seattlegeni.website.settings'
   
     * TODO: add information on running the polling daemons

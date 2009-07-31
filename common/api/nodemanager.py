@@ -34,8 +34,8 @@ from seattlegeni.common.util.assertions import *
 
 from seattlegeni.common.exceptions import *
 
-import repyhelper
-import repyportability
+from seattle import repyhelper
+from seattle import repyportability
 
 repyhelper.translate_and_import("listops.repy")
 repyhelper.translate_and_import("nmclient.repy")
