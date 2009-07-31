@@ -28,8 +28,12 @@
   @log_function_call -- this is our own decorator for logging purposes.
 """
 
+import traceback
+
 # Make available all of our own standard exceptions.
 from seattlegeni.common.exceptions import *
+
+from seattlegeni.common.util import log
 
 # This is the logging decorator use use.
 from seattlegeni.common.util.decorators import log_function_call
@@ -41,7 +45,48 @@ from seattlegeni.website.control import interface
 import xmlrpclib
 
 class PublicXMLRPCFunctions(object):
+  """
+  All public functions of this class are automatically exposed as part of the
+  xmlrpc interface.
   
+  Each method should be sure to check the user input and return useful errors
+  to the client if the input is invalid. Note that raising an AssertionError
+  (e.g. through a call to an assert_* method) won't be sufficient, as those
+  should only indicate something going wrong in our code. 
+  """
+
+  def _dispatch(self, method, args):
+    """
+    We provide a _dispatch function (which SimpleXMLRPCServer looks for and
+    uses) so that we can log exceptions due to our programming errors within
+    seattlegeni as well to detect incorrect usage by clients.
+    """
+      
+    try:
+      # Get the requested function (making sure it exists).
+      try:
+        func = getattr(self, method)
+      except AttributeError:
+        raise InvalidRequestError("The requested method '" + method + "' doesn't exist.")
+      
+      # Call the requested function.
+      return func(*args)
+    
+    except InvalidRequestError:
+      log.error("The xmlrpc server was used incorrectly: " + traceback.format_exc())
+      raise
+    
+    except:
+      # We assume all other exceptions are bugs in our code.
+
+      # TODO: this should probably send an email or otherwise make noise.
+      log.critical("Internal error while handling an xmlrpc request: " + traceback.format_exc())
+
+      # It's not unlikely that the user ends up seeing this message, so we
+      # are careful about what the content of the message is.
+      raise ProgrammerError("Internal error while handling the xmlrpc request.")
+      
+
 
   @staticmethod
   @log_function_call
@@ -253,6 +298,9 @@ class PublicXMLRPCFunctions(object):
       return -1
     else:
       return 0
+
+
+
 
 
 @log_function_call

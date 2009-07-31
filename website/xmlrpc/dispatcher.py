@@ -64,4 +64,4 @@ def rpc_handler(request):
 
 
 # All methods in the PublicXMLRPCFunctions class will be available as xmlrpc functions.
-dispatcher.register_instance(PublicXMLRPCFunctions)
+dispatcher.register_instance(PublicXMLRPCFunctions())
