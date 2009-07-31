@@ -1,7 +1,17 @@
-# Django settings for www project.
+"""
+These are the django settings for the seattlegeni project. See the README.txt
+file for details on what needs to be set in this file. At a minimim, it will
+be the database connection info and the SECRET_KEY value.
 
-# For development: We use the os module to determine the directory this settings.py file is in.
+For public deployment, the DEBUG and TEMPLATE_DEBUG settings should be set to
+False.
+"""
+
+import django
 import os
+
+from seattlegeni.common.util import log
+
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -26,32 +36,35 @@ DATABASE_PASSWORD = 'FILL_THIS_IN' # Not used with sqlite3.
 DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
 DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
 
+# Make this unique, and don't share it with anybody.
+# Fill this in!
+SECRET_KEY = ''
 
 
-# JCS: This code may or may not be kept. If we don't keep it (because we use
-#      django 1.0 not 1.1), then we need to find another way of making sure
-#      to call init_database() from within the website, not just polling daemons.
-## This is called by code below on connection creation if the version of django
-## supports it.
-#def _set_schema(sender, **kwargs):
-#  from seattlegeni.common.api import maindb
-#  maindb.init_database()
-#
-#
-## If this is a modern-enough version of django to support specifying a function
-## to be called on database connection creation, then have it call init_database
-## at that time. This is to help prevent init_database() from accidentally not
-## being called when it should be.
-## Maybe this code shouldn't go in settings.py. I was concerned that putting it
-## in maindb, however, might cause the signal to be registered after the database
-## connection was created. As far as I know, putting it in settings.py is the
-## closest to a guarantee that it will be executed.
-#import django
-#if django.VERSION >= (1,1):
-#  from django.db.backends.signals import connection_created
-#  connection_created.connect(_set_schema)
+
+# Called when new database connections are created (see below).
+def _prepare_newly_created_db_connection(sender, **kwargs):
+  from seattlegeni.common.api import maindb
+  maindb.init_maindb()
+
+
+# If this is a modern-enough version of django to support specifying a function
+# to be called on database connection creation, then have it call init_maindb()
+# at that time. This is to help prevent init_maindb() from accidentally not
+# being called when it should be.
+# Maybe this code shouldn't go in settings.py. I was concerned that putting it
+# in maindb, however, might cause the signal to be registered after the database
+# connection was created. As far as I know, putting it in settings.py is the
+# closest to a guarantee that it will be executed.
+if django.VERSION >= (1,1):
+  # connection_created only exists with django >= 1.1
+  from django.db.backends.signals import connection_created
+  connection_created.connect(_prepare_newly_created_db_connection)
+else:
+  log.error("You must use django >= 1.1 in order to support automatically " +
+            "perform custom database connection initialization. (See settings.py)")
   
-  
+
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -83,10 +96,6 @@ MEDIA_URL = '/site_media/'
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
 ADMIN_MEDIA_PREFIX = '/media/'
-
-# Make this unique, and don't share it with anybody.
-# Fill this in!
-SECRET_KEY = ''
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (

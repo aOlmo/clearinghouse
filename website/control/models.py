@@ -102,7 +102,13 @@ class Node(models.Model):
 
   # The node's identifier (which happens to be a public key with no
   # corresponding private key).
-  node_identifier = models.CharField("Node identifier", max_length=1000, unique=True, db_index=True)
+  # This should be unique, but we can't set this constraint at the
+  # database-level because the length is too long for mysql to index the full
+  # field.
+  # TODO: figure out a way to have django run additional sql when syncdb
+  # is run. We could use this to at least make a unique constraint on the first
+  # 724 (?) bytes of the field in mysql.
+  node_identifier = models.CharField("Node identifier", max_length=2048, db_index=True)
 
   # The IP address the nodemanager was last known to be accessible through.
   last_known_ip = models.IPAddressField("Last known nodemanager IP address")
