@@ -76,6 +76,10 @@ class PublicXMLRPCFunctions(object):
       log.error("The xmlrpc server was used incorrectly: " + traceback.format_exc())
       raise
     
+    except xmlrpclib.Fault:
+      # A xmlrpc Fault was intentionally raised by the code in this module.
+      raise
+    
     except:
       # We assume all other exceptions are bugs in our code.
 
