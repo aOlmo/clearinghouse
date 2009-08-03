@@ -14,6 +14,11 @@
   simple type checking of arguments to functions where the programmer calling
   the function should have been sure to provide the correct type of data.
   
+  Note: We define __all__ at the bottom of this script to make sure that we
+  only export the assertions we've defined here, not anything else that may be
+  imported or used in this module. Only names that start with "assert_" are
+  exported.
+  
   Note: AssertionError is a python built-in exception.
 """
 
@@ -106,6 +111,7 @@ def assert_geniuser(value):
     raise AssertionError("Expected GeniUser object, received " + str(type(value)))
   
 
+
 def assert_node(value):
   """
   <Purpose>
@@ -115,6 +121,7 @@ def assert_node(value):
     raise AssertionError("Expected Node object, received " + str(type(value)))
   
 
+
 def assert_vessel(value):
   """
   <Purpose>
@@ -123,3 +130,15 @@ def assert_vessel(value):
   if not isinstance(value, Vessel):
     raise AssertionError("Expected Vessel object, received " + str(type(value)))
   
+
+
+# Many modules are using the line 'from seattlegeni.common.util.assertions import *'
+# to import the assertions. We define __all__ so that we only export names from
+# this module that start with the "assert_". This prevents us from exporting anything
+# we happened to import as well as any non-private helper functions that may get
+# defined. 
+__all__ = []
+for name in dir():
+  if name.startswith("assert_"):
+    __all__.append(name)
+

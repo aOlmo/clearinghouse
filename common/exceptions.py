@@ -19,6 +19,10 @@
   This ensures that we don't end up ever having an exception named in a
   try/catch block that isn't actually defined in that modules namespace.
   
+  Note: We define __all__ at the bottom of this script to make sure that we
+  only export the exceptions we've defined here, not anything else that may be
+  imported or used in this module. Only names that end in "Error" are exported.
+  
   In general, no code in seattlegeni should knowingly let built-in
   python exceptions escape from the place where the exception occurs.
   Instead, it should be caught and, if it can't be dealt with, re-raised as
@@ -112,4 +116,12 @@ class InsufficientUserResourcesError(SeattleGeniError):
   Indicates that a user requested more resources than they are allowed to have.
   """
 
+
+# Many modules are using the line 'from seattlegeni.common.exceptions import *'
+# to import the exceptions. We define __all__ so that we only export names from
+# this module that end in the word "Error". 
+__all__ = []
+for name in dir():
+  if name.endswith("Error"):
+    __all__.append(name)
 
