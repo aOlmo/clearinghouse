@@ -48,11 +48,12 @@ repyhelper.translate_and_import("time.repy")
 def init_nodemanager():
   """
     <Purpose>
-      Initializes the node manager. Must be called before other operations.
+      Initializes the nodemanager api. Must be called before other operations.
     <Arguments>
       None
     <Exceptions>
-      It is possible for a time error to be thrown (which is fatal).
+      TimeUpdateError
+        If unable to update time.
     <Side Effects>
       This function contacts a NTP server and gets the current time.
       This is needed for the crypto operations that we do later.
@@ -60,8 +61,17 @@ def init_nodemanager():
     <Returns>
       None
   """
-  time_updatetime(23421)
-
+  try:
+    time_updatetime(23421)
+  except TimeError:
+    # We don't want to ignore this, nor do we want to let an exception defined
+    # in a repy module trickle up outside of this module, nor do we want to call
+    # it an InternalError just in case it's considered non-fatal at some point
+    # (because we generally don't want people catching InternalError because
+    # they're bound to catch more then they intended if they do that). So, we
+    # use a seattlegeni exception just for this situation. 
+    raise TimeUpdateError("Failed to perform time_updatetime() in init_nodemanager(): " + 
+                          traceback.format_exc())
 
 
 
@@ -100,9 +110,15 @@ def get_node_info(ip, port):
   assert_int(port)
   
   try:
+    # This can raise an NMClientException, but the handle won't be stored in
+    # the nmclient module if it does so we don't have to clean it up.
     nmhandle = nmclient_createhandle(ip, port)
-    nodeinfo = nmclient_getvesseldict(nmhandle)
-    nmclient_destroyhandle(nmhandle)
+
+    # Be sure to clean up the handle.    
+    try:
+      nodeinfo = nmclient_getvesseldict(nmhandle)
+    finally:
+      nmclient_destroyhandle(nmhandle)
     
   except NMClientException:
     nodestr = str((ip, port))
@@ -172,10 +188,18 @@ def get_vessel_resources(ip, port, vesselname):
   resourcesdict = {}
   
   try:
+    # This can raise an NMClientException, but the handle won't be stored in
+    # the nmclient module if it does so we don't have to clean it up.
     nmhandle = nmclient_createhandle(ip, port)
-    resourcedata = nmclient_rawsay(nmhandle, "GetVesselResources", vesselname)  
+    
+    # Be sure to clean up the handle.
+    try:
+      resourcedata = nmclient_rawsay(nmhandle, "GetVesselResources", vesselname)  
+    finally:
+      nmclient_destroyhandle(nmhandle)
+    
     resourcesdict["usableports"] = _get_vessel_usableports(resourcedata)
-    nmclient_destroyhandle(nmhandle)
+    
     
   except NMClientException:
     nodestr = str((ip, port))
@@ -284,16 +308,21 @@ def _do_signed_call(nodehandle, *callargs):
   (nodeid, ip, port, pubkeystring, privkeystring) = nodehandle
   
   try:
+    # This can raise an NMClientException, but the handle won't be stored in
+    # the nmclient module if it does so we don't have to clean it up.
     nmhandle = nmclient_createhandle(ip, port)
   
-    myhandleinfo = nmclient_get_handle_info(nmhandle)
-    myhandleinfo['publickey'] = rsa_string_to_publickey(pubkeystring)
-    myhandleinfo['privatekey'] = rsa_string_to_privatekey(privkeystring)
-    nmclient_set_handle_info(nmhandle, myhandleinfo)
-  
-    nmclient_signedsay(nmhandle, *callargs)
+    # Be sure to clean up the handle.    
+    try:
+      myhandleinfo = nmclient_get_handle_info(nmhandle)
+      myhandleinfo['publickey'] = rsa_string_to_publickey(pubkeystring)
+      myhandleinfo['privatekey'] = rsa_string_to_privatekey(privkeystring)
+      nmclient_set_handle_info(nmhandle, myhandleinfo)
     
-    nmclient_destroyhandle(nmhandle)
+      nmclient_signedsay(nmhandle, *callargs)
+      
+    finally:
+      nmclient_destroyhandle(nmhandle)
     
   except NMClientException:
     nodestr = str((nodeid, ip, port))

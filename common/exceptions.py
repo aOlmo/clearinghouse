@@ -117,6 +117,16 @@ class InsufficientUserResourcesError(SeattleGeniError):
   """
 
 
+
+class TimeUpdateError(SeattleGeniError):
+  """
+  Indicates that a call to the time_updatetime() repy function failed. This is
+  to avoid this situation being treated as an InternalError in case it's
+  considered to be non-fatal at some point in the future.
+  """
+
+
+
 # Many modules are using the line 'from seattlegeni.common.exceptions import *'
 # to import the exceptions. We define __all__ so that we only export names from
 # this module that end in the word "Error". 
