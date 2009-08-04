@@ -1,10 +1,10 @@
 """
 These are the django settings for the seattlegeni project. See the README.txt
-file for details on what needs to be set in this file. At a minimim, it will
-be the database connection info and the SECRET_KEY value.
+file for details on what needs to be set in this file. At a minimum for
+development, it will be the database connection info and the SECRET_KEY value.
 
-For public deployment, the DEBUG and TEMPLATE_DEBUG settings should be set to
-False.
+For public deployment, see the README.txt file for information about which
+additional changes you'll need to make to this file.
 """
 
 import django
@@ -42,7 +42,15 @@ ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
 
-# Email address that 500 error notifications will be sent from.
+# To be able to send mail to ADMINS when there is an error, django needs to
+# know about an SMTP server it can use. That info is defined here.
+#EMAIL_HOST = 'smtp.gmail.com'
+#EMAIL_HOST_USER = 'an.error.sending.account@gmail.com'
+#EMAIL_HOST_PASSWORD = 'PASSWORD_HERE'
+#EMAIL_PORT = 587
+#EMAIL_USE_TLS = True
+
+# Email address that error notifications will be sent from.
 #SERVER_EMAIL = "error@seattlegeni.server.hostname"
 
 MANAGERS = ADMINS

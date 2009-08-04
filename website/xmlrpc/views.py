@@ -28,7 +28,15 @@
   @log_function_call -- this is our own decorator for logging purposes.
 """
 
+# To send the admins emails when there's an unhandled exception.
+from django.core.mail import mail_admins
+
 import traceback
+
+# Used for raising xmlrpc faults
+import xmlrpclib
+
+from seattlegeni.website import settings
 
 # Make available all of our own standard exceptions.
 from seattlegeni.common.exceptions import *
@@ -41,8 +49,7 @@ from seattlegeni.common.util.decorators import log_function_call
 # All of the work that needs to be done is passed through the controller interface.
 from seattlegeni.website.control import interface
 
-# Used for raising xmlrpc faults
-import xmlrpclib
+
 
 class PublicXMLRPCFunctions(object):
   """
@@ -80,14 +87,45 @@ class PublicXMLRPCFunctions(object):
       # A xmlrpc Fault was intentionally raised by the code in this module.
       raise
     
-    except:
+    except Exception, e:
       # We assume all other exceptions are bugs in our code.
 
-      # TODO: this should probably send an email or otherwise make noise.
-      log.critical("Internal error while handling an xmlrpc request: " + traceback.format_exc())
+      # We use the log message as the basis for the email message, as well.
+      logmessage = "Internal error while handling an xmlrpc request: " + traceback.format_exc()
+      log.critical(logmessage)
 
+      # Normally django will send an email to the ADMINS defined in settings.py
+      # when an exception occurs. However, our xmlrpc dispatcher will turn this
+      # into a Fault that is returned to the client. So, django won't see it as
+      # an uncaught exception. Therefore, we have to send it ourselves.
+      if not settings.DEBUG:
+        subject = "Error handling xmlrpc request '" + method + "': " + str(type(e)) + " " + str(e)
+        
+        emailmessage = logmessage + "\n\n"
+        emailmessage += "XMLRPC method called: " + method + "\n"
+        
+        # If the first argument looks like auth info, don't include the
+        # password in the email we send. Otherwise, include all the args.
+        # We wrap this in a try block just in case we screw this up we want to
+        # be sure we get an email still.
+        try:
+          if len(args) > 0 and isinstance(args[0], dict) and "username" in args[0]:
+            emailmessage += "Username: " + str(args[0]["username"]) + "\n"
+            if len(args) > 1:
+              emailmessage += "Non-auth arguments: " + str(args[1:]) + "\n"
+            else:
+              emailmessage += "There were no non-auth arguments." + "\n"
+          else:
+            emailmessage += "Arguments: " + str(args) + "\n"
+        except:
+          pass
+          
+        # Send an email to the addresses listed in settings.ADMINS
+        mail_admins(subject, emailmessage)
+      
       # It's not unlikely that the user ends up seeing this message, so we
-      # are careful about what the content of the message is.
+      # are careful about what the content of the message is. We don't
+      # include the exception trace.
       raise ProgrammerError("Internal error while handling the xmlrpc request.")
       
 

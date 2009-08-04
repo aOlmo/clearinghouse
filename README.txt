@@ -46,6 +46,14 @@
         # ('Your Name', 'your_email@domain.com'),
       )
       
+      # To be able to send mail to ADMINS when there is an error, django needs to
+      # know about an SMTP server it can use. That info is defined here.
+      EMAIL_HOST = 'smtp.gmail.com'
+      EMAIL_HOST_USER = 'an.error.sending.account@gmail.com'
+      EMAIL_HOST_PASSWORD = 'PASSWORD_HERE'
+      EMAIL_PORT = 587
+      EMAIL_USE_TLS = True
+      
       # Email address that 500 error notifications will be sent from.
       SERVER_EMAIL = "error@seattlegeni.server.hostname"
       
