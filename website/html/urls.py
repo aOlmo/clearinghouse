@@ -42,7 +42,7 @@ urlpatterns = patterns('website.html.views',
                        # download the user's private key (from form)
                        (r'^priv_key$', 'priv_key', {}, 'priv_key'),
                        # download the user's public key (from form)
-                       (r'^pub_key$', 'priv_key', {}, 'pub_key'),
+                       (r'^pub_key$', 'pub_key', {}, 'pub_key'),
 
 #                       # donations functions:
 #                       # create a new share with another use (from form)
@@ -50,10 +50,10 @@ urlpatterns = patterns('website.html.views',
 #                       # delete an existing share with another user (from form)
 #                       (r'^del_share$', 'del_share', {}, 'del_share'),
 
-                       # AJAX
-#                       (r'^ajax_getcredits$', 'ajax_getcredits', {}, 'ajax_getcredits'),
-#                       (r'^ajax_getshares$', 'ajax_getshares', {}, 'ajax_getshares'),
-#                       (r'^ajax_editshare$', 'ajax_editshare', {}, 'ajax_editshare'),
-#                       (r'^ajax_createshare$', 'ajax_createshare', {}, 'ajax_createshare'),
-#                       (r'^ajax_getvessels$', 'ajax_getvessels', {}, 'ajax_getvesseles'),
+                      # AJAX functions, called by the 'My GENI' page
+                      #(r'^ajax_getcredits$', 'ajax_getcredits', {}, 'ajax_getcredits'),
+                      #(r'^ajax_getshares$', 'ajax_getshares', {}, 'ajax_getshares'),
+                      #(r'^ajax_editshare$', 'ajax_editshare', {}, 'ajax_editshare'),
+                      #(r'^ajax_createshare$', 'ajax_createshare', {}, 'ajax_createshare'),
+                      #(r'^ajax_getvessels$', 'ajax_getvessels', {}, 'ajax_getvesseles'),
                       )

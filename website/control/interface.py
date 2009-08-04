@@ -208,32 +208,35 @@ def get_user_with_apikey(username, apikey):
   
 
 
+# JTC: Why do we store the username in the request session dict, when
+# the username is already available as request.user?
+def login_user(request):
+  request.session["username"] = request.user.username
 
-
-@log_function_call
-def login_user(request, geniuser):
-  """
-  <Purpose>
-    Log in a user to a session. This allows future requests that are part of
-    same session to obtain the user object through calls to get_logged_in_user().
-    This function should not be used through the xmlrpc frontend as there is
-    no concept of the session there.
-  <Arguments>
-    request
-      The HttpRequest object of the user's request through the frontend.
-    geniuser
-      The GeniUser object of the user to be logged in.
-  <Exceptions>
-    None
-  <Side Effects>
-    Associates the user with a session corresponding to the request.
-  <Returns>
-    None
-  """
-  assert_geniuser(geniuser)
-  
-  # JCS: I haven't tested this. It may not work as intended.
-  request.session["username"] = geniuser.username
+#@log_function_call
+#def login_user(request, geniuser):
+#  """
+#  <Purpose>
+#    Log in a user to a session. This allows future requests that are part of
+#    same session to obtain the user object through calls to get_logged_in_user().
+#    This function should not be used through the xmlrpc frontend as there is
+#    no concept of the session there.
+#  <Arguments>
+#    request
+#      The HttpRequest object of the user's request through the frontend.
+#    geniuser
+#      The GeniUser object of the user to be logged in.
+#  <Exceptions>
+#    None
+#  <Side Effects>
+#    Associates the user with a session corresponding to the request.
+#  <Returns>
+#    None
+#  """
+#  assert_geniuser(geniuser)
+#  
+#  # JCS: I haven't tested this. It may not work as intended.
+#  request.session["username"] = geniuser.username
 
 
 

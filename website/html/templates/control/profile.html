@@ -22,6 +22,14 @@ Profile - GENI
 			</div>
 			
 			<table class="profile">
+			  {% if info %}
+			  <tr class="even">
+			    <td class="key"> </td>
+			    <td class="value">
+			      {{ info }}<br><br>
+			    </td>
+			  </tr>
+			  {% endif %}
 				<tr class="odd">
 					<td class="key">Username</td>
 					<td class="value">{{ user.username }}</td>
@@ -32,7 +40,7 @@ Profile - GENI
 				</tr>
 				<tr class="odd">
 					<td class="key">Port</td>
-					<td class="value"> {{ geni_user.port }}</td>
+					<td class="value">{{ geni_user.usable_vessel_port }}</td>
 				</tr>
 				<tr class="even">
 					<td class="key">Public Key</td>
@@ -42,7 +50,7 @@ Profile - GENI
 					  </form>
 					</td>
 				</tr>
-				{% ifnotequal geni_user.privkey "" %}
+				{% if geni_user.user_privkey %}
 				<tr class="odd">
 				  <td class="key">Private Key</td>
 				  <td class="value"><a href="#">
@@ -71,7 +79,7 @@ Profile - GENI
 					      location.</p>
 					</td>
 				</tr>
-				{% endifnotequal %}
+				{% endif %}
 			</table>
 		</div>
 	</div>

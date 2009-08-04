@@ -35,6 +35,10 @@ APPEND_SLASH = False
 # The directory the settings.py file is in is what we consider the root of the website. 
 WEBSITE_ROOT = os.path.dirname(__file__)
 
+# JTC: Need to specify LOGIN_URL, as our login page isn't in 
+# the standard default path (default is /accounts/login)
+LOGIN_URL = 'login'
+
 # Email addresses of people that should be emailed when a 500 error occurs on
 # the site when DEBUG = False (that is, in production). Leave this to be empty
 # if nobody should receive an email. 

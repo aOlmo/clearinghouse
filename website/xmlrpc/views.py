@@ -155,11 +155,11 @@ class PublicXMLRPCFunctions(object):
     acquired_vessels = []
     
     # validate rspec data
-    if not isinstance(resource_type, str) or not isinstance(resource_num, int):
+    if not isinstance(resource_type, str) or not isinstance(num_vessels, int):
       raise xmlrpclib.Fault(102, "GENIInvalidUserInput: rspec has invalid data types.")
     
     if (resource_type != "lan" and resource_type != "wan" and \
-    resource_type != "random") or resource_num < 1:
+    resource_type != "random") or num_vessels < 1:
       raise xmlrpclib.Fault(102, "GENIInvalidUserInput: rspec has invalid values.")
       
     # since acquired_vessels expects rand instead of random
