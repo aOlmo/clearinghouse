@@ -13,8 +13,17 @@ import os
 from seattlegeni.common.util import log
 
 
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+
+# The log level used by the seattlegeni log module. All messages at this level
+# or more severe will be logged.
+LOG_LEVEL = log.LOG_LEVEL_DEBUG
+
+# Rather than make the log module have to import this settings file to set the
+# log level, just set it right here.
+log.set_log_level(LOG_LEVEL)
 
 # This is needed to allow xmlrpc requests to work when they don't have a slash
 # on the end of the url.
@@ -95,39 +104,40 @@ MEDIA_URL = '/site_media/'
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
+ADMIN_MEDIA_PREFIX = MEDIA_URL
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.load_template_source',
-    'django.template.loaders.app_directories.load_template_source',
-#     'django.template.loaders.eggs.load_template_source',
+  'django.template.loaders.filesystem.load_template_source',
+  'django.template.loaders.app_directories.load_template_source',
+# 'django.template.loaders.eggs.load_template_source',
 )
 
 MIDDLEWARE_CLASSES = (
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # Our own middleware that logs when a request is initially received and
-    # sets up the logger to log other messages with per-request unique ids.
-    'seattlegeni.website.middleware.logrequest.LogRequestMiddleware',
+  'django.middleware.common.CommonMiddleware',
+  'django.contrib.sessions.middleware.SessionMiddleware',
+  'django.contrib.auth.middleware.AuthenticationMiddleware',
+  # Our own middleware that logs when a request is initially received and
+  # sets up the logger to log other messages with per-request unique ids.
+  'seattlegeni.website.middleware.logrequest.LogRequestMiddleware',
 )
 
 ROOT_URLCONF = 'website.urls'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-    WEBSITE_ROOT + '/html/templates'
+  # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+  # Always use forward slashes, even on Windows.
+  # Don't forget to use absolute paths, not relative paths.
+  WEBSITE_ROOT + '/html/templates'
 )
 
 INSTALLED_APPS = (
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    
-    # We have our maindb model defined here, so it must be listed.
-    'seattlegeni.website.control',
+  'django.contrib.admin',
+  'django.contrib.auth',
+  'django.contrib.contenttypes',
+  'django.contrib.sessions',
+  'django.contrib.sites',
+  
+  # We have our maindb model defined here, so it must be listed.
+  'seattlegeni.website.control',
 )
