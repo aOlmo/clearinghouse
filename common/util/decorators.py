@@ -80,8 +80,7 @@ def log_function_call(func):
       return result
     
     except Exception, e:
-      # TODO: Log exception type, not just the message
-      log.debug('Exception from %s (module %s): %s' % (func.__name__, func.__module__, str(e)))
+      log.debug('Exception from %s (module %s): %s %s' % (func.__name__, func.__module__, type(e), str(e)))
       raise
     
   return do_logging_func_call
@@ -112,7 +111,7 @@ def log_function_call_without_return(func):
       return result
     
     except Exception, e:
-      log.debug('Exception from %s (module %s): %s' % (func.__name__, func.__module__, str(e)))
+      log.debug('Exception from %s (module %s): %s %s' % (func.__name__, func.__module__, type(e), str(e)))
       raise
   
   return do_logging_func_call
@@ -144,7 +143,7 @@ def log_function_call_without_arguments(func):
       return result
     
     except Exception, e:
-      log.debug('Exception from %s (module %s): %s' % (func.__name__, func.__module__, str(e)))
+      log.debug('Exception from %s (module %s): %s %s' % (func.__name__, func.__module__, type(e), str(e)))
       raise
   
   return do_logging_func_call
@@ -183,7 +182,7 @@ def log_function_call_and_only_first_argument(func):
       return result
     
     except Exception, e:
-      log.debug('Exception from %s (module %s): %s' % (func.__name__, func.__module__, str(e)))
+      log.debug('Exception from %s (module %s): %s %s' % (func.__name__, func.__module__, type(e), str(e)))
       raise
   
   return do_logging_func_call

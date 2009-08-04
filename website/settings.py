@@ -14,6 +14,9 @@ from seattlegeni.common.util import log
 
 
 
+# If DEBUG is True, then error details will be shown on the website and ADMINS
+# will not receive an email when an error occurs. So, this should be False in
+# production.
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -32,9 +35,15 @@ APPEND_SLASH = False
 # The directory the settings.py file is in is what we consider the root of the website. 
 WEBSITE_ROOT = os.path.dirname(__file__)
 
+# Email addresses of people that should be emailed when a 500 error occurs on
+# the site when DEBUG = False (that is, in production). Leave this to be empty
+# if nobody should receive an email. 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
+
+# Email address that 500 error notifications will be sent from.
+#SERVER_EMAIL = "error@seattlegeni.server.hostname"
 
 MANAGERS = ADMINS
 
@@ -104,7 +113,7 @@ MEDIA_URL = '/site_media/'
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = MEDIA_URL
+ADMIN_MEDIA_PREFIX = '/admin_media/'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (

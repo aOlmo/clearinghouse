@@ -31,9 +31,24 @@
       Note: using sqlite will not work for everything, but it should work for
       most things if that's more convenient during development.
       
-    * TODO: describe what needs to be change din settings.py for a production
-      launch.
+    * If this is a production launch, set the following in website/settings.py
     
+      # If DEBUG is True, then error details will be shown on the website and ADMINS
+      # will not receive an email when an error occurs. So, this should be False in
+      # production.
+      DEBUG = False
+      TEMPLATE_DEBUG = DEBUG
+      
+      # Email addresses of people that should be emailed when a 500 error occurs on
+      # the site when DEBUG = False (that is, in production). Leave this to be empty
+      # if nobody should receive an email. 
+      ADMINS = (
+        # ('Your Name', 'your_email@domain.com'),
+      )
+      
+      # Email address that 500 error notifications will be sent from.
+      SERVER_EMAIL = "error@seattlegeni.server.hostname"
+      
     * Set your environment variables:
 
         export PYTHONPATH=$PYTHONPATH:/tmp/deploy:/tmp/deploy/seattle

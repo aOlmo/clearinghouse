@@ -6,16 +6,14 @@ from django.conf import settings
 from django.contrib import admin
 admin.autodiscover()
 
+# We override the default error handler because we want to pass a RequestContext
+# to the template so that it can know the MEDIA_URL and so look nice.
+handler500 = 'website.html.errorviews.internal_error'
+
 urlpatterns = patterns('',
     
     (r'^html/', include('website.html.urls')),
     (r'^xmlrpc', include('website.xmlrpc.urls')),
-
-    # Serve media statically for development.
-    # TODO: use a flag in settings.py to determine whether to do this.
-    # TODO: use the settings.MEDIA_URL value rather than hard code 'site_media'
-    (r'^site_media/(?P<path>.*)$', 'django.views.static.serve',
-      {'document_root': settings.MEDIA_ROOT}),
 
     # Uncomment the admin/doc line below and add 'django.contrib.admindocs' 
     # to INSTALLED_APPS to enable admin documentation:
@@ -24,3 +22,12 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     (r'^admin/(.*)', admin.site.root),
 )
+
+# If DEBUG is True, then this is for development rather than production. So,
+# have django serve static files so apache isn't needed for development.
+if settings.DEBUG:
+  urlpatterns += patterns('',
+      (r'^' + settings.MEDIA_URL[1:] + '(?P<path>.*)$', 'django.views.static.serve',
+        {'document_root': settings.MEDIA_ROOT}),
+  )
+
