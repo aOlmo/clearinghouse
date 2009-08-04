@@ -88,9 +88,10 @@ class DoesNotExistError(SeattleGeniError):
 
 
 
-class InvalidPublicKeyError(SeattleGeniError):
+class ValidationError(SeattleGeniError):
   """
-  Indicates that a public key was used which is not a valid public key.
+  Indicates that some data checked for validity is invalid. This is not the
+  same as a django.forms.ValidationError.
   """
 
 

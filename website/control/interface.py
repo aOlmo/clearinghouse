@@ -39,7 +39,7 @@ from seattlegeni.common.api import keygen
 from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import maindb
 
-from seattlegeni.common.util import crypto
+from seattlegeni.common.util import validations
 
 from seattlegeni.common.util.assertions import *
 
@@ -60,20 +60,17 @@ def register_user(username, password, email, affiliation, pubkey=None):
     information necessary for the user record to be complete.
   <Arguments>
     username
-      Can't be an empty string or will result in a ProgrammerError.
     password
     email
     affiliation
     pubkey
-      Optional. If not provided, a key pair will be generated for this user.
+      Optional. A string. If not provided, a key pair will be generated for this user.
   <Exceptions>
     UsernameAlreadyExistsError
       If there is already a user with the specified username.
-    
-    TODO: InvalidUsernameError
-    TODO: InvalidPasswordError
-    TODO: InvalidEmailError
-    TODO: InvalidAffiliationError
+    ValidationError
+      If any of the arguments contains invalid values or if the username is the
+      same as the password.
   <Side Effects>
     The user record in the django db is created as well as a user record in the
     corresponding user profile table that stores our custom information. A port
@@ -82,15 +79,19 @@ def register_user(username, password, email, affiliation, pubkey=None):
     GeniUser instance (our GeniUser model, not the django User) corresponding to the
     newly registered user.
   """
-  assert_str(username)
-  assert_str(password)
-  assert_str(email)
-  assert_str(affiliation)
-  assert_str_or_none(pubkey)
-  
-  # TODO: check that we like the content of the fields (not just that they are
-  #       of valid types) and raise specific exceptions such as 
-  #       InvalidUsernameError if we don't like them.
+  # If the frontend code that called this function wants to know which field
+  # is invalid, it must call the validation functions itself before making the
+  # call to register_user().
+  # These will raise a ValidationError if any of the fields are invalid.
+  # These ensure that the data is of the correct type (e.g. a string) as well as
+  # that we like the content of the variable.
+  validations.validate_username(username)
+  validations.validate_password(password)
+  validations.validate_username_and_password_different(username, password)
+  validations.validate_email(email)
+  validations.validate_affiliation(affiliation)
+  if pubkey is not None:
+    validations.validate_pubkey_string(pubkey)
   
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
@@ -109,8 +110,6 @@ def register_user(username, password, email, affiliation, pubkey=None):
     if pubkey is None:
       (pubkey, privkey) = keygen.generate_keypair()
     else:
-      if not crypto.is_valid_pubkey_string(pubkey):
-        raise InvalidPublicKeyError
       privkey = None
     
     # Generate a donor key for this user. This is done through the backend
@@ -572,10 +571,24 @@ def release_all_vessels(geniuser):
 
 
 
+# Not logging the function call for now.
 def get_vessel_list(vesselhandle_list):
   """
+  <Purpose>
+    Convert a list of vesselhandles into a list of Vessel objects.
+  <Arguments>
+    vesselhandle_list
+      A list of strings where each string is a vesselhandle of the format
+      "nodeid:vesselname"
   <Exceptions>
-    Raises DoesNotExistError
+    DoesNotExistError
+      If a specified vessel does not exist.
+    InvalidRequestError
+      If any vesselhandle in the list is not in the correct format.
+  <Side Effects>
+    None
+  <Returns>
+    A list of Vessel objects.
   """
   assert_list_of_str(vesselhandle_list)
   
@@ -595,8 +608,23 @@ def get_vessel_list(vesselhandle_list):
   
 
 
+# Not logging the function call for now.
 def get_vessel_infodict_list(vessel_list):
-  
+  """
+  <Purpose>
+    Convert a list of Vessel objects into a list of vessel infodicts.
+    An "infodict" is a dictionary of vessel information that contains data
+    which is safe for public display.
+  <Arguments>
+    vessel_list
+      A list of Vessel objects.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of vessel infodicts.
+  """
   infodict_list = []
   
   for vessel in vessel_list:

@@ -44,7 +44,7 @@ class GeniUser(DjangoUser):
 
   # The text the user supplied which identifies the organization they are
   # affiliated with. 
-  affiliation = models.CharField("Affiliation", max_length=500)
+  affiliation = models.CharField("Affiliation", max_length=200)
   
   # The user's public key which they use for communicating with nodes.
   # Note that the key is stored as a string "e n" where e and n are
