@@ -50,6 +50,8 @@ from seattlegeni.common.util.decorators import log_function_call_and_only_first_
 
 from seattlegeni.common.util.assertions import *
 
+from seattlegeni.website import settings
+
 from seattlegeni.website.control.models import Donation
 from seattlegeni.website.control.models import GeniUser
 from seattlegeni.website.control.models import Node
@@ -122,10 +124,10 @@ def init_maindb():
   <Returns>
     None.
   """
-  # TODO: this should first check if the database is mysql, as it would be nice to be
-  # able to run on sqlite for testing.
-  django.db.connection.cursor().execute('set transaction isolation level read committed')
-
+  if settings.DATABASE_ENGINE is "mysql":
+    django.db.connection.cursor().execute('set transaction isolation level read committed')
+  else:
+    log.error("init_maindb() called when not using mysql. This is only OK when developing.")
 
 
 
@@ -609,11 +611,14 @@ def get_available_lan_vessels_by_subnet(geniuser, vesselcount):
   assert_geniuser(geniuser)
   assert_int(vesselcount)
   
+  # Note: This is not compatible with sqlite3. It may only work with mysql.
+  if settings.DATABASE_ENGINE is "sqlite3":
+    raise InternalError("maindb.get_available_lan_vessels_by_subnet() is not supported when using sqlite3")
+  
   # Get a list of subnets that have at least vesselcount active nodes in the subnet.
   # This doesn't guarantee that there are available vessels for this user on
   # those nodes, but it's a start. We'll narrow it down further after we get
   # the list of possible subnets.
-  # Note: This is not compatible with sqlite. It may only work with mysql.
   subnetsql = """SELECT COUNT(*) AS lansize,
                         SUBSTRING_INDEX(last_known_ip, '.', 3) AS subnet
                  FROM control_node
