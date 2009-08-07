@@ -25,8 +25,6 @@ from django.core.urlresolvers import reverse
 from django.views.generic.simple import direct_to_template
 import django.contrib.auth as djangoauth
 
-from django.utils import simplejson
-
 # Make available all of our own standard exceptions.
 from seattlegeni.common.exceptions import *
 
@@ -34,13 +32,15 @@ from seattlegeni.common.exceptions import *
 from seattlegeni.common.util.decorators import log_function_call
 from seattlegeni.common.util.decorators import log_function_call_without_return
 
+# For user registration input validation
+from seattlegeni.common.util import validations
+
 # All of the work that needs to be done is passed through the controller interface.
 from seattlegeni.website.control import interface
 
 from seattlegeni.website.html import forms
 
 
-#TODO: @login_required decorator? I think we'll probably do this ourselves, instead.
 @log_function_call_without_return
 @login_required()
 def profile(request, info=""):
@@ -72,81 +72,59 @@ def profile(request, info=""):
   try:
     user = interface.get_logged_in_user(request)
   except DoesNotExistError:
-    print "*** USER IS NONE."
     return _show_login(request, 'accounts/login.html', {})
-  
   return direct_to_template(request, 'control/profile.html',
                             {'geni_user' : user,
                              'info' : info})
-  
+
 
 def register(request):
-  # TODO: check if there is a logged in user with this session already.
+  try:
+    # check to see if a user is already logged in. if so, redirect them to profile.
+    user = interface.get_logged_in_user(request)
+  except DoesNotExistError:
+    pass
+  else:
+    return HttpResponseRedirect(reverse("profile"))
   
+  page_top_errors = []
   if request.method == 'POST':
-    # TODO: Validate submitted data! Skipping validation just during development.
+    form = forms.GeniUserCreationForm(request.POST, request.FILES)
     
-    # Need to check that the attributes exist, not just grab them.
-    # JCS: This was just the start of getting the register page to work.
-    #      It isn't anywhere near complete or correct.
-    username = request.POST["username"]
-    password = request.POST["password"]
-    password2 = request.POST["password2"]
-    email = request.POST["email"]
-    affiliation = request.POST["affiliation"]
-    pubkey = None
-    
-    # At a minimum, the username cannot be empty. This is because register_user expects at
-    # least a non-emtpy username so that it can try to obtain a lock on that username.
-    if len(username) == 0:
-      # TODO: show user an error message
-      return
-    
-    geniuser = interface.register_user(username, password, email, affiliation, pubkey)
-    
-    return _show_login(request, 'accounts/login.html',
-                      {'msg' : "Username %s has been successfully registered." % (geniuser)})
-    
-#        form = forms.UserCreationForm(request.POST, request.FILES)
-#        if form.is_valid():
-#            txt_pubkey = ""
-#            if 'pubkey' in request.FILES:
-#                file = request.FILES['pubkey']
-#                if file.size > 2048:
-#                    return HttpResponse("Public key too large, file size limit is 2048 bytes")
-#                txt_pubkey = file.read()
-#                
-#            print "TXT_PUBKEY IS:", txt_pubkey    
-#            if form.cleaned_data['gen_upload_choice'] == 2 and txt_pubkey == "":
-#                return HttpResponse("Enter a public key")
-#            
-#            # if they specified a public key we must check it
-#            if txt_pubkey != "":
-#              # JAC: Need to verify the public key is valid
-#              try:
-#                possiblepubkey = rsa_string_to_publickey(txt_pubkey)
-#              except ValueError:
-#                # This will occur when the key isn't even a key (i.e. they 
-#                # uploaded junk
-#                return HttpResponse("Cannot convert key.   Please generate your public key using Seash.")
-#
-#              # JAC: Need to verify the public key is valid
-#              if not rsa_is_valid_publickey(possiblepubkey):
-#                return HttpResponse("The public key you uploaded is not valid.   Please generate using Seash.")
-#
-#            # this saves the user's record to the database
-#            new_user = form.save()
-#
-#            # this creates and saves the geni user in the database
-#            geni_user = User(www_user = new_user, affiliation=form.cleaned_data['affiliation'], pubkey=txt_pubkey, privkey="")
-#            geni_user.save_new_user()
-#  
-#            
-#            return show_login(request, 'accounts/login.html',
-#                              {'msg' : "Username %s has been successfully registered."%(new_user)})
+    # Calling the form's is_valid() function causes all form "clean_..." methods to be checked.
+    # If this succeeds, then the form input data is validated per field-specific cleaning checks. (see forms.py)
+    # However, we still need to do some checks which aren't doable from inside the form class.
+    if form.is_valid():
+      username = form.cleaned_data['username']
+      password = form.cleaned_data['password1']
+      passwordconfirm = form.cleaned_data['password2']
+      affiliation = form.cleaned_data['affiliation']
+      email = form.cleaned_data['email']
+      pubkey = form.cleaned_data['pubkey']
+      
+      try:
+        validations.validate_username_and_password_different(form.cleaned_data['username'], form.cleaned_data['password1'])
+      except ValidationError, err:
+        page_top_errors.append(str(err))
+      
+      # NOTE: gen_upload_choice turns out to be a *string* when retrieved, hence '2'
+      if form.cleaned_data['gen_upload_choice'] == '2' and pubkey == None:
+        page_top_errors.append("Please select a public key to upload.")
+      
+      # only proceed with registration if there are no validation errors
+      if page_top_errors == []:
+        try:
+          # we should never error here, since we've already finished validation at this point.
+          # but, just to be safe...
+          geniuser = interface.register_user(username, password, email, affiliation, pubkey)
+        except ValidationError, err:
+          page_top_errors.append(str(err))
+        else:
+          return _show_login(request, 'accounts/login.html',
+                             {'msg' : "Username %s has been successfully registered." % (geniuser)})
   else:
     form = forms.GeniUserCreationForm()
-    return direct_to_template(request, 'accounts/register.html', {'form' : form})
+  return direct_to_template(request, 'accounts/register.html', {'form' : form, 'page_top_errors' : page_top_errors })
   
 
 
@@ -192,27 +170,9 @@ def _show_login(request, ltemplate, template_dict, form=None):
         request.session.set_test_cookie()
     template_dict['form'] = form
     return direct_to_template(request, ltemplate, template_dict)
-
-
-def _validate_and_get_geniuser(request):
-  try:
-    user = interface.get_logged_in_user(request)
-  except DoesNotExistError:
-    # JTC: we shouldn't ever get here, since we're restricting view methods with
-    # @login_required, which should kick the user back to the login page if they
-    # aren't logged in. but.. just in case the user still can't be retrieved from the session.
-    return _show_login(request, 'accounts/login.html', {})
-  return user
   
-###################################################################
-# Below here are functions that have not been reimplemented for the
-# new version of seattlegeni but that need to be defined in order
-# to avoid the need to modify the existing templates.
-###################################################################
+  
 
-#TODO: Login form presents a 'next' field, if the user visits a page
-#      but gets bounced back to the login page, we should redirect them
-#      there after successful login.
 def login(request):
   
   ltemplate = 'accounts/login.html'
@@ -263,17 +223,30 @@ def help(request):
   return direct_to_template(request,'control/help.html', {})
 
 
+# HTML view for the 'My GENI' page
+# TODO: Need interface call for total_vessel_credits
 @login_required()
 def mygeni(request):
   user = _validate_and_get_geniuser(request)
-  return direct_to_template(request,'control/mygeni.html', {})
+  
+  total_vessel_credits = 10
+  num_acquired_vessels = len(interface.get_acquired_vessels(user))
+  avail_vessel_credits = total_vessel_credits - num_acquired_vessels
+  percent_total_used = int((num_acquired_vessels * 1.0 / total_vessel_credits * 1.0) * 100.0)
+  
+  # total_vessel_credits, percent_total_used, avail_vessel_credits
+  return direct_to_template(request,'control/mygeni.html', 
+                            {'total_vessel_credits' : total_vessel_credits,
+                             'percent_total_used' : percent_total_used,
+                             'avail_vessel_credits' : avail_vessel_credits})
 
 # TODO: This is just temporary to get the existing templates working.
 @login_required()
 def myvessels(request):
+  user = _validate_and_get_geniuser(request)
+  
   pass
 
-# TODO: This is just temporary to get the existing templates working.
 @login_required()
 def getdonations(request):
   user = _validate_and_get_geniuser(request)
@@ -334,106 +307,14 @@ def pub_key(request):
   response['Content-Disposition'] = 'attachment; filename=' + str(user.username) + '.publickey'
   return response
 
-#def __validate_ajax(request):
-#    ret, success = __validate_guser__(request)
-#    if not success:
-#        return __jsonify({"success" : False, "error" : "could not validate your identity"}), False
-#    geni_user = ret
-#
-#    # validate that the request is a POST method
-#    if not request.method == u'POST':
-#        return __jsonify({"success" : False, "error" : "request must be a POST method"}), False
-#    
-#    return geni_user, True
 
-def __jsonify(data):
-    """
-    <Purpose>
-        Turns data into json representation (marshalls data), and
-        generates and returns an HttpResponse object that will communicate
-        the json representation of data to the client.
-       
-    <Arguments>
-        data: data to marshall to the client as json. Typically this is a
-        simple datatype, such as a dictionary, or an array, of strings/ints.
 
-    <Exceptions>
-        None?
-    
-    <Side Effects>
-        None
-
-    <Returns>
-        An HTTP response object the has mimetype set to application/json
-    """
-    json = simplejson.dumps(data)
-    return HttpResponse(json, mimetype='application/json')
-
-def _validate_ajax_and_get_geniuser(request):
+def _validate_and_get_geniuser(request):
   try:
     user = interface.get_logged_in_user(request)
   except DoesNotExistError:
-    return __jsonify({"success" : False, "error" : "could not validate your identity"}), False
-  if not request.method == u'POST':
-    return __jsonify({"success" : False, "error" : "request must be a POST method"}), False
+    # JTC: we shouldn't ever get here, since we're restricting view methods with
+    # @login_required, which should kick the user back to the login page if they
+    # aren't logged in. but.. just in case the user still can't be retrieved from the session.
+    return _show_login(request, 'accounts/login.html', {})
   return user
-  
-def ajax_getcredits(request):
-    """
-    <Purpose>
-
-    <Arguments>
-        request:
-            An HTTP request object, representing the ajax POST request.
-            
-    <Exceptions>
-
-    <Side Effects>
-
-    <Returns>
-        An HTTP response object
-
-    <Note>
-    """
-    print "ajax_getcredits called"
-    geni_user = _validate_ajax_and_get_geniuser(request)
-    
-    # NOTE: total percentage of percent_credits must be 100%
-    percent_credits, total_vessels = geni_user.get_user_credits()
-    
-    print "get_user_credits returned: "
-    print percent_credits
-    print total_vessels
-
-    credits = []
-    for guser, percent in percent_credits:
-        if guser == geni_user:
-            geni_user_record = [{'username' : "Me", 'percent' : percent}]
-            continue
-
-        credits.append({'username' : str(guser),
-                        'percent' : percent})
-    
-    # sort the credits list according to their percent
-    def credit_compare(a, b):
-        return cmp(a['percent'], b['percent'])
-    credits.sort(credit_compare)
-    print "sorted credits: "
-    print credits
-
-    # sort credits into two lists: credits above threshold limit and
-    # below threshold limit (for nice display on page)
-    credit_thresh = 10
-    credits_above_thresh = []
-    credits_below_thresh = []
-    for credit in credits:
-        if credit['percent'] > credit_thresh:
-            credits_above_thresh.append(credit)
-        else:
-            credits_below_thresh.append(credit)
-
-    ret = [credits_above_thresh, credits_below_thresh, geni_user_record, int(total_vessels)]
-    return __jsonify(ret)
-
-
-

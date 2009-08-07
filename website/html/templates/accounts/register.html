@@ -6,7 +6,7 @@ Profile - GENI
 
 {% block script %}
 {{ block.super }}
-<script type="text/javascript" src="{{ MEDIA_URL}}scripts/register.js" charset="utf-8"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/register.js" charset="utf-8"></script>
 {% endblock script %}
 
 {% block nav_register %}
@@ -18,14 +18,23 @@ Profile - GENI
 		<div id="middle">
 		  <form action="{% url register %}" method="POST" enctype="multipart/form-data">
 
-		  {% if form.username.errors or form.password1.errors or form.password2.errors or form.affiliation.errors or form.pubkey.errors %}
+		  {% if form.username.errors or form.password1.errors or form.password2.errors or form.affiliation.errors or form.email.errors or form.pubkey.errors %}
 		  <p class="warning">
 		  Please correct the following:</p>
+		  {% endif %}
+		  
+		  {% if page_top_errors %}
+		  <p class="warning">
+		  {% for error in page_top_errors %}
+		    {{ error }}
+		    <br>
+		  {% endfor %}
+		  </p>
 		  {% endif %}
 
 		  <table class="login">
 		    <tr>
-		      <td class="key"> {{ form.username.label_tag }}</td>
+		      <td class="key">{{ form.username.label_tag }}</td>
 		      <td class="value">{{ form.username }}</td>
 		      <td>{{ form.username.errors }}</td>
 		    </tr>
@@ -42,7 +51,12 @@ Profile - GENI
 		    <tr>
 		      <td class="key">{{ form.affiliation.label_tag }}</td>
 		      <td class="value">{{ form.affiliation }}</td>
-		      <td>{{ form.affiliation.errors }}
+		      <td>{{ form.affiliation.errors }}</td>
+		    </tr>
+		    <tr>
+		      <td class="key">{{ form.email.label_tag }}</td>
+		      <td class="value">{{ form.email }}</td>
+		      <td>{{ form.email.errors }}</td>
 		    </tr>
 		    <tr>
 		      <td class="key">{{ form.pubkey.label_tag }}</td>

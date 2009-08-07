@@ -266,7 +266,7 @@ class PublicXMLRPCFunctions(object):
     user_name = geni_user.username
     urlinstaller = ""
     private_key_exists = True
-    if geni_user.user_privkey == "":
+    if not geni_user.user_privkey:
       private_key_exists = False
     # unsure how to get this data
     max_vessel = 0
@@ -292,6 +292,8 @@ class PublicXMLRPCFunctions(object):
   def get_private_key(auth):
     # Gets a user's private key.
     geni_user = _auth(auth)
+    if not geni_user.user_privkey:
+      raise xmlrpclib.Fault(104, "GENIKeyAlreadyRemoved: Your private key has already been removed.")
     return geni_user.user_privkey
   
   
@@ -312,7 +314,7 @@ class PublicXMLRPCFunctions(object):
       Returns True on success, raises a fault otherwise.
     """
     geni_user = _auth(auth)
-    if geni_user.user_privkey == "":
+    if not geni_user.user_privkey:
       raise xmlrpclib.Fault(104, "GENIKeyAlreadyRemoved: Your private key has already been removed.")
     interface.delete_private_key(geni_user)
     return True

@@ -66,19 +66,19 @@ def validate_username(username):
   try:
     assert_str(username)
   except AssertionError:
-    raise ValidationError("username must be a string")
+    raise ValidationError("Username must be a string.")
   
   if len(username) < USERNAME_MIN_LENGTH:
-    raise ValidationError("username must be at least " + str(USERNAME_MIN_LENGTH) + " characters")
+    raise ValidationError("Username must be at least " + str(USERNAME_MIN_LENGTH) + " characters.")
   
   if len(username) > USERNAME_MAX_LENGTH:
-    raise ValidationError("username must be less than " + str(USERNAME_MAX_LENGTH) + " characters")
+    raise ValidationError("Username must be less than " + str(USERNAME_MAX_LENGTH) + " characters.")
   
   if not USERNAME_ALLOWED_REGEX.match(username):
-    raise ValidationError("username can only contain the characters " + USERNAME_ALLOWED_CHARS)
+    raise ValidationError("Username can only contain the characters " + USERNAME_ALLOWED_CHARS)
 
   if not USERNAME_ALLOWED_FIRST_REGEX.match(username):
-    raise ValidationError("username must start with one of the characters " + USERNAME_ALLOWED_FIRST_CHARS)
+    raise ValidationError("Username must start with one of the characters " + USERNAME_ALLOWED_FIRST_CHARS)
 
 
 
@@ -94,10 +94,10 @@ def validate_password(password):
   try:
     assert_str(password)
   except AssertionError:
-    raise ValidationError("password must be a string")
+    raise ValidationError("Password must be a string.")
   
   if len(password) < PASSWORD_MIN_LENGTH:
-    raise ValidationError("password must be at least " + str(PASSWORD_MIN_LENGTH) + " characters")
+    raise ValidationError("Password must be at least " + str(PASSWORD_MIN_LENGTH) + " characters.")
 
 
 
@@ -112,10 +112,10 @@ def validate_username_and_password_different(username, password):
     assert_str(username)
     assert_str(password)
   except AssertionError:
-    raise ValidationError("username and password must be strings")
+    raise ValidationError("Username and password must be strings.")
   
   if username == password:
-    raise ValidationError("username cannot be the same as the password")
+    raise ValidationError("Username cannot be the same as the password.")
 
 
 
@@ -129,10 +129,10 @@ def validate_email(email):
   try:
     assert_str(email)
   except AssertionError:
-    raise ValidationError("email must be a string")
+    raise ValidationError("E-mail must be a string.")
   
   if not EMAIL_VALID_REGEX.match(email):
-    raise ValidationError("email address is not a valid address")
+    raise ValidationError("E-mail address is not valid.")
 
 
 
@@ -146,13 +146,13 @@ def validate_affiliation(affiliation):
   try:
     assert_str(affiliation)
   except AssertionError:
-    raise ValidationError("affiliation must be a string")
+    raise ValidationError("Affiliation must be a string.")
   
   if len(affiliation) < AFFILIATION_MIN_LENGTH:
-    raise ValidationError("affiliation must be at least " + str(AFFILIATION_MIN_LENGTH) + " characters")
+    raise ValidationError("Affiliation must be at least " + str(AFFILIATION_MIN_LENGTH) + " characters.")
   
   if len(affiliation) > AFFILIATION_MAX_LENGTH:
-    raise ValidationError("affiliation must be less than " + str(AFFILIATION_MAX_LENGTH) + " characters")
+    raise ValidationError("Affiliation must be less than " + str(AFFILIATION_MAX_LENGTH) + " characters.")
 
 
 
@@ -178,14 +178,14 @@ def validate_pubkey_string(pubkeystring):
   try:
     assert_str(pubkeystring)
   except AssertionError:
-    raise ValidationError("public key must be a string")
+    raise ValidationError("Public key must be a string.")
   
   try:
     possiblepubkey = rsa_string_to_publickey(pubkeystring)
   except ValueError:
-    raise ValidationError("public key is not of a correct format")
+    raise ValidationError("Public key is not of a correct format.")
 
   if not rsa_is_valid_publickey(possiblepubkey):
-    raise ValidationError("public key is invalid")
+    raise ValidationError("Public key is invalid.")
 
 
