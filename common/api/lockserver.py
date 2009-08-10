@@ -59,6 +59,7 @@
 
 """
 
+import socket
 import traceback
 import xmlrpclib
 
@@ -115,6 +116,8 @@ def create_lockserver_handle(lockserver_url=LOCKSERVER_URL):
     raise ProgrammerError("The lockserver rejected the request: " + traceback.format_exc())
   except xmlrpclib.ProtocolError:
     raise InternalError("Unable to communicate with the lockserver: " + traceback.format_exc())
+  except socket.error:
+    raise InternalError("Unable to communicate with the lockserver: " + traceback.format_exc())
   
   return lockserver_handle
 
@@ -145,6 +148,8 @@ def destroy_lockserver_handle(lockserver_handle):
   except xmlrpclib.Fault:
     raise ProgrammerError("The lockserver rejected the request: " + traceback.format_exc())
   except xmlrpclib.ProtocolError:
+    raise InternalError("Unable to communicate with the lockserver: " + traceback.format_exc())
+  except socket.error:
     raise InternalError("Unable to communicate with the lockserver: " + traceback.format_exc())
 
 
@@ -317,6 +322,9 @@ def _perform_lock_request(request_type, lockserver_handle, user_list=None, node_
     raise ProgrammerError("The lockserver rejected the request: " + traceback.format_exc())
   except xmlrpclib.ProtocolError:
     raise InternalError("Unable to communicate with the lockserver: " + traceback.format_exc())
+  except socket.error:
+    raise InternalError("Unable to communicate with the lockserver: " + traceback.format_exc())
+
 
 
 

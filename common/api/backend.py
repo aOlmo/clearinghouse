@@ -32,8 +32,8 @@
   functions, set_backend_authcode() must be called by the script first.
 """
 
+import socket
 import traceback
-
 import xmlrpclib
 
 from seattlegeni.common.exceptions import *
@@ -65,6 +65,8 @@ def _do_backend_request(func, *args):
   except xmlrpclib.Fault:
     raise ProgrammerError("The backend rejected the request: " + traceback.format_exc())
   except xmlrpclib.ProtocolError:
+    raise InternalError("Unable to communicate with the backend: " + traceback.format_exc())
+  except socket.error:
     raise InternalError("Unable to communicate with the backend: " + traceback.format_exc())
 
 
