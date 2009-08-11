@@ -10,22 +10,31 @@
   Justin Samuel
 
 <Purpose>
-  This is the nodemanager api for seattlegeni. All nodemanager communication
-  that needs to be done by seattlegeni should do it through this module.
+  This is the nodemanager api for seattlegeni.
   
-  Before using other functions in this module, the function init_nodemanager()
-  must be called first.
+  Unless you are are developing the backend server, all you will use this
+  module for is to first call init_nodemanager() and then to call either of
+  these two functions:
   
-  There are two types of functions in this module:
-    1. Functions that do not require signed nodemanager communication.
-    2. Functions that do require signed nodemanager communication.
-    
-  The functions that require signed nodemanager communication require that
-  you pass in a node handle as the first argument. You can get that node
-  handle by calling get_node_handle().
+    * get_node_info()
+    * get_vessel_resources()
   
-  The only functions that don't require a node handle are currently
-  get_node_info() and get_vessel_resources().
+  You will not be able to use any of the other functions in this module from
+  most code because you will not have access to the private owner keys for the
+  node. Only the backend should be accessing the private owner keys. That is,
+  if you need to change the node state, use the backend api, not this api.
+  
+  Information for using the other functions:
+  
+  If you are developing the backend_daemon itself, then you have a legitimate
+  reason to be calling the other functions in this module which can change the
+  node state. To use those, you will first call init_nodemanager() and then do
+  the following to use any of the functions that change node state:
+  
+    1. Call get_node_handle() to obtain a node handle that can be passed to
+       the other functions in this module.
+    2. Call any of the other functions in this module, passing the node handle
+       as the first argument.
 """
 
 import traceback
@@ -213,6 +222,31 @@ def get_vessel_resources(ip, port, vesselname):
 
 
 def get_node_handle(nodeid, ip, port, pubkeystring, privkeystring):
+  """
+  <Purpose>
+    Obtain a node handle that can be used with the node-state-changing
+    functions in this module.
+  <Arguments>
+    nodeid
+      The node's id (a.k.a. "nodekey").
+    ip
+      The ip address of of the nodemanager.
+    port
+      The port the nodemanager is listening on (an int or long).
+    pubkeystring
+      The public key string of the ownerkey that will be used for any signed
+      nodemanager communication.
+    privkeystring
+      The private key string of the ownerkey that will be used for any signed
+      nodemanager communication.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    An opaque object that can be passed as the node handle to other functions
+    in this module.
+  """
   assert_str(nodeid)
   assert_str(ip)
   assert_int(port)
@@ -226,6 +260,25 @@ def get_node_handle(nodeid, ip, port, pubkeystring, privkeystring):
 
 
 def change_users(nodehandle, vesselname, userkeylist):
+  """
+  <Purpose>
+    Perform a ChangeUsers call on a vessel.
+  <Arguments>
+    nodehandle
+      A node handle obtained through a call to get_node_handle().
+    vesselname
+      The name of the vessel.
+    userkeylist
+      A list of public key strings which are the user keys to be set on the
+      vessel.
+  <Exceptions>
+    NodemanagerCommunicationError
+      If we cannot communicate with a nodemanager or the request fails.
+  <Side Effects>
+    The user key list of the vessel has been replaced.
+  <Returns>
+    None
+  """
   assert_str(vesselname)
   assert_list_of_str(userkeylist)
   
@@ -236,6 +289,22 @@ def change_users(nodehandle, vesselname, userkeylist):
 
 
 def reset_vessel(nodehandle, vesselname):
+  """
+  <Purpose>
+    Perform a ResetVessel call on a vessel.
+  <Arguments>
+    nodehandle
+      A node handle obtained through a call to get_node_handle().
+    vesselname
+      The name of the vessel.
+  <Exceptions>
+    NodemanagerCommunicationError
+      If we cannot communicate with a nodemanager or the request fails.
+  <Side Effects>
+    The vessel has been reset.
+  <Returns>
+    None
+  """
   assert_str(vesselname)
   
   _do_signed_call(nodehandle, 'ResetVessel', vesselname)
@@ -245,10 +314,28 @@ def reset_vessel(nodehandle, vesselname):
 
 
 def change_owner(nodehandle, vesselname, ownerkey):
+  """
+  <Purpose>
+    Perform a ChangeOwner call on a vessel.
+  <Arguments>
+    nodehandle
+      A node handle obtained through a call to get_node_handle().
+    vesselname
+      The name of the vessel.
+    ownerkey
+      The public key to set as the owner key of the vessel.
+  <Exceptions>
+    NodemanagerCommunicationError
+      If we cannot communicate with a nodemanager or the request fails.
+  <Side Effects>
+    The owner key of the vessel has been replaced. Future requests that modify
+    this vessel will need to use this new owner key.
+  <Returns>
+    None
+  """
   assert_str(vesselname)
   assert_str(ownerkey)
   
-  # TODO: are these the correct arguments for ChangeOwner?
   _do_signed_call(nodehandle, 'ChangeOwner', vesselname, ownerkey)
 
 
@@ -256,23 +343,73 @@ def change_owner(nodehandle, vesselname, ownerkey):
 
 
 def split_vessel(nodehandle, vesselname, desiredresourcedata):
+  """
+  <Purpose>
+    Perform a SplitVessel call on a vessel.
+  <Arguments>
+    nodehandle
+      A node handle obtained through a call to get_node_handle().
+    vesselname
+      The name of the vessel.
+    desiredresourcedata
+      A string of resourcedata that specifies the resources of a new vessel to
+      create when splitting the existing vessel. This resourcedata has the
+      format of a resources file.
+  <Exceptions>
+    NodemanagerCommunicationError
+      If we cannot communicate with a nodemanager or the request fails.
+  <Side Effects>
+    The vesselname no longer exists. It has been split into two new vessels,
+    one of which has the resources specified in the desiredresourcedata.
+  <Returns>
+    A tuple of the two new vessel names that resulted from the split. The
+    first element of the tuple is the name of the vessel that has the
+    leftover resources from the split. The second element of the tuple is
+    the name of the vessel that has the exact resources specified in the
+    desiredresourcedata.
+  """
   assert_str(vesselname)
   assert_str(desiredresourcedata)
   
-  # TODO: are these the correct arguments for SplitVessel?
-  _do_signed_call(nodehandle, 'SplitVessel', vesselname, desiredresourcedata)
+  splitvesselretval = _do_signed_call(nodehandle, 'SplitVessel', vesselname, desiredresourcedata)
+  
+  # Get the new vessel names. The "left" vessel has the leftovers, the 
+  # "right" is of the size requested.
+  leftovervesselname, exactvesselname = splitvesselretval.split()
+
+  return (leftovervesselname, exactvesselname)
 
 
 
 
 
 def join_vessels(nodehandle, firstvesselname, secondvesselname):
+  """
+  <Purpose>
+    Perform a JoinVessels call on two vessels.
+  <Arguments>
+    nodehandle
+      A node handle obtained through a call to get_node_handle().
+    firstvesselname
+      The name of the first vessel to be joined.
+    secondvesselname
+      The name of the second vessel to be joined.
+  <Exceptions>
+    NodemanagerCommunicationError
+      If we cannot communicate with a nodemanager or the request fails.
+  <Side Effects>
+    Neither firstvesselname nor secondvesselname exist. The have been joined
+    together into a vessel that has a new name.
+  <Returns>
+    The name of the new vessel that has been created by joining together the
+    two vessels.
+  """
   assert_str(firstvesselname)
   assert_str(secondvesselname)
   
-  # TODO: are these the correct arguments for JoinVessels?
-  # TODO: need to return something, I believe.
-  _do_signed_call(nodehandle, 'JoinVessels', firstvesselname, secondvesselname)
+  combinedvesselname = _do_signed_call(nodehandle, 'JoinVessels', firstvesselname, secondvesselname)
+
+  return combinedvesselname
 
 
 
@@ -282,7 +419,6 @@ def _do_signed_call(nodehandle, *callargs):
   """
     <Purpose>
       Performs an action that requires authentication on a remote node.
-
     <Arguments>
       ip:
         The node's IP address (a string)
@@ -295,15 +431,12 @@ def _do_signed_call(nodehandle, *callargs):
       *callargs:
         The arguments to give the node.   The first argument will usually be
         the call type (i.e. "ChangeUsers")
-
     <Exceptions>
       Exception / NMClientException are raised when the call fails.   
-
     <Side Effects>
       Whatever side effects the call has on the remote node.
-
     <Returns>
-      None.
+      None
   """
   (nodeid, ip, port, pubkeystring, privkeystring) = nodehandle
   
@@ -319,13 +452,13 @@ def _do_signed_call(nodehandle, *callargs):
       myhandleinfo['privatekey'] = rsa_string_to_privatekey(privkeystring)
       nmclient_set_handle_info(nmhandle, myhandleinfo)
     
-      nmclient_signedsay(nmhandle, *callargs)
+      return nmclient_signedsay(nmhandle, *callargs)
       
     finally:
       nmclient_destroyhandle(nmhandle)
     
   except NMClientException:
     nodestr = str((nodeid, ip, port))
-    message = "Failed to communicate with node " + nodestr + ": "
+    message = "NodeManager request failed with node " + nodestr + ": "
     raise NodemanagerCommunicationError(message + traceback.format_exc())
   
