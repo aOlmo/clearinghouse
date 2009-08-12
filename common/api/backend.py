@@ -30,6 +30,10 @@
      
   The other functions are used by polling daemons. In order to use the other
   functions, set_backend_authcode() must be called by the script first.
+  
+  Note that the none of these function calls will result in changes to the
+  database. Any corresponding changes that also need to be made in the
+  database must be made by any client code that uses this api.
 """
 
 import socket
@@ -39,6 +43,8 @@ import xmlrpclib
 from seattlegeni.common.exceptions import *
 
 from seattlegeni.common.util.decorators import log_function_call
+
+
 
 
 
@@ -59,6 +65,7 @@ def _get_backend_proxy():
 
 
 
+
 def _do_backend_request(func, *args):
   try:
     return func(*args)
@@ -73,12 +80,34 @@ def _do_backend_request(func, *args):
 
 
 
+
+def _require_backend_authcode():
+  if backend_authcode is None:
+    raise ProgrammerError("You must call set_backend_authcode(authcode) before calling this function.")
+
+
+
+
+
 # Not using log_function_call so we don't log the authcode.
 def set_backend_authcode(authcode):
   """
-  Sets the value of the authcode sent to the backend with privileged requests.
-  This is needed for the backend to ensure that calls to the privileged
-  operations (set_vessel_owner, split_vessel, join_vessel) are allowed.
+  <Purpose>
+    Sets the value of the authcode sent to the backend with privileged requests.
+    This is needed for the backend to ensure that calls to the privileged
+    operations (set_vessel_owner, split_vessel, join_vessel) are allowed.
+    The website will never need to use this function (and shouldn't have
+    access to a valid authcode, either). This function will need to be used
+    by polling daemons such as node state transition scripts.
+  <Arguments>
+    authcode
+      The authcode to send with privileged requests.
+  <Exceptions>
+    None
+  <Side Effects>
+    The value of the global variable backend_authcode has been changed.
+  <Returns>
+    None
   """
   global backend_authcode
   backend_authcode = authcode
@@ -89,6 +118,22 @@ def set_backend_authcode(authcode):
 
 @log_function_call
 def acquire_vessel(geniuser, vessel):
+  """
+  <Purpose>
+    Perform the necessary nodemanager communication to acquire a vessel for a
+    user.
+  <Arguments>
+    geniuser
+      The user the vessel is to be acquired for.
+    vessel
+      A Vessel object of the vessel to be acquired.
+  <Exceptions>
+    None
+  <Side Effects>
+    The vessel has been acquired for the user.
+  <Returns>
+    None
+  """
   # Acquiring a vessel is just setting the userkeylist to include only this
   # user's key.
   func = _get_backend_proxy().SetVesselUsers
@@ -102,6 +147,20 @@ def acquire_vessel(geniuser, vessel):
 
 @log_function_call
 def release_vessel(vessel):
+  """
+  <Purpose>
+    Perform the necessary nodemanager communication to release a vessel.
+  <Arguments>
+    vessel
+      A Vessel object of an acquired vessel to be released.
+  <Exceptions>
+    None
+  <Side Effects>
+    The vessel has been released (at least as far as the client code is
+    concerned).
+  <Returns>
+    None
+  """
   # This is actually a noop. The reason for this is because the backend doesn't
   # perform immediate action because of a released vessel. Instead, the client
   # code will user maindb.record_released_vessel() and the database change
@@ -125,6 +184,11 @@ def generate_key(keydecription):
     keydecription
       A description of what this key is for. This should be specific enough
       to locate where the returned public key is stored in the maindb.
+  <Exceptions>
+    None
+  <Side Effects>
+    A new key has been generated and stored in the the keydb with the privided
+    description.
   <Returns>
     The public key part of the key pair.
   """
@@ -138,9 +202,27 @@ def generate_key(keydecription):
 
 
 @log_function_call
-def set_vessel_user_keylist(vessel, userkeylist):
+def set_vessel_user_keylist(node, vesselname, userkeylist):
+  """
+  <Purpose>
+    Perform the necessary nodemanager communication to set the user key list
+    for a vessel.
+  <Arguments>
+    node
+      The Node object of the node which the vessel is on.
+    vesselname
+      The name of the vessel whose user key list is to be set.
+    userkeylist
+      A list of public key strings that are the user keys to be set for the vessel.
+  <Exceptions>
+    None
+  <Side Effects>
+    The user key list for the vessel has been changed on the vessel.
+  <Returns>
+    None
+  """
   func = _get_backend_proxy().SetVesselUsers
-  args = (vessel.node.node_identifier, vessel.name, userkeylist)
+  args = (node.node_identifier, vesselname, userkeylist)
   
   _do_backend_request(func, *args)
 
@@ -149,78 +231,119 @@ def set_vessel_user_keylist(vessel, userkeylist):
 
 
 @log_function_call
-def set_vessel_owner_key(vessel, ownerkey):
+def set_vessel_owner_key(node, vesselname, ownerkey):
   """
-  pubkey must be a valid key stored in the keydb.
+  <Purpose>
+    Perform the necessary nodemanager communication to set the owner key
+    for a vessel.
+  <Arguments>
+    node
+      The Node object of the node which the vessel is on.
+    vesselname
+      The name of the vessel whose owner key is to be set.
+    ownerkey
+      A public key string of the owner key to be set for the vessel. Note that
+      this key (with its correspond private key) must already exist in the
+      keydb before this function is called.
+  <Exceptions>
+    None
+  <Side Effects>
+    The owner key on the vessel has been changed. The main database is not modified.
+  <Returns>
+    None
   """
-  # Having this method available to the website means that if the website is
-  # compromised, then the attacker can try to change the vessel owner for
-  # all vessels. So, we need to authenticate with the backend by including
-  # the backend_authcode in the request.
-
-  if backend_authcode is None:
-    raise ProgrammerError("You must call set_backend_authcode(authcode) before calling this function.")
+  # Changing the owner key is a privileged request and the backend server will
+  # require an authcode to be sent with the request.
+  _require_backend_authcode()
 
   func = _get_backend_proxy().SetVesselOwner
-  args = (backend_authcode, vessel.node.node_identifier, vessel.name, ownerkey)
+  args = (backend_authcode, node.node_identifier, vesselname, ownerkey)
   
   _do_backend_request(func, *args)
-
-  # TODO: the client code needs to update the database to reflect the new owner
-  #       key. Need to make this clear in the function docstring.
 
   
 
 
 
 @log_function_call
-def split_vessel(vessel, desiredresourcedata):
+def split_vessel(node, vesselname, desiredresourcedata):
   """
+  <Purpose>
+    Perform the necessary nodemanager communication to split the vessel.
+  <Arguments>
+    node
+      The Node object of the node which the vessel is on.
+    vesselname
+      The name of the vessel that is to be split.
+    desiredresourcedata
+      A string of resourcedata that specifies the resources of a new vessel to
+      create when splitting the existing vessel. This resourcedata has the
+      format of a resources file.
   <Exceptions>
-    Raises ??? if unable to split the vessel because there aren't enough
-    resources available to do the split.
+    Raises InvalidRequestError if unable to split the vessel. This includes if
+    it fails because there aren't enough resources available to do the split.
+  <Side Effects>
+    The vessel passed in as an argument to the function no longer exists.
+    It has been split into two new vessels, one of which has the resources
+    specified in the desiredresourcedata. The main database is not modified.
   <Returns>
-    Returns a tuple of (newvessel1, newvessel2) where newvessel1
-    has the leftovers and newvessel2 is of the size requested. These are both
-    vessel objects.
+    A tuple of the two new vessel names that resulted from the split. The
+    first element of the tuple is the name of the vessel that has the
+    leftover resources from the split. The second element of the tuple is
+    the name of the vessel that has the exact resources specified in the
+    desiredresourcedata.
   """
-  # This seems like a privileged operation, so the backend_authcode must be
-  # provided in the request.
-  
-  if backend_authcode is None:
-    raise ProgrammerError("You must call set_backend_authcode(authcode) before calling this function.")
+  # Splitting a vessel is a privileged request and the backend server will
+  # require an authcode to be sent with the request.
+  _require_backend_authcode()
   
   func = _get_backend_proxy().SplitVessel
-  args = (backend_authcode, vessel.node.node_identifier, vessel.name, desiredresourcedata)
+  args = (backend_authcode, node.node_identifier, vesselname, desiredresourcedata)
   
-  _do_backend_request(func, *args)
-  
-  # TODO: the client code needs to update the database to reflect the split.
-  #       Need to make this clear in the function docstring.
+  # We don't have a great way of having the backend tell us that the split
+  # failed only due to lacking resources and not because of some other type
+  # of problem. So, we're going to have to assume that all failures in this
+  # call are because of not enough resources to do the split.
+  try:
+    return _do_backend_request(func, *args)
+  except ProgrammerError, e:
+    # The exception message will already contain the traceback info because
+    # of the message that was set when the ProgrammerError was thrown in
+    # the call to _do_backend_request().
+    raise InvalidRequestError(str(e))
 
 
 
 
 
 @log_function_call
-def join_vessels(firstvessel, secondvessel):
+def join_vessels(node, firstvesselname, secondvesselname):
   """
-  The first vessel will retain the user keys and  therefore the state.
+  <Purpose>
+    Perform the necessary nodemanager communication to join the vessels.
+  <Arguments>
+    node
+      The Node object of the node which the vessels are on.
+    firstvesselname
+      The name of the first vessel that is to be joined.
+    secondvesselname
+      The name of the second vessel that is to be joined.
+  <Exceptions>
+    None
+  <Side Effects>
+    The two vessel passed in as arguments to the function no longer exist.
+    They have been joined into a new vessel. The first vessel will retain the
+    user keys and therefore the state. The main database is not modified.
   <Returns>
-    The firstvessel (a new object that will reflect any database changes since
-    the joining of the two vessels).
+    The name of the new vessel that has been created by joining together the
+    two vessels.
   """
-  # This seems like a privileged operation, so the backend_authcode must be
-  # provided in the request.
-  
-  if backend_authcode is None:
-    raise ProgrammerError("You must call set_backend_authcode(authcode) before calling this function.")
+  # Joining two vessels is a privileged request and the backend server will
+  # require an authcode to be sent with the request.
+  _require_backend_authcode()
   
   func = _get_backend_proxy().JoinVessels
-  args = (backend_authcode, firstvessel.node.node_identifier, firstvessel.name, secondvessel.name)
+  args = (backend_authcode, node.node_identifier, firstvesselname, secondvesselname)
   
-  _do_backend_request(func, *args)
+  return _do_backend_request(func, *args)
   
-  # TODO: the client code needs to update the database to reflect the join. 
-  #       Need to make this clear in the function docstring.
-

@@ -22,13 +22,16 @@ import sys
 import time
 import traceback
 
-# TODO: remove this and use starttimer after #548 is resolved.
 import thread
 
 # These are used to build a single-threaded XMLRPC server.
 import SocketServer
 import SimpleXMLRPCServer
 
+
+# The config module contains the authcode that is required for performing
+# privileged operations.
+import seattlegeni.backend.config
 
 from seattlegeni.common.api import keydb
 from seattlegeni.common.api import keygen
@@ -44,6 +47,8 @@ from seattlegeni.common.util import log
 from seattlegeni.common.util.assertions import *
 
 from seattlegeni.common.util.decorators import log_function_call
+from seattlegeni.common.util.decorators import log_function_call_without_first_argument
+
 
 
 # The port that we'll listen on.
@@ -103,6 +108,14 @@ def _assert_number_of_arguments(functionname, args, exact_number):
 
 
 
+def _assert_valid_authcode(authcode):
+  if authcode != seattlegeni.backend.config.authcode:
+    raise InvalidRequestError("The provided authcode (" + authcode + ") is invalid.")
+
+
+
+
+
 class BackendPublicFunctions(object):
   """
   All public functions of this class are automatically exposed as part of the
@@ -129,7 +142,7 @@ class BackendPublicFunctions(object):
       # Call the requested function.
       return func(*args)
     
-    except (InvalidRequestError, AssertionError):
+    except (DoesNotExistError, InvalidRequestError, AssertionError):
       log.error("The backend was used incorrectly: " + traceback.format_exc())
       raise
     
@@ -137,9 +150,11 @@ class BackendPublicFunctions(object):
       # We assume all other exceptions are bugs in the backend. Unlike the
       # lockserver where it might result in broader data corruption, here in
       # the backend we allow the backend to continue serving other requests.
+      # That is, we don't go through steps to try to shutdown the backend.
       
       # TODO: this should probably send an email or otherwise make noise.
       log.critical("The backend had an internal error: " + traceback.format_exc())
+      raise
       
 
 
@@ -167,6 +182,8 @@ class BackendPublicFunctions(object):
     
     # Return the public key.
     return pubkey
+
+
 
 
 
@@ -203,7 +220,7 @@ class BackendPublicFunctions(object):
 
   # Using @staticmethod makes it so that 'self' doesn't get passed in as the first arg.
   @staticmethod
-  @log_function_call
+  @log_function_call_without_first_argument
   def SetVesselOwner(*args):
     """
     This is a public function of the XMLRPC server. See the module comments at
@@ -216,6 +233,8 @@ class BackendPublicFunctions(object):
     assert_str(nodeid)
     assert_str(vesselname)
     assert_str(ownerkey)
+    
+    _assert_valid_authcode(authcode)
     
     # Note: The nodemanager checks whether the owner key is a valid key and
     #       will raise an exception if it is not.
@@ -232,7 +251,7 @@ class BackendPublicFunctions(object):
     
   # Using @staticmethod makes it so that 'self' doesn't get passed in as the first arg.
   @staticmethod
-  @log_function_call
+  @log_function_call_without_first_argument
   def SplitVessel(*args):
     """
     This is a public function of the XMLRPC server. See the module comments at
@@ -246,11 +265,13 @@ class BackendPublicFunctions(object):
     assert_str(vesselname)
     assert_str(desiredresourcedata)
     
+    _assert_valid_authcode(authcode)
+    
     # Raises a DoesNotExistError if there is no node with this nodeid.
     nodehandle = _get_node_handle_from_nodeid(nodeid)
     
     # Raises NodemanagerCommunicationError if it fails.
-    nodemanager.split_vessel(nodehandle, vesselname, desiredresourcedata)
+    return nodemanager.split_vessel(nodehandle, vesselname, desiredresourcedata)
     
     
 
@@ -258,7 +279,7 @@ class BackendPublicFunctions(object):
 
   # Using @staticmethod makes it so that 'self' doesn't get passed in as the first arg.
   @staticmethod
-  @log_function_call
+  @log_function_call_without_first_argument
   def JoinVessels(*args):
     """
     This is a public function of the XMLRPC server. See the module comments at
@@ -272,11 +293,13 @@ class BackendPublicFunctions(object):
     assert_str(firstvesselname)
     assert_str(secondvesselname)
     
+    _assert_valid_authcode(authcode)
+    
     # Raises a DoesNotExistError if there is no node with this nodeid.
     nodehandle = _get_node_handle_from_nodeid(nodeid)
     
     # Raises NodemanagerCommunicationError if it fails.
-    nodemanager.join_vessels(nodehandle, firstvesselname, secondvesselname)
+    return nodemanager.join_vessels(nodehandle, firstvesselname, secondvesselname)
       
 
 
@@ -287,19 +310,23 @@ def cleanup_vessels():
   # This thread will never end this lockserver session.
   lockserver_handle = lockserver.create_lockserver_handle()
 
+  log.info("[cleanup_vessels] cleanup thread started.")
+
   # Run forever.
   while True:
     
     try:
       # First, make it so that expired vessels are seen as dirty.
       markedcount = maindb.mark_expired_vessels_as_dirty()
-      log.info("[cleanup_vessels] " + str(markedcount) + " expired vessels have been marked as dirty.")
+      if markedcount > 0:
+        log.info("[cleanup_vessels] " + str(markedcount) + " expired vessels have been marked as dirty.")
 
       # Get a list of vessels to clean up. This doesn't include nodes known to
       # be inactive as we would just continue failing to communicate with nodes
       # that are down.
       cleanupvessellist = maindb.get_vessels_needing_cleanup()
-      log.info("[cleanup_vessels] " + str(len(cleanupvessellist)) + " vessels to clean up.")
+      if len(cleanupvessellist) > 0:
+        log.info("[cleanup_vessels] " + str(len(cleanupvessellist)) + " vessels to clean up: " + str(cleanupvessellist))
       
       # Now go through all of the dirty vessels and clean them up.
       for vessel in cleanupvessellist:
@@ -357,9 +384,11 @@ def main():
 
   # Initialize the key database.
   keydb.init_keydb()
+  
+  # Initialize the nodemanager.
+  nodemanager.init_nodemanager()
 
   # Start the background thread that does vessel cleanup.
-  # TODO: change this to use starttimer after #548 is resolved.
   thread.start_new_thread(cleanup_vessels, ())
 
   # Register the XMLRPCServer. Use allow_none to allow allow the python None value.

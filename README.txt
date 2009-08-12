@@ -118,6 +118,11 @@
       
         mysql -u[username] -p --database=[keydbname] < keydb/schema.sql
 
+    * Edit the file backend/config.py and set a value for the authcode.
+    
+    * For production launch, make sure that the file backend/config.py is not
+      readable by the website.
+
     * Set your environment variables:
   
         export PYTHONPATH=$PYTHONPATH:/tmp/deploy:/tmp/deploy/seattle
