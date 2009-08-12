@@ -25,12 +25,20 @@
   
 <Notes>
   * All references to user here are to our GeniUser model, not to the django user.
+  
   * The functions that modify the seattlegeni database or perform actions on
     nodes all do an extra check to ensure the user is valid after obtaining a
     user lock. This is to ensure that user has not been deleted and to see other
     changes to the user that were made between the time that the request was
     made and when the lock was obtained.
+    
+  * When using this module from the frontend views, you do not need to catch
+    InternalError, ProgrammerError, or otherwise uncaught exceptions. Those
+    are allowed to trickle all the way up and get handled based on how we've
+    configured django.
 """
+
+import traceback
 
 from seattlegeni.common.exceptions import *
 
@@ -301,8 +309,7 @@ def delete_private_key(geniuser):
     geniuser
       A GeniUser object of the user whose private key is to be deleted.
   <Exceptions>
-    DoesNotExistError
-      If the user does not exist by the time we hold the user lock.
+    None
   <Side Effects>
     The private key belonging to the user is deleted if it exists, otherwise
     the user account is not modified.
@@ -317,12 +324,14 @@ def delete_private_key(geniuser):
   try:
     # Make sure the user still exists now that we hold the lock. Also makes
     # sure that we see any changes made to the user before we obtained the lock.
-    # Raises a DoesNotExistError if the user doesn't exist anymore.
     # We don't use the user object we retrieve because we want the
     # object passed in to the function to reflect the deletion of the key.
     # That is, we want the object passed in to have the user_privkey be None
     # when this function returns.
-    maindb.get_user(geniuser.username)
+    try:
+      maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
     
     maindb.delete_user_private_key(geniuser)
     
@@ -425,8 +434,6 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
     vesseltype
       The type of vessels to acquire. One of either 'lan', 'wan', or 'rand'.
   <Exceptions>
-    DoesNotExistError
-      If the user doesn't exist anymore after we have acquired the user lock.
     UnableToAcquireResourcesError
       If not able to acquire the requested vessels (in this case, no vessels
       will be acquired).
@@ -450,8 +457,10 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
   try:
     # Make sure the user still exists now that we hold the lock. Also makes
     # sure that we see any changes made to the user before we obtained the lock.
-    # Raises a DoesNotExistError if the user doesn't exist anymore.
-    geniuser = maindb.get_user(geniuser.username)
+    try:
+      geniuser = maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
     
     # Ensure the user is allowed to acquire these resources. This call will
     # raise an InsufficientUserResourcesError if the additional vessels would
@@ -489,8 +498,6 @@ def release_vessels(geniuser, vessel_list):
     vessel_list
       A list of vessels the user is to be removed from.
   <Exceptions>
-    DoesNotExistError
-      If the user doesn't exist anymore after we have acquired the user lock.
     InvalidRequestError
       If any of the vessels in the vessel_list are not currently acquired by
       geniuser.
@@ -512,8 +519,10 @@ def release_vessels(geniuser, vessel_list):
   try:
     # Make sure the user still exists now that we hold the lock. Also makes
     # sure that we see any changes made to the user before we obtained the lock.
-    # Raises a DoesNotExistError if the user doesn't exist anymore.
-    geniuser = maindb.get_user(geniuser.username)
+    try:
+      geniuser = maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
     
     for vessel in vessel_list:
       if vessel.acquired_by_user != geniuser:
@@ -539,8 +548,7 @@ def release_all_vessels(geniuser):
     geniuser
       The GeniUser who is to have their vessels released.
   <Exceptions>
-    DoesNotExistError
-      If the user doesn't exist anymore after we have acquired the user lock.
+    None
   <Side Effects>
     All of the user's acquired vessels have been released.
   <Returns>
@@ -554,8 +562,10 @@ def release_all_vessels(geniuser):
   try:
     # Make sure the user still exists now that we hold the lock. Also makes
     # sure that we see any changes made to the user before we obtained the lock.
-    # Raises a DoesNotExistError if the user doesn't exist anymore.
-    geniuser = maindb.get_user(geniuser.username)
+    try:
+      geniuser = maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
     
     # Get a list of all vessels acquired by the user.
     vessel_list = maindb.get_acquired_vessels(geniuser)
@@ -643,4 +653,25 @@ def get_vessel_infodict_list(vessel_list):
     infodict_list.append(vessel_info)
     
   return infodict_list
+
+
+
+
+
+def get_total_vessel_credits(geniuser):
+  """
+  <Purpose>
+    Determine the total number of vessels the user is allowed to acquire,
+    regardless of how many they have already acquired.
+  <Arguments>
+    geniuser
+      The GeniUser whose total vessel credit count is wanted.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    The maximum number of vessels the user is allowed to acquire.
+  """
+  return maindb.get_user_total_vessel_credits(geniuser)
 
