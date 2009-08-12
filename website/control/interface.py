@@ -638,6 +638,7 @@ def get_vessel_infodict_list(vessel_list):
     vessel_info["vessel_id"] = vessel.name
     
     vessel_info["handle"] = vessel_info["node_id"] + ":" + vessel.name
+    vessel_info["date_expires"] = vessel.date_expires
     
     infodict_list.append(vessel_info)
     

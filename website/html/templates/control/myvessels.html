@@ -34,18 +34,20 @@ My Vessels - GENI
 					<input type="submit" value="Get" />
 				</form>
 			  {% else %}
-			        <div id="action_other"> Donate more
-	nodes to acquire more resources. </div>
+			  <div id="action_other"> Donate more nodes to acquire more resources. </div>
 			  {% endifnotequal %}
 				
 			  {% ifnotequal action_summary "" %}
 				<div id="action_summary"> {{ action_summary }} <a id="expand" href="#">[+]</a></div>
 			  {% endifnotequal %}
 
-			  {% ifnotequal action_explanation "" %}
-				<div id="action_detail"> Details: {{ action_explanation }} </div>
+			  {% ifnotequal action_detail "" %}
+				<div id="action_detail"> Details: {{ action_detail }} </div>
 			  {% endifnotequal %}
 				
+				{% ifnotequal remove_detail "" %}
+				<div id="action_summary"> {{ remove_detail }} </div>
+				{% endifnotequal %}
 			</div>
 			<table class="vessels">
 				<tr class="odd">
@@ -66,12 +68,12 @@ My Vessels - GENI
   					<td>
   					  <form method="POST" action="{% url del_resource %}">
   					<input type="submit" value="remove"> </input>
-  					<input type="hidden" name="delresource_{{ vessel.handle }}"> </input>
+  					<input type="hidden" name="handle" value="{{ vessel.handle }}"></input>
   					  </form>
   					</td>
   					<td> <b>{{ vessel.node_ip }}</b>:{{ vessel.node_port }}:{{ vessel.vessel_id }} </td>
   					<td> vessel.status? </td>
-  					<td> vessel.timeremaining? </td>
+  					<td> {{ vessel.date_expires }} </td>
   				</tr>
   				{% endfor %}
   			{% else %}

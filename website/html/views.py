@@ -89,6 +89,8 @@ def register(request):
   
   page_top_errors = []
   if request.method == 'POST':
+    
+    #TODO: what if the form data isn't in the POST request? we need to check for this.
     form = forms.GeniUserCreationForm(request.POST, request.FILES)
     
     # Calling the form's is_valid() function causes all form "clean_..." methods to be checked.
@@ -97,13 +99,12 @@ def register(request):
     if form.is_valid():
       username = form.cleaned_data['username']
       password = form.cleaned_data['password1']
-      passwordconfirm = form.cleaned_data['password2']
       affiliation = form.cleaned_data['affiliation']
       email = form.cleaned_data['email']
       pubkey = form.cleaned_data['pubkey']
       
       try:
-        validations.validate_username_and_password_different(form.cleaned_data['username'], form.cleaned_data['password1'])
+        validations.validate_username_and_password_different(username, password)
       except ValidationError, err:
         page_top_errors.append(str(err))
       
@@ -212,9 +213,11 @@ def login(request):
   return _show_login(request, ltemplate, {})
 
 
+
 def logout(request):
   interface.logout_user(request)
   return HttpResponseRedirect(reverse("profile"))
+
 
 
 @login_required()
@@ -223,8 +226,8 @@ def help(request):
   return direct_to_template(request,'control/help.html', {})
 
 
+
 # HTML view for the 'My GENI' page
-# TODO: Need interface call for total_vessel_credits
 @login_required()
 def mygeni(request):
   user = _validate_and_get_geniuser(request)
@@ -240,9 +243,10 @@ def mygeni(request):
                              'percent_total_used' : percent_total_used,
                              'avail_vessel_credits' : avail_vessel_credits})
 
-# TODO: This is just temporary to get the existing templates working.
+
+
 @login_required()
-def myvessels(request, get_form=False, action_explanation="", remove_explanation="", action_summary=""):
+def myvessels(request, get_form=False, action_summary="", action_detail="", remove_detail=""):
   user = _validate_and_get_geniuser(request)
   
   if get_form is False:
@@ -262,30 +266,113 @@ def myvessels(request, get_form=False, action_explanation="", remove_explanation
                              'my_vessels' : my_vessels,
                              'sh_vessels' : shvessels,
                              'get_form' : get_form,
-                             'action_explanation' : action_explanation,
-                             'remove_explanation' : remove_explanation,
-                             "action_summary" : action_summary})
+                             'action_summary' : action_summary,
+                             'action_detail' : action_detail,
+                             'remove_detail' : remove_detail})
+
+
 
 @login_required()
 def getdonations(request):
   user = _validate_and_get_geniuser(request)
   return direct_to_template(request,'control/getdonations.html', {'username' : user.username})
 
-# TODO: This is just temporary to get the existing templates working.
+
+
 @login_required()
 def get_resources(request):
-  pass
+  user = _validate_and_get_geniuser(request)
+  
+  # the request must be via POST. if not, bounce user back to My Vessels page
+  if not request.method == 'POST':
+    return myvessels(request)
+  
+  # try and grab form from POST. if it can't, bounce user back to My Vessels page
+  get_form = forms.gen_get_form(user, request.POST)
+  if get_form is None:
+    return myvessels(request)
+  
+  action_summary = ""
+  action_detail = ""
+  
+  if get_form.is_valid():
+    vessel_num = get_form.cleaned_data['num']
+    vessel_type = get_form.cleaned_data['env']
+    
+    try:
+      acquired_vessels = interface.acquire_vessels(user, vessel_num, vessel_type)
+    except DoesNotExistError:
+      action_summary = "The current user no longer exists, and may have been deleted."
+    except UnableToAcquireResourcesError, err:
+      action_summary = "Couldn't acquire resources at this time. Details follow:"
+      action_detail = str(err)
+    except InsufficientUserResourcesError:
+      action_summary = "You do not have enough vessel credits to fufill this request."
+    except ProgrammerError:
+      action_summary = "Internal GENI Error. Tried to acquire an invalid vessel type."
+    except Exception, err:
+      action_summary = "Internal GENI Error. Please contact us! Details follow:"
+      action_detail = str(err)
+  
+  # return a My Vessels page with the updated vessels/vessel acquire details/errors
+  return myvessels(request, get_form, action_summary=action_summary, action_detail=action_detail)
+  
 
-# TODO: This is just temporary to get the existing templates working.
 @login_required()
 def del_resource(request):
-  pass
+  user = _validate_and_get_geniuser(request)
+  
+  # the request must be via POST. if not, bounce user back to My Vessels page
+  if not request.method == 'POST':
+    return myvessels(request)
 
-# TODO: This is just temporary to get the existing templates working.
+  if not request.POST['handle']:
+    print ("*** REQUEST.POST HANDLE WAS EMPTY")
+    return myvessels(request)
+  
+  # vessel_handle needs to be a list (even though we only add one handle), 
+  # since get_vessel_list expects a list.
+  vessel_handle = []
+  vessel_handle.append(request.POST['handle'])
+  remove_detail = ""
+  
+  print "*** ABOUT TO CONVERT HANDLE TO VESSEL, handle: ", request.POST['handle']
+  try:
+    # convert handle to vessel
+    vessel_to_release = interface.get_vessel_list(vessel_handle)
+  except DoesNotExistError:
+    remove_detail = "Internal GENI Error. The vessel you are trying to delete does not exist."
+  except InvalidRequestError, err:
+    remove_detail = "Internal GENI Error. Please contact us! Details: " + str(err)
+  else:
+    try:
+      interface.release_vessels(user, vessel_to_release)
+    except DoesNotExistError:
+      remove_detail = "The current user no longer exists, and may have been deleted."
+    except InvalidRequestError, err:
+      remove_detail = "Internal GENI Error. Please contact us! Details: " + str(err)
+  
+  return myvessels(request, remove_detail=remove_detail)
+
+
+
 @login_required()
 def del_all_resources(request):
-  pass
-
+  user = _validate_and_get_geniuser(request)
+  
+  # the request must be via POST. if not, bounce user back to My Vessels page
+  if not request.method == 'POST':
+    return myvessels(request)
+  
+  remove_detail = ""
+  
+  try:
+    interface.release_all_vessels(user)
+  except DoesNotExistError:
+    remove_detail = "Internal GENI Error. The vessel you are trying to delete does not exist."
+  
+  return myvessels(request, remove_detail=remove_detail)
+  
 # TODO: This is just temporary to get the existing templates working.
 @login_required()
 def gen_new_key(request):
