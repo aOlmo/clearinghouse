@@ -191,6 +191,42 @@ def log_function_call_and_only_first_argument(func):
 
 
 
+@_simple_decorator
+def log_function_call_without_first_argument(func):
+  """
+  <Purpose>
+    Logs the function called without the first argument (unless it's a kwarg),
+    and logs when the function returns including the return value. Will also log
+    any exception that is raised.
+    
+    Be careful when using this to log functions that return sensitive values
+    (e.g. private keys).
+    
+    The reason this decorator exists is that there are functions that take
+    a sensitive value (such as the backend authcode) as the first argument,
+    and we don't want that ending up in the logs.
+  """
+  
+  # The name "do_logging_func_call" is never seen anywhere but here.
+  def do_logging_func_call(*args, **kwargs):
+    log.debug('Calling: %s (module %s), 1st arg: [Not logging], other args: %s, kwargs: %s.' % 
+             (func.__name__, func.__module__, str(_get_cleaned_args(args)[1:]), str(_get_cleaned_args(kwargs))))
+    
+    try:
+      result = func(*args, **kwargs)
+      log.debug('Returning from %s (module %s): %s' % (func.__name__, func.__module__, str(result)))
+      return result
+    
+    except Exception, e:
+      log.debug('Exception from %s (module %s): %s %s' % (func.__name__, func.__module__, type(e), str(e)))
+      raise
+  
+  return do_logging_func_call
+
+
+
+
+
 def _log_call_info(func, args, kwargs):
   # This is a separate function because I didn't want to repeat it the code in
   # both log_function_call and log_function_call_without_return.
