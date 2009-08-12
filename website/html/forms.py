@@ -22,6 +22,8 @@ from django.contrib.auth.forms import UserCreationForm as DjangoUserCreationForm
 import django.forms as forms
 from seattlegeni.common.exceptions import *
 from seattlegeni.common.util import validations
+from seattlegeni.website.control import interface
+
 
 class PubKeyField(forms.FileField):
   def clean(self,value,initial):
@@ -82,4 +84,66 @@ class GeniUserCreationForm(DjangoUserCreationForm):
     except ValidationError, err:
       raise forms.ValidationError, str(err)
     return value
-  
+
+
+def gen_get_form(geni_user,req_post=None):
+    """
+    <Purpose>
+        Dynamically generates a GetVesselsForm that has the right
+        number vessels (the allowed number of vessels a user may
+        acquire). Possibly generate a GetVesselsForm from an HTTP POST
+        request.
+
+    <Arguments>
+        geni_user:
+            geni_user object
+        req_post:
+            An HTTP POST request (django) object from which a
+            GetVesselsForm may be instantiated. If this argument is
+            not supplied, a blank form will be created
+
+    <Exceptions>
+        None?
+
+    <Side Effects>
+        None.
+
+    <Returns>
+        A GetVesselsForm object that is instantiated with a req_post
+        (if given). None is returned if the user cannot acquire any
+        more vessels.
+    """
+    # the total number of vessels a user may acquire
+    #TODO: Interface call that gets remaining vessel credit.
+    #max_num = geni_user.vessel_credit_remaining()
+    max_num = 10
+    if max_num == 0:
+        return None
+
+    # dynamically generate the get vessels form
+    get_vessel_choices = zip(range(1,max_num+1),range(1,max_num+1))
+
+    class GetVesselsForm(forms.Form):
+        """
+        <Purpose>
+            Generates a form to acquire vessels by the user
+        <Side Effects>
+            None
+        <Example Use>
+            GetVesselsForm()
+                to generate a blank form
+            GetVesselsForm(post_request)
+                to generate a form from an existing POST request
+        """
+        # maximum number of vessels a user is allowed to acquire
+        num = forms.ChoiceField(choices=get_vessel_choices, error_messages={'required' : 'Please enter the number of vessels to acquire'})
+
+        # the various environment types the user may select from
+        env = forms.ChoiceField(choices=((1,'LAN'),(2,'WAN'),(3,'Random')), error_messages={'required' : 'Please enter the networking environment for vessels to acquire'})
+
+        def get_errors_as_str(self):
+            return str(self.errors)
+        
+    if req_post is None:
+        return GetVesselsForm()
+    return GetVesselsForm(req_post)

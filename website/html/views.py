@@ -242,10 +242,29 @@ def mygeni(request):
 
 # TODO: This is just temporary to get the existing templates working.
 @login_required()
-def myvessels(request):
+def myvessels(request, get_form=False, action_explanation="", remove_explanation="", action_summary=""):
   user = _validate_and_get_geniuser(request)
   
-  pass
+  if get_form is False:
+    get_form = forms.gen_get_form(user)
+
+  # shared vessels that are used by others but which belong to this user (TODO)
+  shvessels = []
+
+  # this user's used vessels
+  my_vessels_raw = interface.get_acquired_vessels(user)
+  my_vessels = interface.get_vessel_infodict_list(my_vessels_raw)
+
+  # return the used resources page constructed from a template
+  return direct_to_template(request,'control/myvessels.html',
+                            {'geni_user' : user,
+                             'num_vessels' : len(my_vessels),
+                             'my_vessels' : my_vessels,
+                             'sh_vessels' : shvessels,
+                             'get_form' : get_form,
+                             'action_explanation' : action_explanation,
+                             'remove_explanation' : remove_explanation,
+                             "action_summary" : action_summary})
 
 @login_required()
 def getdonations(request):

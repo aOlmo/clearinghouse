@@ -11,7 +11,7 @@ My Vessels - GENI
 
 {% block script %}
 {{ block.super }}
-<script type="text/javascript" src="{{ MEDIA_URL}}scripts/myvessels.js" charset="utf-8"></script>
+<script type="text/javascript" src="{{ MEDIA_URL }}scripts/myvessels.js" charset="utf-8"></script>
 {% endblock script %}
 
 {% block nav_myvessels %}
@@ -61,17 +61,17 @@ My Vessels - GENI
 					<th>Expires in</td>
 				</tr>
 			{% if my_vessels %}
-				{% for vmap in my_vessels %}
+				{% for vessel in my_vessels %}
   				<tr class="{% cycle 'odd' 'even' %}">
   					<td>
   					  <form method="POST" action="{% url del_resource %}">
   					<input type="submit" value="remove"> </input>
-  					<input type="hidden" name="delresource_{{ vmap.id }}"> </input>
+  					<input type="hidden" name="delresource_{{ vessel.handle }}"> </input>
   					  </form>
   					</td>
-  					<td> {{ vmap.vessel_port.vessel.donation.ip }}:{{ vmap.vessel_port.vessel.donation.port }}:{{ vmap.vessel_port.vessel.name }} </td>
-  					<td> {{ vmap.vessel_port.vessel.status }} </td>
-  					<td> {{ vmap.time_remaining }} </td>
+  					<td> <b>{{ vessel.node_ip }}</b>:{{ vessel.node_port }}:{{ vessel.vessel_id }} </td>
+  					<td> vessel.status? </td>
+  					<td> vessel.timeremaining? </td>
   				</tr>
   				{% endfor %}
   			{% else %}
