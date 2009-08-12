@@ -49,9 +49,8 @@ class GeniUser(DjangoUser):
   # The user's public key which they use for communicating with nodes.
   # Note that the key is stored as a string "e n" where e and n are
   # decimal numbers. Because of this, max_length != max bits in the key.
-  # TODO: need to provide manual index sql command to be run after syncdb,
-  # as the field length is too long for the whole field to be indexed.
-  user_pubkey = models.CharField("GeniUser's public key", max_length=2048, db_index=True)
+  # We index this field with custom sql. See the file sql/geniuser.sql.
+  user_pubkey = models.CharField("GeniUser's public key", max_length=2048)
   
   # The user's private key which they use for communicating with nodes.
   # This is not stored in the Key DB because the website needs access to it and
@@ -73,9 +72,8 @@ class GeniUser(DjangoUser):
   # accessible using this public key. The user never sees their donor keys.
   # Note that the key is stored as a string "e n" where e and n are
   # decimal numbers. Because of this, max_length != max bits in the key.
-  # TODO: need to provide manual index sql command to be run after syncdb,
-  # as the field length is too long for the whole field to be indexed.
-  donor_pubkey = models.CharField("Donor public Key", max_length=2048, db_index=True)
+  # We index this field with custom sql. See the file sql/geniuser.sql.
+  donor_pubkey = models.CharField("Donor public Key", max_length=2048)
   
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)
@@ -105,10 +103,8 @@ class Node(models.Model):
   # This should be unique, but we can't set this constraint at the
   # database-level because the length is too long for mysql to index the full
   # field.
-  # TODO: figure out a way to have django run additional sql when syncdb
-  # is run. We could use this to at least make a unique constraint on the first
-  # 724 (?) bytes of the field in mysql.
-  node_identifier = models.CharField("Node identifier", max_length=2048, db_index=True)
+  # We index this field with custom sql. See the file sql/node.sql.
+  node_identifier = models.CharField("Node identifier", max_length=2048)
 
   # The IP address the nodemanager was last known to be accessible through.
   last_known_ip = models.IPAddressField("Last known nodemanager IP address")
@@ -176,7 +172,7 @@ class Donation(models.Model):
   # setting up a donation's resources for use (which, for now, would be
   # creating vessels on the corresponding node using this donation's resources).
   # TODO: remove this if it doesn't get used.
-  status = models.CharField("Node status", max_length=100, blank=True, db_index=True)
+  status = models.CharField("Donation status", max_length=100, blank=True, db_index=True)
 
   # Simple storage of the contents of a resource file describing the donated
   # resources. This information is not currently used anywhere. How this data
