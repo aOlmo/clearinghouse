@@ -127,22 +127,24 @@ def log_start_request(request):
   messagelist.append(request.method)
   messagelist.append(request.path)
   
+  # Log the request variables.
   # We ignore the fact that there could be query string variables in a POST request.
   if request.method == "GET":
     messagelist.append(str(request.GET))
   else:
-    messagelist.append(str(request.POST))
+    clean_post_querydict = request.POST.copy()
+    for key in request.POST:
+      # TODO: need to prevent logging password/apikey in xmlrpc requests
+      if "password" in key:
+        clean_post_querydict[key] = "[REMOVED]"
+    messagelist.append(str(clean_post_querydict))
   
   if request.user.is_authenticated():
-    # TODO: log just the username
-    messagelist.append(str(request.user))
+    messagelist.append("logged_in_user:" + str(request.user.username))
   else:
-    messagelist.append("-")
-  
-  # TODO: don't log a submitted password.
+    messagelist.append("logged_in_user:-")
   
   info(' '.join(messagelist))
-  # TODO: log the request variables, excluding password.
 
 
 
