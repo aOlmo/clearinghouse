@@ -172,6 +172,13 @@ def main():
     # Use copy2 to preserve permissions, e.g. in case these weren't world-readable.
     shutil.copy2(old_keydb_config_path, new_keydb_config_path)
 
+    # The backend config file.
+    old_keydb_config_path = os.path.join(renameddir, "seattlegeni", "backend", "config.py")
+    new_keydb_config_path = os.path.join(seattlegeni_deploy_dir, "backend", "config.py")
+    print "Copying " + old_keydb_config_path + " to " + new_keydb_config_path
+    # Use copy2 to preserve permissions, e.g. in case these weren't world-readable.
+    shutil.copy2(old_keydb_config_path, new_keydb_config_path)
+
   _print_post_deploy_instructions()
 
 
