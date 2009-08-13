@@ -498,6 +498,30 @@ def remove_vessel_access_user(vessel, geniuser):
 
 
 @log_function_call
+def _remove_all_user_access_to_vessel(vessel):
+  """
+  <Purpose>
+    Indicate in the database that no user has access to the vessel.
+  <Arguments>
+    vessel
+      The Vessel object to have all user access removed.
+  <Exceptions>
+    None
+  <Side Effects>
+    The database no longer indicates that any user has access to the vessel.
+  <Returns>
+    None
+  """
+  assert_vessel(vessel)
+
+  # Delete any map records for this user/vessel.
+  VesselUserAccessMap.objects.filter(vessel=vessel).delete()
+
+
+
+
+
+@log_function_call
 def get_user(username):
   """
   <Purpose>
@@ -1086,7 +1110,8 @@ def record_acquired_vessel(geniuser, vessel):
   <Exceptions>
     None
   <Side Effects>
-    The vessel is marked as acquired by geniuser.
+    The vessel is marked as acquired by geniuser. The user and vessel are
+    also added to the database's VesselUserAccessMap table.
   <Returns>
     None
   """
@@ -1097,8 +1122,12 @@ def record_acquired_vessel(geniuser, vessel):
   # resources have been acquired, so the only thing we need to do is make the
   # vessel as having been acquired by this user.
   vessel.acquired_by_user = geniuser
-  vessel.date_acquired = datetime.now() + DEFAULT_VESSEL_EXPIRATION_TIMEDELTA
+  vessel.date_acquired = datetime.now()
+  vessel.date_expires = vessel.date_acquired + DEFAULT_VESSEL_EXPIRATION_TIMEDELTA
   vessel.save()
+  
+  # Update the database to reflect that this user has access to this vessel.
+  add_vessel_access_user(vessel, geniuser)
 
 
 
@@ -1109,7 +1138,7 @@ def record_released_vessel(vessel):
   """
   <Purpose>
     Performs all database operations necessary to record the fact that a vessel
-    was released.
+    was released or expired.
   <Arguments>
     vessel
       The Vessel object to be marked as having been released.
@@ -1117,16 +1146,28 @@ def record_released_vessel(vessel):
     None
   <Side Effects>
     The vessel is marked as not acquired by any user as well as marked as dirty.
+    All records for this vessel in the database's VesselUserAccessMap have been
+    removed.
   <Returns>
     None
   """
   assert_vessel(vessel)
+  
+  # We remove the VesselUserAccessMap records first just in case something
+  # fails. That is, we don't want to leave the VesselUserAccessMap records
+  # around with the vessel later getting cleaned up and given to another user.
+  # Alternatively, we could manually commit a transaction for the
+  # record_released_vessel() function that we're in to make sure all or none
+  # of it gets done.
+  _remove_all_user_access_to_vessel(vessel)
   
   # We aren't caching any information with the user record about how many
   # resources have been acquired, so the only thing we need to do is make the
   # vessel as having not having been acquired by any user.
   vessel.acquired_by_user = None
   vessel.is_dirty = True
+  vessel.date_acquired = None
+  vessel.date_expires = None
   vessel.save()
 
 
@@ -1158,17 +1199,14 @@ def mark_expired_vessels_as_dirty():
   queryset = Vessel.objects.filter(date_expires__lte=datetime.now())
   queryset = queryset.exclude(acquired_by_user=None)
   
-  count = queryset.count()
+  vessel_list = list(queryset)
   
-  if count > 0:
-    queryset.update(is_dirty=True, acquired_by_user=None)
-    
-    # Remove all vessel user access records for each of these vessels.
-    for vessel in list(queryset):
-      VesselUserAccessMap.objects.filter(vessel=vessel).delete()
+  if len(vessel_list) > 0:
+    for vessel in vessel_list:
+      record_released_vessel(vessel)
 
   # Return the number of vessels that just expired.
-  return count
+  return len(vessel_list)
 
 
 
