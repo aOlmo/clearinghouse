@@ -90,7 +90,7 @@ def _process_mix_files_in_directory(trunkdir, directory_with_mix_files):
   originaldir = os.getcwd()
   os.chdir(directory_with_mix_files)
 
-  mix_files = glob.glob(os.path.join(directory_with_mix_files, "*.mix"))
+  mix_files = glob.glob("*.mix")
  
   # Generate a .py file for each .mix file.
   for file_path in mix_files:
