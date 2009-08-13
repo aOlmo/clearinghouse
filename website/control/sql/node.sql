@@ -5,11 +5,11 @@
  * to index others (and will print an error message). So, we just provide
  * this custom sql.
  * 
- * Note that for InnoDB, the default max key length appears to be 1000 bytes.
+ * Note that for InnoDB, the default max key length appears to often be 767 bytes.
  * 
  * When using sqlite3 for development, this custom sql will fail. That's ok.
  * 
  * For more info on providing custom sql after syncdb:
  * http://docs.djangoproject.com/en/dev/howto/initial-data/#providing-initial-sql-data
  */
-ALTER TABLE `control_node` ADD INDEX (`node_identifier` (1000));
+ALTER TABLE `control_node` ADD INDEX (`node_identifier` (767));
