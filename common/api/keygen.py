@@ -53,9 +53,10 @@ def generate_keypair():
   <Arguments>
     None
   <Exceptions>
-    TODO: need to revist this
+    None
   <Side Effects>
-    Requests a key from the keygen daemon.
+    Requests a key from the keygen daemon if USE_KEYDAEMON is True. If that
+    fails or if USE_KEYDAEMON is False, directly generates a key.
   <Returns>
     A tuple in the format (pubkey, privkey).
   """
