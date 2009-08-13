@@ -195,8 +195,20 @@ def _do_acquire_vessel(lockserver_handle, geniuser, vessel):
   # Lock the node that this vessel is on.
   lockserver.lock_node(lockserver_handle, node_id)
   try:
-    # TODO: We should query the db now that we hold the lock to find out if the
-    #       state of the node/vessel is what we expect.
+    try:
+      vessel = maindb.get_vessel(node_id, vessel.name)
+    except DoesNotExistError:
+      message = "Vessel no longer exists once the node lock was obtained."
+      raise UnableToAcquireResourcesError(message)
+      
+    if vessel.acquired_by_user is not None:
+      message = "Vessel already acquired once the node lock was obtained."
+      raise UnableToAcquireResourcesError(message)
+    
+    node = maindb.get_node(node_id)
+    if node.is_active is False:
+      message = "Vessel's node is no longer active once the node lock was obtained."
+      raise UnableToAcquireResourcesError(message)
     
     # This will raise a UnableToAcquireResourcesException if it fails (e.g if
     # the node is down). We want to allow the exception to be passed up to
@@ -233,7 +245,6 @@ def release_vessels(lockserver_handle, vessel_list):
   <Returns>
     None.
   """
-  # TODO: check validity of parameters
     
   for vessel in vessel_list:
     _do_release_vessel(lockserver_handle, vessel)
@@ -254,10 +265,19 @@ def _do_release_vessel(lockserver_handle, vessel):
   # Lock the vessel.
   lockserver.lock_node(lockserver_handle, node_id)
   try:
-    # TODO: We should query the db now that we hold the lock to find out if the
-    #       state of the node/vessel is what we expect. For example, what if
-    #       the vessel was already released before we got the lock and another
-    #       user acquired the node before we got the lock?
+    try:
+      vessel = maindb.get_vessel(node_id, vessel.name)
+    except DoesNotExistError:
+      # The vessel record no longer exists, so the vessel must no longer exist.
+      return
+      
+    if vessel.acquired_by_user is None:
+      # The vessel must have already been released.
+      return
+    
+    # We don't check for node.is_active == True because we might as well have
+    # the backend try to clean up the vessel even if the database says it's
+    # inactive (maybe the node is back online?).
     
     # This will not raise an exception, even if the node the vessel is on is down.
     backend.release_vessel(vessel)
