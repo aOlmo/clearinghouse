@@ -210,10 +210,33 @@ def regenerate_api_key(geniuser):
 @log_function_call
 def create_node(node_identifier, last_known_ip, last_known_port, last_known_version, is_active, owner_pubkey, extra_vessel_name):
   """
-  A 'node' lock should be held on the specified node identifier before calling this
-  function. We assume that code calling this function already checked to
-  see whether a node by this identifier exists (and did so while holding the
-  lock on that node identifier).
+  <Purpose>
+    Create a new node record in the database. A node lock should be held before
+    calling this function.
+  <Arguments>
+    node_identifier
+      The identifier of the node to be created (there must be any existing
+      nodes with this identifier).
+    last_known_ip
+      The last known ip address (a string) that this node's nodemanager was
+      running on.
+    last_known_port
+      The last known port (an int) that this node's nodemanager was running on.
+    last_known_version
+      The last known version of Seattle (a string) that this node was running.
+    is_active
+      Whether this node is considered to be up.
+    owner_pubkey
+      The owner public key (a string) that SeattleGeni uses for this node. The
+      corresponding private key must be stored in the keydb.
+    extra_vessel_name
+      The name of the 'extra vessel' on this node (a string).
+  <Exceptions>
+    None
+  <Side Effects>
+    A node record is created in the database.
+  <Returns>
+    The Node object of the created node.
   """
   assert_str(node_identifier)
   assert_str(last_known_ip)
@@ -222,6 +245,13 @@ def create_node(node_identifier, last_known_ip, last_known_port, last_known_vers
   assert_bool(is_active)
   assert_str(owner_pubkey)
   assert_str(extra_vessel_name)
+  
+  # Make sure there is not already a node with this node identifier.
+  try:
+    get_node(node_identifier)
+    raise ProgrammerError("A node with this identifier already exists: " + node_identifier)
+  except DoesNotExistError:
+    pass
   
   # Create the Node.
   node = Node(node_identifier=node_identifier, last_known_ip=last_known_ip,
@@ -238,6 +268,25 @@ def create_node(node_identifier, last_known_ip, last_known_port, last_known_vers
 
 @log_function_call
 def create_donation(node, donor, resource_description_text):
+  """
+  <Purpose>
+    Create a new donation record in the database. A node lock and a user lock
+    should be held before calling this function.
+  <Arguments>
+    node
+      The Node object of the node that the donation was made from.
+    donor
+      The GeniUser object of the user that made the donation.
+    resource_description_text
+      A description of the donated resources (in the format of other resource
+      descriptions used in Seattle).
+  <Exceptions>
+    None
+  <Side Effects>
+    A donation record is created in the database.
+  <Returns>
+    The Donation object of the created donation.
+  """
   assert_node(node)
   assert_geniuser(donor)
   assert_str(resource_description_text)
@@ -255,6 +304,22 @@ def create_donation(node, donor, resource_description_text):
 
 @log_function_call
 def create_vessel(node, vesselname):
+  """
+  <Purpose>
+    Create a new vessel record in the database. A node lock should be held
+    before calling this function.
+  <Arguments>
+    node
+      The Node object of the node that the vessel exists on.
+    vesselname
+      The name of the vessel for the vessel record to be created.
+  <Exceptions>
+    None
+  <Side Effects>
+    A vessel record is created in the database.
+  <Returns>
+    The Vessel object of the created vessel.
+  """
   assert_node(node)
   assert_str(vesselname)
   
@@ -272,6 +337,24 @@ def create_vessel(node, vesselname):
 @transaction.commit_manually
 @log_function_call
 def set_vessel_ports(vessel, port_list):
+  """
+  <Purpose>
+    Change the list of ports the database considers associated with a vessel.
+    A node lock should be held before calling this function.
+  <Arguments>
+    vessel
+      The Vessel object whose list of ports is to be changed.
+    port_list
+      The list of port numbers (int's or long's) that are the complete list
+      of ports for this vessel.
+  <Exceptions>
+    None
+  <Side Effects>
+    The database indicates that the ports in port_list (and only those ports)
+    are the ports for the vessel. 
+  <Returns>
+    None
+  """
   assert_vessel(vessel)
   assert_list(port_list)
   for port in port_list:
@@ -301,6 +384,19 @@ def set_vessel_ports(vessel, port_list):
 
 @log_function_call
 def get_users_with_access_to_vessel(vessel):
+  """
+  <Purpose>
+    Determine which users have access to a vessel according to the database.
+  <Arguments>
+    vessel
+      The Vessel object whose user access is info is wanted.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of GeniUser objects of the users who have access to the vessel.
+  """
   assert_vessel(vessel)
 
   # Let's return it as a list() rather than a django QuerySet.
@@ -314,6 +410,19 @@ def get_users_with_access_to_vessel(vessel):
 
 @log_function_call
 def get_vessels_accessible_by_user(geniuser):
+  """
+  <Purpose>
+    Determine which vessels the database indicates the user has access to.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose vessel access info is wanted.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of Vessel objects of the vessels the user has access to.
+  """
   assert_geniuser(geniuser)
 
   # Let's return it as a list() rather than a django QuerySet.
@@ -327,6 +436,22 @@ def get_vessels_accessible_by_user(geniuser):
 
 @log_function_call
 def add_vessel_access_user(vessel, geniuser):
+  """
+  <Purpose>
+    Indicate in the database that a user has access to a vessel. A node lock
+    and a user lock should be held before calling this function.
+  <Arguments>
+    vessel
+      The Vessel object that the user is being given access to.
+    geniuser
+      The GeniUser object of the user that being access to the vessel.
+  <Exceptions>
+    None
+  <Side Effects>
+    The database indicates that the user has access to the vessel.
+  <Returns>
+    None
+  """
   assert_vessel(vessel)
   assert_geniuser(geniuser)
 
@@ -346,6 +471,22 @@ def add_vessel_access_user(vessel, geniuser):
   
 @log_function_call
 def remove_vessel_access_user(vessel, geniuser):
+  """
+  <Purpose>
+    Indicate in the database that a user no longer has access to a vessel. A
+    node lock and a user lock should be held before calling this function.
+  <Arguments>
+    vessel
+      The Vessel object that the user is having access removed from.
+    geniuser
+      The GeniUser object of the user that is having access removed.
+  <Exceptions>
+    None
+  <Side Effects>
+    The database no longer indicates that the user has access to the vessel.
+  <Returns>
+    None
+  """
   assert_vessel(vessel)
   assert_geniuser(geniuser)
 
@@ -358,6 +499,20 @@ def remove_vessel_access_user(vessel, geniuser):
 
 @log_function_call
 def get_user(username):
+  """
+  <Purpose>
+    Retrieve the user that a has the given username.
+  <Arguments>
+    username
+      The username of the user to be retrieved.
+  <Exceptions>
+    DoesNotExistError
+      If there is no user with the given username.
+  <Side Effects>
+    None
+  <Returns>
+    The GeniUser object of the user.
+  """
   assert_str(username)
   
   try:
@@ -380,6 +535,22 @@ def get_user(username):
 
 @log_function_call_and_only_first_argument
 def get_user_with_password(username, password):
+  """
+  <Purpose>
+    Retrieve the user that a has the given username and password.
+  <Arguments>
+    username
+      The username of the user to be retrieved.
+    password
+      The password of the user to be retrieved.
+  <Exceptions>
+    DoesNotExistError
+      If there is no user with the given username and password.
+  <Side Effects>
+    None
+  <Returns>
+    The GeniUser object of the user.
+  """
   assert_str(username)
   assert_str(password)
   
@@ -399,6 +570,22 @@ def get_user_with_password(username, password):
 
 @log_function_call_and_only_first_argument
 def get_user_with_apikey(username, apikey):
+  """
+  <Purpose>
+    Retrieve the user that a has the given username and apikey.
+  <Arguments>
+    username
+      The username of the user to be retrieved.
+    apikey
+      The apikey of the user to be retrieved.
+  <Exceptions>
+    DoesNotExistError
+      If there is no user with the given username and apikey.
+  <Side Effects>
+    None
+  <Returns>
+    The GeniUser object of the user.
+  """
   assert_str(username)
   assert_str(apikey)
   
@@ -418,6 +605,19 @@ def get_user_with_apikey(username, apikey):
 
 @log_function_call
 def get_node_identifier_from_vessel(vessel):
+  """
+  <Purpose>
+    Determine the node id of the node a vessel is on.
+  <Arguments>
+    vessel
+      The Vessel object of the vessel whose node's nodeid will be retrieved.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    The node id (a string).
+  """
   assert_vessel(vessel)
   
   return vessel.node.node_identifier
@@ -430,11 +630,20 @@ def get_node_identifier_from_vessel(vessel):
 def delete_user_private_key(geniuser):
   """
   <Purpose>
-    Delete the user's private user key.
+    Delete the user's private user key. A user lock should be held before
+    calling this function.
+  <Arguments>
+    geniuser
+      The user whose private key is to be deleted.
+  <Exceptions>
+    None
+  <Side Effects>
+    The user's private key has been removed from the database.
+  <Returns>
+    None
   """
   assert_geniuser(geniuser)
   
-  # TODO assert that geniuser is a GeniUser
   geniuser.user_privkey = None
   geniuser.save()
 
@@ -444,6 +653,19 @@ def delete_user_private_key(geniuser):
 
 @log_function_call
 def get_donations_by_user(geniuser):
+  """
+  <Purpose>
+    Retrieve a list of all donations made by a user.
+  <Arguments>
+    geniuser
+      The user whose donations are to be retrieved.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of Donation objects.
+  """
   assert_geniuser(geniuser)
   
   # Let's return it as a list() rather than a django QuerySet.
@@ -457,6 +679,20 @@ def get_donations_by_user(geniuser):
 
 @log_function_call
 def get_node(node_identifier):
+  """
+  <Purpose>
+    Retrieve a Node object that represents a specific node.
+  <Arguments>
+    node_identifier
+      The identifier of the node to be retrieved.
+  <Exceptions>
+    DoesNotExistError
+      If there is no node in the database with the provided identifier.
+  <Side Effects>
+    None
+  <Returns>
+    A Node object.
+  """
   assert_str(node_identifier)
 
   try:
@@ -475,7 +711,52 @@ def get_node(node_identifier):
 
 
 @log_function_call
+def set_node_owner_pubkey(node, ownerkeystring):
+  """
+  <Purpose>
+    Change a node's owner key. A node lock should be held before calling this
+    function.
+  <Arguments>
+    node
+      The node object of the node whose owner key is to be modified.
+    ownerkeystring
+      The public key string to be set as the node's owner key.
+  <Exceptions>
+    None
+  <Side Effects>
+    The node's owner key is changed in the database.
+  <Returns>
+    None
+  """
+  assert_node(node)
+  assert_str(ownerkeystring)
+  
+  node.owner_pubkey = ownerkeystring
+  node.save()
+
+
+
+
+
+@log_function_call
 def get_vessel(node_identifier, vesselname):
+  """
+  <Purpose>
+    Retrieve a Vessel object that represents a specific vessel.
+  <Arguments>
+    node_identifier
+      The identifier of the node that the vessel is on.
+    vesselname
+      The name of the vessel.
+  <Exceptions>
+    DoesNotExistError
+      If there is no such vessel in the database (including if there is no node
+      with the given identifier).
+  <Side Effects>
+    None
+  <Returns>
+    A Vessel object.
+  """
   assert_str(node_identifier)
   assert_str(vesselname)
 
@@ -497,6 +778,20 @@ def get_vessel(node_identifier, vesselname):
 
 @log_function_call
 def get_acquired_vessels(geniuser):
+  """
+  <Purpose>
+    Retrieve a list of vessels that are acquired by a user.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose acquired vessels are to be
+      retrieved.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of Vessel objects.
+  """
   assert_geniuser(geniuser)
   
   # Let's return it as a list() rather than a django QuerySet.
@@ -662,6 +957,22 @@ def get_available_lan_vessels_by_subnet(geniuser, vesselcount):
 
 @log_function_call
 def get_user_free_vessel_credits(geniuser):
+  """
+  <Purpose>
+    Determine number of free vessel credits the user gets (that is, vessel
+    credits they get from registering an account without having donated any
+    resources).
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose freee vessel credit count is to be
+      retrieved.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    The user's number of free vessel credits.
+  """
   assert_geniuser(geniuser)
 
   return FREE_VESSEL_CREDITS_PER_USER
@@ -672,6 +983,20 @@ def get_user_free_vessel_credits(geniuser):
 
 @log_function_call
 def get_user_vessel_credits_from_donations(geniuser):
+  """
+  <Purpose>
+    Determine number of vessel credits the user has earned due to donations.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose vessel credits from donations are to
+      be retrieved.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    The user's number of vessel credits from donations.
+  """
   assert_geniuser(geniuser)
 
   return len(get_donations_by_user(geniuser)) * VESSEL_CREDITS_FOR_DONATIONS_MULTIPLIER
@@ -682,7 +1007,23 @@ def get_user_vessel_credits_from_donations(geniuser):
 
 @log_function_call
 def get_user_total_vessel_credits(geniuser):
-
+  """
+  <Purpose>
+    Determine the total number of vessel credits the user has, regardless of
+    the number of vessels that already have acquired. This is the sum of the
+    number of free vessel credits for the user and the number of vessel
+    credits from donations by the user.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose total vessel credit count is to be
+      retrieved.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    The user's total number of vessel credits.
+  """
   return get_user_free_vessel_credits(geniuser) + get_user_vessel_credits_from_donations(geniuser) 
   
 
@@ -737,6 +1078,17 @@ def record_acquired_vessel(geniuser, vessel):
   <Purpose>
     Performs all database operations necessary to record the fact that a vessel
     was acquired by a user.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user who is acquiring the vessel.
+    vessel
+      The Vessel object to be marked as acquired by the user.
+  <Exceptions>
+    None
+  <Side Effects>
+    The vessel is marked as acquired by geniuser.
+  <Returns>
+    None
   """
   assert_geniuser(geniuser)
   assert_vessel(vessel)
@@ -758,6 +1110,15 @@ def record_released_vessel(vessel):
   <Purpose>
     Performs all database operations necessary to record the fact that a vessel
     was released.
+  <Arguments>
+    vessel
+      The Vessel object to be marked as having been released.
+  <Exceptions>
+    None
+  <Side Effects>
+    The vessel is marked as not acquired by any user as well as marked as dirty.
+  <Returns>
+    None
   """
   assert_vessel(vessel)
   
@@ -772,13 +1133,26 @@ def record_released_vessel(vessel):
 
 
 
-@log_function_call
+# We don't log the function call here so that we don't fill up the backend
+# daemon's logs.
 def mark_expired_vessels_as_dirty():
   """
+  <Purpose>
+    Change all vessel records in the database whose acquisitions have expired
+    to be marked as dirty in the database (that is, to indicate they need to
+    be cleaned up by the backend).
+  <Arguments>
+    None
+  <Exceptions>
+    None
+  <Side Effects>
+    All expired vessels (past expiration and acquired by users) in the database
+    are marked as dirty as well as marked as not acquired by users. Additionally,
+    all vessel user access map entries for each of these vessels have been
+    removed.
   <Returns>
     The number of expired vessels marked as dirty.
   """
-  
   # We want to mark as dirty all vessels past their expiration date that are
   # currently acquired by users.
   queryset = Vessel.objects.filter(date_expires__lte=datetime.now())
@@ -786,7 +1160,12 @@ def mark_expired_vessels_as_dirty():
   
   count = queryset.count()
   
-  queryset.update(is_dirty=True, acquired_by_user=None)
+  if count > 0:
+    queryset.update(is_dirty=True, acquired_by_user=None)
+    
+    # Remove all vessel user access records for each of these vessels.
+    for vessel in list(queryset):
+      VesselUserAccessMap.objects.filter(vessel=vessel).delete()
 
   # Return the number of vessels that just expired.
   return count
@@ -797,6 +1176,20 @@ def mark_expired_vessels_as_dirty():
 
 @log_function_call
 def mark_vessel_as_clean(vessel):
+  """
+  <Purpose>
+    Change the database to indicate that a vessel has been cleaned up by the
+    backend.
+  <Arguments>
+    vessel
+      The Vessel object of the vessel to be marked as clean.
+  <Exceptions>
+    None
+  <Side Effects>
+    Marks the vessel as clean in the database.
+  <Returns>
+    None
+  """
   assert_vessel(vessel)
   
   vessel.is_dirty = False
@@ -806,8 +1199,21 @@ def mark_vessel_as_clean(vessel):
 
 
 
-@log_function_call
+# We don't log the function call here so that we don't fill up the backend
+# daemon's logs.
 def get_vessels_needing_cleanup():
+  """
+  <Purpose>
+    Determine which vessels need to be cleaned up by the backend.
+  <Arguments>
+    None
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of Vessel objects which are the vessels needing to be cleaned up.
+  """
   queryset = Vessel.objects.filter(is_dirty=True)
   queryset = queryset.filter(node__is_active=True)
   return list(queryset)
@@ -819,6 +1225,21 @@ def get_vessels_needing_cleanup():
 
 @log_function_call
 def does_vessel_need_cleanup(vessel):
+  """
+  <Purpose>
+    Determine whether a given vessel needs to be cleaned up by the backend.
+  <Arguments>
+    vessel
+      The Vessel object that we want to know if it needs to be cleaned up.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A tuple (needs_cleanup, reason) where needs_cleanup is a boolean indicating
+    whether the vessel needs cleanup and reason is a string that indicates the
+    reason cleanup is needed if needs_cleanup is True.
+  """
   assert_vessel(vessel)
   
   # Re-query the database in case this vessel has changed or been deleted.
@@ -844,8 +1265,17 @@ def does_vessel_need_cleanup(vessel):
 @log_function_call
 def delete_all_vessels_of_node(node):
   """
-  Intended to be used when a node state transition script combines all vessels
-  to move the node back to the canonical state.
+  <Purpose>
+    Delete from the database all vessel records of a node.
+  <Arguments>
+    node
+      The Node object whose vessel records are to be deleted.
+  <Exceptions>
+    None
+  <Side Effects>
+    All vessel records for this node have been removed from the database.
+  <Returns>
+    None
   """
   assert_node(node)
   
