@@ -28,6 +28,8 @@ import thread
 import SocketServer
 import SimpleXMLRPCServer
 
+# To send the admins emails when there's an unhandled exception.
+import django.core.mail 
 
 # The config module contains the authcode that is required for performing
 # privileged operations.
@@ -49,6 +51,7 @@ from seattlegeni.common.util.assertions import *
 from seattlegeni.common.util.decorators import log_function_call
 from seattlegeni.common.util.decorators import log_function_call_without_first_argument
 
+from seattlegeni.website import settings
 
 
 # The port that we'll listen on.
@@ -152,8 +155,14 @@ class BackendPublicFunctions(object):
       # the backend we allow the backend to continue serving other requests.
       # That is, we don't go through steps to try to shutdown the backend.
       
-      # TODO: this should probably send an email or otherwise make noise.
-      log.critical("The backend had an internal error: " + traceback.format_exc())
+      message = "The backend had an internal error: " + traceback.format_exc()
+      log.critical(message)
+      
+      # Send an email to the addresses listed in settings.ADMINS
+      if not settings.DEBUG:
+        subject = "Critical SeattleGeni backend error"
+        django.core.mail.mail_admins(subject, message)
+      
       raise
       
 
@@ -367,9 +376,18 @@ def cleanup_vessels():
           lockserver.unlock_node(lockserver_handle, nodeid)
         
     except:
-      # TODO: should send email or otherwise make noise to alert developers
-      log.critical("[cleanup_vessels] Something very bad happened: " + traceback.format_exc())
-
+      message = "[cleanup_vessels] Something very bad happened: " + traceback.format_exc()
+      log.critical(message)
+      
+      # Send an email to the addresses listed in settings.ADMINS
+      if not settings.DEBUG:
+        subject = "Critical SeattleGeni backend error"
+        django.core.mail.mail_admins(subject, message)
+        
+        # Sleep for ten minutes to make sure we don't flood the admins with error
+        # report emails.
+        time.sleep(600)
+      
     # Sleep a few seconds for those times where we don't have any vessels to clean up.
     time.sleep(5)
 

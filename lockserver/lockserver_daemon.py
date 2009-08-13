@@ -203,7 +203,12 @@ Details of the "lockdict" format:
 
 import sys
 
+# To send the admins emails when there's an unhandled exception.
+import django.core.mail 
+
 from seattlegeni.common.util import log
+
+from seattlegeni.website import settings
 
 # Use threading.Lock directly instead of repy's getlock() to ease testing
 # by not depending on repy. We also use threading.Event().
@@ -944,12 +949,17 @@ class LockserverPublicFunctions(object):
       # If there is a bug in the lockserver, that's really bad. We terminate the
       # lockserver in this case rather than risk incorrect locking behavior.
       
-      # TODO: this should probably send an email or otherwise make noise.
-      log.critical("The lockserver had an internal error and is exiting." + traceback.format_exc())
-      
       # This will tell the server thread to exit.
       lockserver_had_error = True
-    
+
+      message = "The lockserver had an internal error and is exiting." + traceback.format_exc()
+      log.critical(message)
+
+      # Send an email to the addresses listed in settings.ADMINS
+      if not settings.DEBUG:
+        subject = "Critical SeattleGeni lockserver error"
+        django.core.mail.mail_admins(subject, message)
+      
       # This request will likely end up seeing an xmlrpclib.ProtocolError due to the
       # shutdown, regardless of this exception.
       raise

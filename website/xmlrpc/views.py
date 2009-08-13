@@ -29,7 +29,7 @@
 """
 
 # To send the admins emails when there's an unhandled exception.
-from django.core.mail import mail_admins
+import django.core.mail 
 
 import traceback
 
@@ -48,6 +48,7 @@ from seattlegeni.common.util.decorators import log_function_call
 
 # All of the work that needs to be done is passed through the controller interface.
 from seattlegeni.website.control import interface
+
 
 
 
@@ -121,7 +122,7 @@ class PublicXMLRPCFunctions(object):
           pass
           
         # Send an email to the addresses listed in settings.ADMINS
-        mail_admins(subject, emailmessage)
+        django.core.mail.mail_admins(subject, emailmessage)
       
       # It's not unlikely that the user ends up seeing this message, so we
       # are careful about what the content of the message is. We don't
