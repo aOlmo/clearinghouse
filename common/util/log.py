@@ -29,6 +29,7 @@
 """
 
 import random
+import sys
 import threading
 from datetime import datetime
 
@@ -69,6 +70,7 @@ def set_log_level(level):
 def debug(message):
   if loglevel <= LOG_LEVEL_DEBUG:
     print _get_time() + " DEBUG " + _get_request_id() + " " + str(message)
+    sys.stdout.flush()
 
 
 
@@ -77,6 +79,7 @@ def debug(message):
 def info(message):
   if loglevel <= LOG_LEVEL_INFO:
     print _get_time() + " INFO " + _get_request_id() + " " + str(message)
+    sys.stdout.flush()
 
 
 
@@ -85,6 +88,7 @@ def info(message):
 def error(message):
   if loglevel <= LOG_LEVEL_ERROR:
     print _get_time() + " ERROR " + _get_request_id() + " " + str(message)
+    sys.stdout.flush()
 
 
 
@@ -93,6 +97,9 @@ def error(message):
 def critical(message):
   if loglevel <= LOG_LEVEL_CRITICAL:
     print _get_time() + " CRITICAL " + _get_request_id() + " " + str(message)
+    sys.stdout.flush()
+
+
 
 
 
@@ -100,6 +107,8 @@ def _get_request_id():
   if not hasattr(request_context, 'request_id'):
     request_context.request_id = DEFAULT_REQUEST_ID
   return request_context.request_id
+
+
 
 
 
