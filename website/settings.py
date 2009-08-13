@@ -162,3 +162,11 @@ INSTALLED_APPS = (
   # We have our maindb model defined here, so it must be listed.
   'seattlegeni.website.control',
 )
+
+# The number of seconds sessions are valid for. Django uses this for the
+# session expiration in the database in addition to the cookie expiration,
+# which is good.
+SESSION_COOKIE_AGE = 3600
+
+# Use session cookies, not persistent cookies.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
