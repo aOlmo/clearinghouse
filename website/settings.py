@@ -143,7 +143,7 @@ MIDDLEWARE_CLASSES = (
   'seattlegeni.website.middleware.logrequest.LogRequestMiddleware',
 )
 
-ROOT_URLCONF = 'website.urls'
+ROOT_URLCONF = 'seattlegeni.website.urls'
 
 TEMPLATE_DIRS = (
   # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".

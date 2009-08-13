@@ -8,12 +8,12 @@ admin.autodiscover()
 
 # We override the default error handler because we want to pass a RequestContext
 # to the template so that it can know the MEDIA_URL and so look nice.
-handler500 = 'website.html.errorviews.internal_error'
+handler500 = 'seattlegeni.website.html.errorviews.internal_error'
 
 urlpatterns = patterns('',
     
-    (r'^html/', include('website.html.urls')),
-    (r'^xmlrpc', include('website.xmlrpc.urls')),
+    (r'^html/', include('seattlegeni.website.html.urls')),
+    (r'^xmlrpc', include('seattlegeni.website.xmlrpc.urls')),
 
     # Uncomment the admin/doc line below and add 'django.contrib.admindocs' 
     # to INSTALLED_APPS to enable admin documentation:

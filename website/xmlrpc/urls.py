@@ -4,7 +4,7 @@ from django.conf.urls.defaults import *
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = patterns('website.xmlrpc.dispatcher',
+urlpatterns = patterns('seattlegeni.website.xmlrpc.dispatcher',
                        # top level urls and functions:
                        (r'', 'rpc_handler', {}, 'rpc_handler'),
                       )

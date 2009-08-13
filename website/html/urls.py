@@ -4,7 +4,7 @@ from django.conf.urls.defaults import *
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = patterns('website.html.views',
+urlpatterns = patterns('seattlegeni.website.html.views',
 
                        # Previously defined in accounts/urls.py.                       
                        (r'^register$', 'register',{},'register'),
