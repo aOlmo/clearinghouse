@@ -28,6 +28,8 @@ import thread
 import SocketServer
 import SimpleXMLRPCServer
 
+import xmlrpclib
+
 # To send the admins emails when there's an unhandled exception.
 import django.core.mail 
 
@@ -45,6 +47,7 @@ from seattlegeni.common.api import nodemanager
 from seattlegeni.common.exceptions import *
 
 from seattlegeni.common.util import log
+from seattlegeni.common.util import parallel
 
 from seattlegeni.common.util.assertions import *
 
@@ -144,6 +147,9 @@ class BackendPublicFunctions(object):
       
       # Call the requested function.
       return func(*args)
+    
+    except NodemanagerCommunicationError, e:
+      raise xmlrpclib.Fault(100, "Node communication failure: " + str(e))
     
     except (DoesNotExistError, InvalidRequestError, AssertionError):
       log.error("The backend was used incorrectly: " + traceback.format_exc())
@@ -324,6 +330,9 @@ def cleanup_vessels():
   # Run forever.
   while True:
     
+    # Sleep a few seconds for those times where we don't have any vessels to clean up.
+    time.sleep(5)
+    
     try:
       # First, make it so that expired vessels are seen as dirty.
       markedcount = maindb.mark_expired_vessels_as_dirty()
@@ -334,46 +343,33 @@ def cleanup_vessels():
       # be inactive as we would just continue failing to communicate with nodes
       # that are down.
       cleanupvessellist = maindb.get_vessels_needing_cleanup()
-      if len(cleanupvessellist) > 0:
-        log.info("[cleanup_vessels] " + str(len(cleanupvessellist)) + " vessels to clean up: " + str(cleanupvessellist))
+      if len(cleanupvessellist) == 0:
+        continue
+        
+      log.info("[cleanup_vessels] " + str(len(cleanupvessellist)) + " vessels to clean up: " + str(cleanupvessellist))
       
-      # Now go through all of the dirty vessels and clean them up.
+      # Get a list of nodes to lock.
+      node_id_list = []
       for vessel in cleanupvessellist:
+        node_id = maindb.get_node_identifier_from_vessel(vessel)
+        # Lock names must be unique, and there could be multiple vessels from the
+        # same node in the vessel_list.
+        if node_id not in node_id_list:
+          node_id_list.append(node_id)
+            
+      # Lock the nodes that these vessels are on and always unlock them.
+      lockserver.lock_multiple_nodes(lockserver_handle, node_id_list)
+      try:
+        # Parallelize the cleanup of these vessels.
+        parallel_results = parallel.run_parallelized(cleanupvessellist, _cleanup_single_vessel)
         
-        nodeid = maindb.get_node_identifier_from_vessel(vessel)
-        
-        lockserver.lock_node(lockserver_handle, nodeid)
-        try:
-          # Now that we have a lock on the node that this vessel is on, find out
-          # if we should still clean up this vessel (e.g. maybe a node state
-          # transition script moved the node to a new state and this vessel was
-          # removed).
-          needscleanup, reasonwhynot = maindb.does_vessel_need_cleanup(vessel)
-          if not needscleanup:
-            log.info("[cleanup_vessels] Vessel " + str(vessel) + " no longer needs cleanup: " + reasonwhynot)
-            continue
+        if len(parallel_results["exception"]) > 0:
+          vessel, exception_message = parallel_results["exception"][0]
+          raise InternalError("Unhandled exception during parallelized vessel cleanup: " + exception_message)
           
-          # Raises a DoesNotExistError if there is no node with this nodeid.
-          nodehandle = _get_node_handle_from_nodeid(nodeid)
-          
-          log.info("[cleanup_vessels] About to ChangeUsers on vessel " + str(vessel))
-          nodemanager.change_users(nodehandle, vessel.name, [''])
-          
-          log.info("[cleanup_vessels] About to ResetVessel on vessel " + str(vessel))
-          nodemanager.reset_vessel(nodehandle, vessel.name)
-          
-          # We only mark it as clean if no exception was raised when trying to
-          # perform the above nodemanager operations.
-          maindb.mark_vessel_as_clean(vessel)
-
-          log.info("[cleanup_vessels] Successfully cleaned up vessel " + str(vessel))
-          
-        except NodemanagerCommunicationError:
-          log.info("[cleanup_vessels] Failed to cleanup vessel " + str(vessel) + ". " + traceback.format_exc())
-          
-        finally:
-          # Always unlock the node.
-          lockserver.unlock_node(lockserver_handle, nodeid)
+      finally:
+        # Unlock the nodes.
+        lockserver.unlock_multiple_nodes(lockserver_handle, node_id_list)
         
     except:
       message = "[cleanup_vessels] Something very bad happened: " + traceback.format_exc()
@@ -388,8 +384,47 @@ def cleanup_vessels():
         # report emails.
         time.sleep(600)
       
-    # Sleep a few seconds for those times where we don't have any vessels to clean up.
-    time.sleep(5)
+
+
+
+
+def _cleanup_single_vessel(vessel):
+  # Now that we have a lock on the node that this vessel is on, find out
+  # if we should still clean up this vessel (e.g. maybe a node state
+  # transition script moved the node to a new state and this vessel was
+  # removed).
+  needscleanup, reasonwhynot = maindb.does_vessel_need_cleanup(vessel)
+  if not needscleanup:
+    log.info("[cleanup_vessels] Vessel " + str(vessel) + " no longer needs cleanup: " + reasonwhynot)
+    return
+  
+  nodeid = maindb.get_node_identifier_from_vessel(vessel)
+  
+  try:
+    nodehandle = _get_node_handle_from_nodeid(nodeid)
+  except DoesNotExistError:
+    message = "A node doesn't in the database anymore! " + traceback.format_exc()
+    log.critical(message)
+    raise InternalError(message)
+  
+  try:
+    log.info("[cleanup_vessels] About to ChangeUsers on vessel " + str(vessel))
+    nodemanager.change_users(nodehandle, vessel.name, [''])
+    log.info("[cleanup_vessels] About to ResetVessel on vessel " + str(vessel))
+    nodemanager.reset_vessel(nodehandle, vessel.name)
+  except NodemanagerCommunicationError:
+    # We don't pass this exception up. Maybe the node is offline now. At some
+    # point, it will be marked in the database as offline (should we be doing
+    # that here?). At that time, the dirty vessels on that node will not be
+    # in the cleanup list anymore.
+    log.info("[cleanup_vessels] Failed to cleanup vessel " + str(vessel) + ". " + traceback.format_exc())
+    return
+    
+  # We only mark it as clean if no exception was raised when trying to
+  # perform the above nodemanager operations.
+  maindb.mark_vessel_as_clean(vessel)
+
+  log.info("[cleanup_vessels] Successfully cleaned up vessel " + str(vessel))
 
 
 

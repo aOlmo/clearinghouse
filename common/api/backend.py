@@ -69,8 +69,11 @@ def _get_backend_proxy():
 def _do_backend_request(func, *args):
   try:
     return func(*args)
-  except xmlrpclib.Fault:
-    raise ProgrammerError("The backend rejected the request: " + traceback.format_exc())
+  except xmlrpclib.Fault, fault:
+    if fault.faultCode == 100:
+      raise NodemanagerCommunicationError(fault.faultString)
+    else:
+      raise ProgrammerError("The backend rejected the request: " + traceback.format_exc())
   except xmlrpclib.ProtocolError:
     raise InternalError("Unable to communicate with the backend: " + traceback.format_exc())
   except socket.error:
@@ -139,8 +142,11 @@ def acquire_vessel(geniuser, vessel):
   func = _get_backend_proxy().SetVesselUsers
   args = (vessel.node.node_identifier, vessel.name, [geniuser.user_pubkey])
   
-  _do_backend_request(func, *args)
-    
+  try:
+    _do_backend_request(func, *args)
+  except NodemanagerCommunicationError:
+    raise UnableToAcquireResourcesError
+
 
 
 
@@ -215,7 +221,8 @@ def set_vessel_user_keylist(node, vesselname, userkeylist):
     userkeylist
       A list of public key strings that are the user keys to be set for the vessel.
   <Exceptions>
-    None
+    NodemanagerCommunicationError
+      If there's a problem communicating with the node.
   <Side Effects>
     The user key list for the vessel has been changed on the vessel.
   <Returns>
@@ -246,7 +253,8 @@ def set_vessel_owner_key(node, vesselname, ownerkey):
       this key (with its correspond private key) must already exist in the
       keydb before this function is called.
   <Exceptions>
-    None
+    NodemanagerCommunicationError
+      If there's a problem communicating with the node.
   <Side Effects>
     The owner key on the vessel has been changed. The main database is not modified.
   <Returns>
@@ -280,8 +288,11 @@ def split_vessel(node, vesselname, desiredresourcedata):
       create when splitting the existing vessel. This resourcedata has the
       format of a resources file.
   <Exceptions>
-    Raises InvalidRequestError if unable to split the vessel. This includes if
-    it fails because there aren't enough resources available to do the split.
+    InvalidRequestError
+      If unable to split the vessel. This includes if it fails because there
+      aren't enough resources available to do the split.
+    NodemanagerCommunicationError
+      If there's a problem communicating with the node.
   <Side Effects>
     The vessel passed in as an argument to the function no longer exists.
     It has been split into two new vessels, one of which has the resources
@@ -329,7 +340,8 @@ def join_vessels(node, firstvesselname, secondvesselname):
     secondvesselname
       The name of the second vessel that is to be joined.
   <Exceptions>
-    None
+    NodemanagerCommunicationError
+      If there's a problem communicating with the node.
   <Side Effects>
     The two vessel passed in as arguments to the function no longer exist.
     They have been joined into a new vessel. The first vessel will retain the
