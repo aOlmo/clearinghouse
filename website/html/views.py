@@ -304,18 +304,11 @@ def get_resources(request):
     
     try:
       acquired_vessels = interface.acquire_vessels(user, vessel_num, vessel_type)
-    except DoesNotExistError:
-      action_summary = "The current user no longer exists, and may have been deleted."
     except UnableToAcquireResourcesError, err:
       action_summary = "Couldn't acquire resources at this time. Details follow:"
       action_detail = str(err)
     except InsufficientUserResourcesError:
       action_summary = "You do not have enough vessel credits to fufill this request."
-    except ProgrammerError:
-      action_summary = "Internal GENI Error. Tried to acquire an invalid vessel type."
-    except Exception, err:
-      action_summary = "Internal GENI Error. Please contact us! Details follow:"
-      action_detail = str(err)
   
   # return a My Vessels page with the updated vessels/vessel acquire details/errors
   return myvessels(request, get_form, action_summary=action_summary, action_detail=action_detail)
@@ -350,8 +343,6 @@ def del_resource(request):
   else:
     try:
       interface.release_vessels(user, vessel_to_release)
-    except DoesNotExistError:
-      remove_detail = "The current user no longer exists, and may have been deleted."
     except InvalidRequestError, err:
       remove_detail = "Internal GENI Error. Please contact us! Details: " + str(err)
   
@@ -390,12 +381,8 @@ def del_priv(request):
   if user.user_privkey == "":
     msg = "Private key has already been deleted."
   else:
-    try:
-      interface.delete_private_key(user)
-    except DoesNotExistError:
-      msg = "Private key couldn't be deleted. (Couldn't grab user for key delete)"
-    else:
-      msg = "Private key has been deleted."
+    interface.delete_private_key(user)
+    msg = "Private key has been deleted."
   return direct_to_template(request, 'control/profile.html',
                             {'geni_user' : user,
                              'info' : msg})
