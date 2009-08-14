@@ -30,11 +30,6 @@ from seattlegeni.keydb import config
 
 
 
-# Database connection.
-connection = None
-
-
-
 
 
 def init_keydb():
@@ -46,18 +41,31 @@ def init_keydb():
   <Exceptions>
     None
   <Side Effects>
-    Creates a connection with the mysql server.
+    Does nothing for the moment, actually. Maybe someday it will setup a
+    connection pool or do other important initialization on the database.
+    We can't just make a single connection and create a new cursor for
+    each request because that's not how cursors work, at least with MySQLdb.
   <Returns>
     None
   """
-  
-  global connection
-  
+  pass  
+
+
+
+
+
+def _get_connection():
   try:
-    connection = MySQLdb.connect(user=config.dbuser, passwd=config.dbpass, db=config.dbname, host=config.dbhost)
-    
+    return MySQLdb.connect(user=config.dbuser, passwd=config.dbpass, db=config.dbname, host=config.dbhost)
   except MySQLdb.Error:
     raise InternalError("Failed initializing key database: " + traceback.format_exc())
+
+
+
+
+
+def _release_connection(connection):
+  connection.close()
 
 
 
@@ -81,22 +89,24 @@ def get_private_key(pubkey):
   
   assert_str(pubkey)
   
+  connection = _get_connection()
   cursor = connection.cursor()
   
   try:
-    # Note: `keys` is a reserved mysql keyword so must be quoted.
-    cursor.execute("SELECT privkey FROM `keys` WHERE pubkey = %s", (pubkey))
-  except MySQLdb.Error:
-    raise InternalError("Failed getting private key: " + traceback.format_exc())
- 
-  if cursor.rowcount != 1:
-    raise DoesNotExistError("No private key corresponding to the public key: " + pubkey)
+    try:
+      # Note: `keys` is a reserved mysql keyword so must be quoted.
+      cursor.execute("SELECT privkey FROM `keys` WHERE pubkey = %s", (pubkey))
+    except MySQLdb.Error:
+      raise InternalError("Failed getting private key: " + traceback.format_exc())
+   
+    if cursor.rowcount != 1:
+      raise DoesNotExistError("No private key corresponding to the public key: " + pubkey)
+    
+    return cursor.fetchone()[0]
   
-  privkey = cursor.fetchone()[0]
-  
-  cursor.close()
-  
-  return privkey
+  finally:
+    cursor.close()
+    _release_connection(connection)
 
 
 
@@ -128,22 +138,26 @@ def set_private_key(pubkey, privkey, keydescription):
   assert_str(privkey)
   assert_str(keydescription)
   
+  connection = _get_connection()
   cursor = connection.cursor()
   
   try:
-    # We insert include the pubkeyhash field to ensure that keys are unique.
-    # We can't use the pubkey field because it is too long to enforce
-    # uniqueness at the database level. We don't want to try to query it
-    # ourselves because then we need to do two queries and have a shared access
-    # lock around them, and that's a lot messier. This should be an uncommon
-    # error case and likely means there's something very wrong in some other
-    # part of the system, sothis is the simplest way to raise an exception if
-    # this case does occur.
-    # Note: `keys` is a reserved mysql keyword so must be quoted.
-    cursor.execute("INSERT INTO `keys` (pubkeyhash, pubkey, privkey, description) VALUES (MD5(%s), %s, %s, %s)", 
-                   (pubkey, pubkey, privkey, keydescription))
-  except MySQLdb.Error:
-    raise InternalError("Failed setting private key: " + traceback.format_exc())
+    try:
+      # We insert include the pubkeyhash field to ensure that keys are unique.
+      # We can't use the pubkey field because it is too long to enforce
+      # uniqueness at the database level. We don't want to try to query it
+      # ourselves because then we need to do two queries and have a shared access
+      # lock around them, and that's a lot messier. This should be an uncommon
+      # error case and likely means there's something very wrong in some other
+      # part of the system, sothis is the simplest way to raise an exception if
+      # this case does occur.
+      # Note: `keys` is a reserved mysql keyword so must be quoted.
+      cursor.execute("INSERT INTO `keys` (pubkeyhash, pubkey, privkey, description) VALUES (MD5(%s), %s, %s, %s)", 
+                     (pubkey, pubkey, privkey, keydescription))
+    except MySQLdb.Error:
+      raise InternalError("Failed setting private key: " + traceback.format_exc())
   
-  cursor.close()
+  finally:
+    cursor.close()
+    _release_connection(connection)
 
