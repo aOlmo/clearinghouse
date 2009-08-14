@@ -18,13 +18,27 @@
 #   will result in all seattlegeni components running off of the newly deployed
 #   version.
 # <Usage>
+#    As root:
 #    update_seattlegeni_from_trunk.sh
+
+if [ "$USER" != "root" ]; then
+  echo "You must run this script as root. Exiting."
+  exit 1
+fi
+
+SUDO_CMD="sudo -u geni"
 
 cd /home/geni
 
-svn up trunk/
+$SUDO_CMD svn up trunk/
 
-python trunk/seattlegeni/deploymentscripts/deploy_seattlegeni.py trunk/ live/
+$SUDO_CMD python trunk/seattlegeni/deploymentscripts/deploy_seattlegeni.py trunk/ live/
 
-mv live.bak.* bak/
+$SUDO_CMD mv live.bak.* bak/
+
+# Ensure that sensitive files are only readable by the geni user:
+chown geni live/seattlegeni/keydb/config.py
+chown geni live/seattlegeni/backend/config.py
+chmod 600 live/seattlegeni/keydb/config.py
+chmod 600 live/seattlegeni/backend/config.py
 

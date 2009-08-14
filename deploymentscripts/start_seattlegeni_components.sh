@@ -35,6 +35,14 @@ if [ "$USER" != "root" ]; then
   exit 1
 fi
 
+ALREADY_RUNNING_COUNT=`ps -ef | grep start_seattlegeni_components.sh | grep -v grep | grep -v $$ | wc -l`
+# We expect one copy to be running, at least (this one).
+if [ "$ALREADY_RUNNING_COUNT" != "0" ]; then
+  echo "There appears to already be a copy of start_seattlegeni_components.sh running."
+  echo "You'll need to kill the other running copy first."
+  exit 1
+fi
+
 echo "Starting lockserver."
 $SUDO_CMD python $SEATTLEGENI_DIR/lockserver/lockserver_daemon.py >>$LOG_DIR/lockserver.log 2>&1 &
 sleep 1 # Wait a moment to make sure it has started (lockserver is used by other components).
