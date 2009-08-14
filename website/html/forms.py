@@ -1,6 +1,6 @@
 """
 <Program Name>
-  accounts/forms.py
+  forms.py
 
 <Started>
   October, 2008

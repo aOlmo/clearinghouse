@@ -17,12 +17,15 @@
   in this file which will be invoked.
 """
 
+import os
+
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.views.generic.simple import direct_to_template
+from django.views.generic.simple import redirect_to
 import django.contrib.auth as djangoauth
 
 # Make available all of our own standard exceptions.
@@ -378,6 +381,8 @@ def del_all_resources(request):
 def gen_new_key(request):
   pass
 
+
+
 @log_function_call
 @login_required()
 def del_priv(request):
@@ -396,6 +401,7 @@ def del_priv(request):
                              'info' : msg})
 
 
+
 @log_function_call
 @login_required()
 def priv_key(request):
@@ -405,6 +411,7 @@ def priv_key(request):
   return response
 
 
+
 @log_function_call
 @login_required()
 def pub_key(request):
@@ -412,6 +419,197 @@ def pub_key(request):
   response = HttpResponse(user.user_pubkey, mimetype='text/plain')
   response['Content-Disposition'] = 'attachment; filename=' + str(user.username) + '.publickey'
   return response
+
+
+
+def download(request, username):
+  validuser = True
+  try:
+    # validate that this username actually exists
+    user = interface.get_user_for_installers(username)
+  except DoesNotExistError:
+    validuser = False
+  return direct_to_template(request,'download/installers.html', {'username' : username, 'validuser' : validuser})
+
+
+
+def build_win_installer(request, username):
+  """
+  <Purpose>
+    Allows the user to download a Windows distribution of Seattle
+    that will donate resources to user with 'username'.
+  
+  <Arguments>
+    request:
+       HTTP Request object
+    username (string):
+       A string representing the GENI user's username into the GENI portal
+  
+  <Exceptions>
+    None?
+  
+  <Side Effects>
+    None
+  
+  <Returns>
+    On failure of username lookup returns an HTTP response with
+    description of the error. On success, returns the seattle windows
+    distribution file for the user to donate to as username.
+  """
+  success,ret = build_installer(username, 'w')
+  if not success:
+      return ret
+  redir_url = ret + "seattle_win.zip"
+  return redirect_to(request, redir_url)
+
+
+
+def build_linux_installer(request, username):
+  """
+ <Purpose>
+    Allows the user to download a Linux distribution of Seattle
+    that will donate resources to user with 'username'.
+
+ <Arguments>
+    request:
+       HTTP Request object
+    username (string):
+       A string representing the GENI user's username into the GENI portal
+
+ <Exceptions>
+    None?
+ 
+ <Side Effects>
+    None
+
+ <Returns>
+    On failure of username lookup returns an HTTP response with
+    description of the error. On success, returns the seattle linux
+    distribution file for the user to donate to as username.
+  """
+  success,ret = build_installer(username, 'l')
+  if not success:
+      return ret
+  redir_url = ret + "seattle_linux.tgz"
+  return redirect_to(request, redir_url)
+
+
+
+def build_mac_installer(request, username):
+  """
+ <Purpose>
+    Allows the user to download a Mac/OSX distribution of Seattle
+    that will donate resources to user with 'username'.
+
+ <Arguments>
+    request:
+       HTTP Request object
+    username (string):
+       A string representing the GENI user's username into the GENI portal
+
+ <Exceptions>
+    None?
+ 
+ <Side Effects>
+    None
+
+ <Returns>
+    On failure of username lookup returns an HTTP response with
+    description of the error. On success, returns the seattle mac
+    distribution file for the user to donate to as username.
+  """
+  success,ret = build_installer(username, 'm')
+  if not success:
+      return ret
+  redir_url = ret + "seattle_mac.tgz"
+  return redirect_to(request, redir_url)
+
+
+
+def build_installer(username, dist_char):
+    """
+   <Purpose>
+      Builds an installer with distrubution char 'dist_char' that
+      describes the platform of the desired installer, that will
+      donate resources to uesr with username.
+
+   <Arguments>
+      username (string):
+         A string representing the GENI user's username into the GENI portal
+      dist_char (string):
+         Containing 'm' or 'l' or 'w' for each major distribution
+         (Mac/Linux/Windows) that this function will build/compose.
+
+   <Exceptions>
+      None?
+   
+   <Side Effects>
+      Creates a new installer file in a temporary directory that is
+      world readable via Apache. It also creates a variety of files in
+      this temporary directory that are relevant to the installer
+      build process.
+
+   <Returns>
+      On success, returns (True, URL) where URL is the redirection url
+      to the request installer. On failure returns (False,
+      HttpResponse) where HttpResponse is an HTTP Response that
+      specifies what went wrong in attemptign to look up the user with
+      username.
+    """
+    try:
+      user = interface.get_user_for_installers(username)
+      username = user.username
+    except DoesNotExistError:
+      #TODO: what happens if the username is invalid? render a "build failed, bad user" page?
+      ret = HttpResponse("Couldn't get user.")
+      return False, ret
+
+    # prefix dir is specific to this user
+    prefix = "/var/www/dist/geni/%s_dist"%(username)
+    # paths to custominstallerinfo and customize_installers script
+    vesselinfopy = "/home/geni/trunk_do_not_update/test/writecustominstallerinfo.py"
+    customize_installer_script = "/home/geni/trunk_do_not_update/dist/customize_installers.py"
+    
+    genilookuppubkey = "129774128041544992483840782113037451944879157105918667490875002217516699749307491907386666192386877354906201798442050236403095676275904600258748306841717805688118184641552438954898004036758248379889058675795451813045872492421308274734660011578944922609099087277851338277313994200761054957165602579454496913499 5009584846657937317736495348478482159442951678179796433038862287646668582746026338819112599540128338043099378054889507774906339128900995851308672478258731140180190140468013856238094738039659798409337089186188793214102866350638939419805677190812074478208301019935069545923355193838949699496492397781457581193908714041831854374243557949384786876738266983181127249134779897575097946022340850779201939355412918841366370355327173665360672716628991450762121558255087503128279166537142360507802367604402756069070736597174937086480718583392482692614171062272186494071564184129689431325498982800811856338274118203718702345272278560446589165471494375651361750852019147810160148921625729542290638336334809398971313397822221564079037502214439643276240764600598988028102968157487817931720659847520822457976835172247118797446828110946660365132205322939204586763411439281848784213195825380220677820416073940040666481776343542973130000147584659760068373009458649543362607042577145752915876989793197702723812196638625607032478537457723974278728977851718860740932725872670723883052328375429048891803294991318092625440596678842926089139554432813900387338150959410412520854154851406242710420276841944243411402577440698771918699717808708127522759621651"
+    
+    # remove and recreate the prefix dir
+    os.system("rm -Rf %s/"%(prefix))
+    os.system("mkdir %s/"%(prefix))
+
+    # write out to file the user's donor key
+    f = open('%s/%s'%(prefix, username),'w');
+    f.write("%s"%(user.user_pubkey))
+    f.close()
+
+    # write out to file the geni lookup key
+    f = open('%s/%s_geni'%(prefix, username),'w');
+    f.write("%s"%(genilookuppubkey))
+    f.close()
+    
+    # write out to file the vesselinfo to customize the installer
+    vesselinfo = '''Percent 8\nOwner %s/%s\nUser %s/%s_geni\n'''%(prefix,username,prefix,username);
+    f = open('%s/vesselinfo'%(prefix),'w');
+    f.write("%s"%(vesselinfo))
+    f.close()
+
+    # create the dir where vesselinfo will be created
+    os.system("mkdir %s/vesselinfodir/"%(prefix))
+    # create the vessel info
+    cmd = "cd /var/www/dist/geni && python %s %s/vesselinfo %s/vesselinfodir 2> /tmp/customize.err > /tmp/customize.out"%(vesselinfopy, prefix, prefix)
+    #f = open("/tmp/out", "w")
+    #f.write(cmd)
+    os.system(cmd)
+    # run carter's script to create the installer of the particular type ((w)in, (l)inux, or (m)ac)
+    os.system("python %s %s %s/vesselinfodir/ %s/ > /tmp/carter.out 2> /tmp/carter.err"%(customize_installer_script, dist_char, prefix,prefix))
+    #os.system("python %s %s %s/vesselinfodir/ %s/ &> /tmp/out"%(carter_script, dist_char, prefix,prefix))
+    # compose and return the url to which the user needs to be redirected
+    redir_url = "http://seattlegeni.cs.washington.edu/dist/geni/%s_dist/"%(username)
+    return True, redir_url
+
+
+
+def donations_help(request, username):
+  return direct_to_template(request,'download/help.html', {'username' : username})
 
 
 
