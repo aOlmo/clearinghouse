@@ -127,7 +127,7 @@ class PublicXMLRPCFunctions(object):
       # It's not unlikely that the user ends up seeing this message, so we
       # are careful about what the content of the message is. We don't
       # include the exception trace.
-      raise ProgrammerError("Internal error while handling the xmlrpc request.")
+      raise xmlrpclib.Fault(100, "GENIOpError: Internal error while handling the xmlrpc request.")
       
 
 
@@ -141,7 +141,7 @@ class PublicXMLRPCFunctions(object):
       auth
         An authorization dict of the form {'username':username, 'password':password}
       rspec
-        A resource specificiation dict of the form {'rspec_type':type, 'number_of_nodes':num}
+        A resource specification dict of the form {'rspec_type':type, 'number_of_nodes':num}
     <Exceptions>
       Raises xmlrpclib Fault objects:
         100, "GENIOpError" for internal errors.
@@ -169,14 +169,10 @@ class PublicXMLRPCFunctions(object):
     
     try:
       acquired_vessels = interface.acquire_vessels(geni_user, num_vessels, resource_type)
-    except DoesNotExistError:
-      raise xmlrpclib.Fault(100, "GENIOpError: Internal GENI Error! Recieved a DoesNotExistError while calling interface.acquire_vessels")
     except UnableToAcquireResourcesError, err:
       raise xmlrpclib.Fault(100, "GENIOpError: Internal GENI Error! Unable to fulfill vessel acquire request at this given time. Please try again later.")
     except InsufficientUserResourcesError, err:
       raise xmlrpclib.Fault(103, "GENINotEnoughCredits: You do not have enough vessel credits to acquire the number of vessels requested.")
-    except ProgrammerError, err:
-      raise xmlrpclib.Fault(100, "GENIOpError: Internal GENI Error! Recieved a ProgrammerError while calling interface.acquire_vessels. Details: " + str(err)) 
     
     # since acquire_vessels returns a list of Vessel objects, we
     # need to convert them into a list of 'info' dictionaries.
@@ -219,8 +215,6 @@ class PublicXMLRPCFunctions(object):
     
     try:
       interface.release_vessels(geni_user, list_of_vessel_objs)
-    except DoesNotExistError:
-      raise xmlrpclib.Fault(100, "GENIOpError: Internal GENI Error! Caught a DoesNotExistError while calling interface.release_vessels")
     except InvalidRequestError, err:
       # vessel exists but isn't valid for you to use.
       raise xmlrpclib.Fault(102, "GENIInvalidUserInput: Tried to release a vessel that didn't belong to you. Details: " + str(err))
