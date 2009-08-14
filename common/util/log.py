@@ -69,8 +69,8 @@ def set_log_level(level):
 
 def debug(message):
   if loglevel <= LOG_LEVEL_DEBUG:
-    print _get_time() + " DEBUG " + _get_request_id() + " " + str(message)
-    sys.stdout.flush()
+    print >> sys.stderr, _get_time() + " DEBUG " + _get_request_id() + " " + str(message)
+    sys.stderr.flush()
 
 
 
@@ -78,8 +78,8 @@ def debug(message):
 
 def info(message):
   if loglevel <= LOG_LEVEL_INFO:
-    print _get_time() + " INFO " + _get_request_id() + " " + str(message)
-    sys.stdout.flush()
+    print >> sys.stderr, _get_time() + " INFO " + _get_request_id() + " " + str(message)
+    sys.stderr.flush()
 
 
 
@@ -87,8 +87,8 @@ def info(message):
 
 def error(message):
   if loglevel <= LOG_LEVEL_ERROR:
-    print _get_time() + " ERROR " + _get_request_id() + " " + str(message)
-    sys.stdout.flush()
+    print >> sys.stderr, _get_time() + " ERROR " + _get_request_id() + " " + str(message)
+    sys.stderr.flush()
 
 
 
@@ -96,8 +96,8 @@ def error(message):
 
 def critical(message):
   if loglevel <= LOG_LEVEL_CRITICAL:
-    print _get_time() + " CRITICAL " + _get_request_id() + " " + str(message)
-    sys.stdout.flush()
+    print >> sys.stderr, _get_time() + " CRITICAL " + _get_request_id() + " " + str(message)
+    sys.stderr.flush()
 
 
 
