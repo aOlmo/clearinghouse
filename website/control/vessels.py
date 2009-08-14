@@ -20,6 +20,9 @@ from seattlegeni.common.api import backend
 from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import maindb
 
+from seattlegeni.common.util import log
+from seattlegeni.common.util import parallel
+
 from seattlegeni.common.util.decorators import log_function_call
 
 
@@ -150,25 +153,63 @@ def _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_
   Returns the list of acquired vessels if successful.
   """
   
-  # TODO: parallelize vessel acquisition
-
   # Make sure there are sufficient vessels to even try to fulfill the request.
   if len(vessel_list) < vesselcount:
     raise UnableToAcquireResourcesError("There are not enough available vessels to fulfill the request.")
   
   acquired_vessels = []
 
-  for vessel in vessel_list:
-    try:
-      _do_acquire_vessel(lockserver_handle, geniuser, vessel)
-    except UnableToAcquireResourcesError:
-      # We don't worry about an individual vessel acquisition failing. We just
-      # proceed to try to acquire others to fulfill the request.
-      continue
-    # We successfully acquired this vessel.
-    acquired_vessels.append(vessel)
+  remaining_vessel_list = vessel_list[:]
+
+  # Keep trying to acquire vessels until there are no more left to acquire.
+  # There's a "return" statement in the loop that will get out of the loop
+  # once we've obtained all of the vessels we wanted, so here we are only
+  # concerned with there being any vessels left to try.
+  while len(remaining_vessel_list) > 0:
+  
+    # Each time through the loop we'll try to acquire the number of vessels
+    # remaining that are needed to fulfill the user's request.
+    remaining_needed_vesselcount = vesselcount - len(acquired_vessels)
+    next_vessels_to_acquire = remaining_vessel_list[:remaining_needed_vesselcount]
+    remaining_vessel_list = remaining_vessel_list[remaining_needed_vesselcount:]
+  
+    # Note that we haven't worried about checking if the number of remaining
+    # vessels could still fulfill the user's request. In the name of
+    # correctness over efficiency, we'll let this case that should be rare
+    # (at least until the vesselcount's users are request get to be huge)
+    # sort itself out with a few unnecessary vessel acquisition before they
+    # ultimately get released after this loop.
+  
+    parallel_results = _parallel_acquire_vessels_from_list(lockserver_handle, geniuser, next_vessels_to_acquire)
+  
+    # The "exception" key contains a list of tuples where the first item of
+    # the tuple is the vessel object and the second item is the str(e) of
+    # the exception. Because the repy parellelization module that is used
+    # underneath only passes up the exception string, we have made
+    # _do_acquire_vessel() include the string "UnableToAcquireResourcesError"
+    # in the exception message so we can tell these apart from more
+    # serious failures (e.g the backed is down).
+    for (vessel, exception_message) in parallel_results["exception"]:
+      
+      if "UnableToAcquireResourcesError" in exception_message:
+        # This is ok, maybe the node is offline.
+        log.info("Failed to acquire vessel: " + str(vessel))
+        
+      elif "UnableToAcquireResourcesError" not in exception_message:
+        # Something serious happened, maybe the backend is down.
+        raise InternalError("Unexpected exception occurred during parallelized " +
+                            "acquisition of vessels: " + exception_message)
+    
+    # The "returned" key contains a list of tuples where the first item of
+    # the tuple is the vessel object and the second is the return value
+    # (which is None).
+    for (vessel, ignored_return_value) in parallel_results["returned"]:
+      # We successfully acquired this vessel.
+      acquired_vessels.append(vessel)
+
     # If we've acquired all of the vessels the user wanted, we're done.
     if len(acquired_vessels) == vesselcount:
+      log.info("Successfully acquired vessel: " + str(vessel))
       return acquired_vessels
 
   # If we got here, then we didn't acquire the vessels the user wanted. We
@@ -183,47 +224,71 @@ def _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_
 
 
 @log_function_call
-def _do_acquire_vessel(lockserver_handle, geniuser, vessel):
+def _parallel_acquire_vessels_from_list(lockserver_handle, geniuser, vessel_list):
+  
+  node_id_list = []
+  for vessel in vessel_list:
+    node_id = maindb.get_node_identifier_from_vessel(vessel)
+    # Lock names must be unique, and there could be multiple vessels from the
+    # same node in the vessel_list. Whether we want to allow acquiring multiple
+    # vessels on the same node is a separate issue from the correctness of this
+    # part of the code.
+    if node_id not in node_id_list:
+      node_id_list.append(node_id)
+
+  # Lock the nodes that these vessels are on.
+  lockserver.lock_multiple_nodes(lockserver_handle, node_id_list)
+  try:
+    return parallel.run_parallelized(vessel_list, _do_acquire_vessel, geniuser)
+    
+  finally:
+    # Unlock the nodes.
+    lockserver.unlock_multiple_nodes(lockserver_handle, node_id_list)
+
+
+
+
+
+@log_function_call
+def _do_acquire_vessel(vessel, geniuser):
   """
   Perform that actual acquisition of the vessel by the user (through the
   backend) and update the database accordingly if the vessel is successfully
   acquired.
-  """  
+
+  When an UnableToAcquireResourcesError is raised, the exception message
+  will contain the string "UnableToAcquireResourcesError" so that it can be
+  seen in the results of a call to repy's parallelization function.  
+  """
   
   node_id = maindb.get_node_identifier_from_vessel(vessel)
-
-  # Lock the node that this vessel is on.
-  lockserver.lock_node(lockserver_handle, node_id)
+  
   try:
-    try:
-      vessel = maindb.get_vessel(node_id, vessel.name)
-    except DoesNotExistError:
-      message = "Vessel no longer exists once the node lock was obtained."
-      raise UnableToAcquireResourcesError(message)
-      
-    if vessel.acquired_by_user is not None:
-      message = "Vessel already acquired once the node lock was obtained."
-      raise UnableToAcquireResourcesError(message)
+    vessel = maindb.get_vessel(node_id, vessel.name)
+  except DoesNotExistError:
+    message = "Vessel no longer exists once the node lock was obtained."
+    raise UnableToAcquireResourcesError("UnableToAcquireResourcesError: " + message)
     
-    node = maindb.get_node(node_id)
-    if node.is_active is False:
-      message = "Vessel's node is no longer active once the node lock was obtained."
-      raise UnableToAcquireResourcesError(message)
-    
-    # This will raise a UnableToAcquireResourcesException if it fails (e.g if
-    # the node is down). We want to allow the exception to be passed up to
-    # the caller.
+  if vessel.acquired_by_user is not None:
+    message = "Vessel already acquired once the node lock was obtained."
+    raise UnableToAcquireResourcesError("UnableToAcquireResourcesError: " + message)
+  
+  node = maindb.get_node(node_id)
+  if node.is_active is False:
+    message = "Vessel's node is no longer active once the node lock was obtained."
+    raise UnableToAcquireResourcesError("UnableToAcquireResourcesError: " + message)
+  
+  # This will raise a UnableToAcquireResourcesException if it fails (e.g if
+  # the node is down). We want to allow the exception to be passed up to
+  # the caller.
+  try:
     backend.acquire_vessel(geniuser, vessel)
+  except UnableToAcquireResourcesError, e:
+    raise UnableToAcquireResourcesError("UnableToAcquireResourcesError: " + str(e))
+  
+  # Update the database to reflect the successful vessel acquisition.
+  maindb.record_acquired_vessel(geniuser, vessel)
     
-    # Update the database to reflect the successful vessel acquisition.
-    maindb.record_acquired_vessel(geniuser, vessel)
-    
-    return vessel
-    
-  finally:
-    # Unlock the node.
-    lockserver.unlock_node(lockserver_handle, node_id)
-
 
 
 
