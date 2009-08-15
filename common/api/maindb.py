@@ -106,9 +106,13 @@ def init_maindb():
   <Purpose>
     Initializes the database in a way that makes database transaction commits
     from other sources immediately visible. Must be called after creating
-    any database connection. 
-    scripts that need to see changes to the database even without starting a
-    new transaction.
+    any database connection.
+    
+    If you're using the maindb in long-running non-website code, you should
+    either call this function on a regular basis (even if new database
+    connections haven't been made) or copy the bit of code here that does the
+    django.db.reset_queries() call to your own code. Otherwise, your memory
+    usage will grow due to query logging when DEBUG is True.
   <Arguments>
     None.
   <Exceptions>
@@ -129,6 +133,16 @@ def init_maindb():
   else:
     log.error("init_maindb() called when not using mysql. This is only OK when developing.")
 
+  # We shouldn't be running in production with settings.DEBUG = True. Just in
+  # case, though, tell django to reset its list of saved queries. On the
+  # website, init_maindb() will get called with each web request so we'll be
+  # resetting the queries at the beginning of each request.
+  # See http://docs.djangoproject.com/en/dev/faq/models/#why-is-django-leaking-memory
+  # for more info.
+  if settings.DEBUG:
+    log.debug("Resetting django query log because settings.DEBUG is True.")
+    log.error("Reminder: settings.DEBUG is True. Don't run in production like this!")
+    django.db.reset_queries()
 
 
 

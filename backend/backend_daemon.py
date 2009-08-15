@@ -33,6 +33,10 @@ import xmlrpclib
 # To send the admins emails when there's an unhandled exception.
 import django.core.mail 
 
+# We use django.db.reset_queries() to prevent memory "leaks" due to query
+# logging when settings.DEBUG is True.
+import django.db 
+
 # The config module contains the authcode that is required for performing
 # privileged operations.
 import seattlegeni.backend.config
@@ -330,10 +334,22 @@ def cleanup_vessels():
   # Run forever.
   while True:
     
-    # Sleep a few seconds for those times where we don't have any vessels to clean up.
-    time.sleep(5)
-    
     try:
+      
+      # Sleep a few seconds for those times where we don't have any vessels to clean up.
+      time.sleep(5)
+      
+      # We shouldn't be running the backend in production with
+      # settings.DEBUG = True. Just in case, though, tell django to reset its
+      # list of saved queries each time through the loop. Note that this is not
+      # specific to the cleanup thread as other parts of the backend are using
+      # the maindb, as well, so we're overloading the purpose of the cleanup
+      # thread by doing this here. This is just a convenient place to do it.
+      # See http://docs.djangoproject.com/en/dev/faq/models/#why-is-django-leaking-memory
+      # for more info.
+      if settings.DEBUG:
+        django.db.reset_queries()
+      
       # First, make it so that expired vessels are seen as dirty.
       markedcount = maindb.mark_expired_vessels_as_dirty()
       if markedcount > 0:
