@@ -22,6 +22,7 @@
   sane and are themselves decorated with the _simple_decorator.
 """
 
+import datetime
 
 from seattlegeni.common.util import log
 
@@ -57,6 +58,13 @@ def _simple_decorator(decorator):
 
 
 
+def _get_timedelta_str(starttime):
+  return str(datetime.datetime.now() - starttime)
+
+
+
+
+
 @_simple_decorator
 def log_function_call(func):
   """
@@ -74,9 +82,11 @@ def log_function_call(func):
   def do_logging_func_call(*args, **kwargs):
     _log_call_info(func, args, kwargs)
     
+    starttime = datetime.datetime.now()
+    
     try:
       result = func(*args, **kwargs)
-      log.debug('Returning from %s (module %s): %s' % (func.__name__, func.__module__, str(result)))
+      log.debug('Returning from %s (module %s) (time %s): %s' % (func.__name__, func.__module__, _get_timedelta_str(starttime), str(result)))
       return result
     
     except Exception, e:
@@ -105,9 +115,11 @@ def log_function_call_without_return(func):
   def do_logging_func_call(*args, **kwargs):
     _log_call_info(func, args, kwargs)
     
+    starttime = datetime.datetime.now()
+    
     try:
       result = func(*args, **kwargs)
-      log.debug('Returning from %s (module %s): [Not logging return value]' % (func.__name__, func.__module__))
+      log.debug('Returning from %s (module %s) (time %s): [Not logging return value]' % (func.__name__, func.__module__, _get_timedelta_str(starttime)))
       return result
     
     except Exception, e:
@@ -137,9 +149,11 @@ def log_function_call_without_arguments(func):
     log.debug('Calling: %s (module %s), args: [Not logging], kwargs: [Not logging].' %
              (func.__name__, func.__module__))
     
+    starttime = datetime.datetime.now()
+    
     try:
       result = func(*args, **kwargs)
-      log.debug('Returning from %s (module %s): %s' % (func.__name__, func.__module__, str(result)))
+      log.debug('Returning from %s (module %s) (time %s): %s' % (func.__name__, func.__module__, _get_timedelta_str(starttime), str(result)))
       return result
     
     except Exception, e:
@@ -176,9 +190,11 @@ def log_function_call_and_only_first_argument(func):
     log.debug('Calling: %s (module %s), 1st arg: %s, other args: [Not logging].' % 
              (func.__name__, func.__module__, str(_get_cleaned_args(args)[0])))
     
+    starttime = datetime.datetime.now()
+    
     try:
       result = func(*args, **kwargs)
-      log.debug('Returning from %s (module %s): %s' % (func.__name__, func.__module__, str(result)))
+      log.debug('Returning from %s (module %s) (time %s): %s' % (func.__name__, func.__module__, _get_timedelta_str(starttime), str(result)))
       return result
     
     except Exception, e:
@@ -212,9 +228,11 @@ def log_function_call_without_first_argument(func):
     log.debug('Calling: %s (module %s), 1st arg: [Not logging], other args: %s, kwargs: %s.' % 
              (func.__name__, func.__module__, str(_get_cleaned_args(args)[1:]), str(_get_cleaned_args(kwargs))))
     
+    starttime = datetime.datetime.now()
+    
     try:
       result = func(*args, **kwargs)
-      log.debug('Returning from %s (module %s): %s' % (func.__name__, func.__module__, str(result)))
+      log.debug('Returning from %s (module %s) (time %s): %s' % (func.__name__, func.__module__, _get_timedelta_str(starttime), str(result)))
       return result
     
     except Exception, e:
