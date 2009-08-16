@@ -43,6 +43,8 @@ from seattlegeni.common.util.assertions import *
 
 from seattlegeni.common.exceptions import *
 
+from seattlegeni.common.util.decorators import log_function_call_without_first_argument
+
 from seattle import repyhelper
 from seattle import repyportability
 
@@ -253,7 +255,7 @@ def get_node_handle(nodeid, ip, port, pubkeystring, privkeystring):
   assert_str(pubkeystring)
   assert_str(privkeystring)
   
-  return (nodeid, ip, port, pubkeystring, privkeystring)
+  return (privkeystring, (nodeid, ip, port, pubkeystring))
 
 
 
@@ -282,7 +284,7 @@ def change_users(nodehandle, vesselname, userkeylist):
   assert_str(vesselname)
   assert_list_of_str(userkeylist)
   
-  _do_signed_call(nodehandle, 'ChangeUsers', vesselname, '|'.join(userkeylist))
+  _do_signed_call(nodehandle[0], nodehandle[1], 'ChangeUsers', vesselname, '|'.join(userkeylist))
 
 
 
@@ -307,7 +309,7 @@ def reset_vessel(nodehandle, vesselname):
   """
   assert_str(vesselname)
   
-  _do_signed_call(nodehandle, 'ResetVessel', vesselname)
+  _do_signed_call(nodehandle[0], nodehandle[1], 'ResetVessel', vesselname)
 
 
 
@@ -336,7 +338,7 @@ def change_owner(nodehandle, vesselname, ownerkey):
   assert_str(vesselname)
   assert_str(ownerkey)
   
-  _do_signed_call(nodehandle, 'ChangeOwner', vesselname, ownerkey)
+  _do_signed_call(nodehandle[0], nodehandle[1], 'ChangeOwner', vesselname, ownerkey)
 
 
 
@@ -371,7 +373,8 @@ def split_vessel(nodehandle, vesselname, desiredresourcedata):
   assert_str(vesselname)
   assert_str(desiredresourcedata)
   
-  splitvesselretval = _do_signed_call(nodehandle, 'SplitVessel', vesselname, desiredresourcedata)
+  splitvesselretval = _do_signed_call(nodehandle[0], nodehandle[1],
+                                      'SplitVessel', vesselname, desiredresourcedata)
   
   # Get the new vessel names. The "left" vessel has the leftovers, the 
   # "right" is of the size requested.
@@ -407,7 +410,8 @@ def join_vessels(nodehandle, firstvesselname, secondvesselname):
   assert_str(firstvesselname)
   assert_str(secondvesselname)
   
-  combinedvesselname = _do_signed_call(nodehandle, 'JoinVessels', firstvesselname, secondvesselname)
+  combinedvesselname = _do_signed_call(nodehandle[0], nodehandle[1],
+                                       'JoinVessels', firstvesselname, secondvesselname)
 
   return combinedvesselname
 
@@ -415,19 +419,30 @@ def join_vessels(nodehandle, firstvesselname, secondvesselname):
 
 
 
-def _do_signed_call(nodehandle, *callargs):
+@log_function_call_without_first_argument
+def _do_signed_call(privkeystring, nodeid_ip_port_pubkey_tuple, *callargs):
   """
     <Purpose>
       Performs an action that requires authentication on a remote node.
+      
+      The arguments are a little weird because our goal was to keep the rest
+      of the code clean but have the private key be a separate, first argument
+      to this function. The reason for this is so that we can use a logging
+      decorator but not log the private key. We wouldn't have mangled a public
+      function this way, but this is private and the nodehandle is opaque
+      to client code.
     <Arguments>
-      ip:
-        The node's IP address (a string)
-      port:
-        The port that the node manager is running on (an int)
-      pubkeystring:
-        The public key used for authentication
       privkeystring:
         The private key used for authentication
+      nodeid_ip_port_pubkey_tuple:
+        nodeid:
+          The node's identifier.
+        ip:
+          The node's IP address (a string)
+        port:
+          The port that the node manager is running on (an int)
+        pubkeystring:
+          The public key used for authentication
       *callargs:
         The arguments to give the node.   The first argument will usually be
         the call type (i.e. "ChangeUsers")
@@ -438,7 +453,7 @@ def _do_signed_call(nodehandle, *callargs):
     <Returns>
       None
   """
-  (nodeid, ip, port, pubkeystring, privkeystring) = nodehandle
+  (nodeid, ip, port, pubkeystring) = nodeid_ip_port_pubkey_tuple
   
   try:
     # This can raise an NMClientException, but the handle won't be stored in
