@@ -140,9 +140,6 @@ class BackendPublicFunctions(object):
     """
       
     try:
-      # Set a unique request id for this thread for log messages.
-      log.set_request_id()
-
       # Get the requested function (making sure it exists).
       try:
         func = getattr(self, method)

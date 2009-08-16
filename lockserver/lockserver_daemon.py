@@ -979,12 +979,6 @@ class LockserverPublicFunctions(object):
     global lockserver_had_error
       
     try:
-      # Set a unique request id for this thread for log messages.
-      # We don't try to use the session id for the log request id because
-      # there isn't always a session id and we don't know it early enough
-      # even where there is one.
-      log.set_request_id()
-      
       # Get the requested function (making sure it exists).
       try:
         func = getattr(self, method)

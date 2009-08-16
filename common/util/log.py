@@ -41,10 +41,9 @@ from datetime import datetime
 # object isn't among a function's arguments.
 request_context = threading.local()
 
-# Set the default request_id value to "-". This is what will be logged
-# when this module is used to log messages without calling either
-# log_start_request() or set_request_id().
-DEFAULT_REQUEST_ID = "-"
+
+
+
 
 LOG_LEVEL_DEBUG = 1
 LOG_LEVEL_INFO = 2
@@ -105,7 +104,7 @@ def critical(message):
 
 def _get_request_id():
   if not hasattr(request_context, 'request_id'):
-    request_context.request_id = DEFAULT_REQUEST_ID
+    set_request_id()
   return request_context.request_id
 
 
