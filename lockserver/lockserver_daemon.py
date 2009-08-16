@@ -119,9 +119,11 @@ GetStatus()
   <Side Effects>
     None.
   <Returns>
-    A dictionary with two keys, "heldlockdict" and "sessiondict", is
-    returned. The values of these keys are most of the contents of the global
-    variables by the same names used within the lockserver itself.
+    A dictionary with the keys, "heldlockdict",  "sessiondict", and
+    "locktimelist" is returned. The values of these keys are most of the
+    contents of the global variables by the same names used within the
+    lockserver itself. It excludes the Event objects from the sessiondict
+    data that is returned.
 
  
 Details of the "lockdict" format:
@@ -201,10 +203,15 @@ Details of the "lockdict" format:
   TODO: Write a simple benchmark script.
 """
 
+import datetime
+
+import time
 import sys
 
 # To send the admins emails when there's an unhandled exception.
 import django.core.mail 
+
+from seattlegeni.common.exceptions import *
 
 from seattlegeni.common.util import log
 
@@ -213,6 +220,9 @@ from seattlegeni.website import settings
 # Use threading.Lock directly instead of repy's getlock() to ease testing
 # by not depending on repy. We also use threading.Event().
 import threading
+
+# To start the background monitor_held_lock_times() thread.
+import thread
 
 import traceback
 
@@ -231,6 +241,18 @@ LISTENPORT = 8010
 # Session ids will be random numeric strings between these two values, inclusive.
 MIN_SESSION_ID = 1000000
 MAX_SESSION_ID = 9999999
+
+# This is the amount of time the longest-held lock is allowed to be held before
+# we consider there to be something very wrong and send notification emails to
+# administrators.
+MAX_EXPECTED_LOCK_HOLDING_TIMEDELTA = datetime.timedelta(minutes=5)
+
+# Number of seconds to wait between checks of whether a lock has been held too
+# long.
+SECONDS_BETWEEN_LOCK_HOLDING_TIME_CHECKS = 30
+
+
+
 
 
 
@@ -275,6 +297,21 @@ heldlockdict = None
 #              }
 # Note: This value is initialized by the call to init_globals()
 sessiondict = None
+
+# This is a list of tuples of the format ({locktype: lockname}, locktime) 
+# containing an entry for every acquired lock. The locktime is a datetime
+# object representing the time when the lock was acquired. The list is in
+# order where the first item in the list is the longest-held lock and the
+# last item is the shortest-held lock. The reason this information is not
+# just kept in the heldlockdict is largely because we don't want to return
+# the time in with the GetStatus call because the tests would have to be
+# changed to expect a value there that is different with every run of the
+# test. Also, all we really care about is the longest-held lock and most
+# of the point here is to be able to detect when any lock has been held
+# past a threshold that we consider reasonable. So, for that, we might
+# as well keep track of the order explicitly as we know that information
+# here in the lockserver daemon.
+locktimelist = []
 
 
 
@@ -541,6 +578,9 @@ def _acquire_individual_lock(session_id, locktype, lockname):
     # Record in the sessiondict that the session holds this lock.
     sessiondict[session_id]["heldlocks"][locktype].append(lockname)
     
+    # Append to the locktimelist indicating when this lock was acquired.
+    locktimelist.append(({locktype: lockname}, datetime.datetime.now()))
+    
   else:
     # This lock is already held, so add the session to this lock's queue.
     heldlockinfo["queue"].append(session_id)
@@ -673,6 +713,14 @@ def _release_individual_lock(session_id, locktype, lockname):
   # Regardless of whether there are queued sessions waiting for this lock,
   # it is removed from the list of locks this session holds.
   sessiondict[session_id]["heldlocks"][locktype].remove(lockname)
+
+  # Remove this lock from the locktimelist.
+  for locktimeitem in locktimelist:
+    if locktimeitem[0] == {locktype: lockname}:
+      log.info("Lock " + str({locktype: lockname}) + " was held for " + 
+               str(datetime.datetime.now() - locktimeitem[1]))
+      locktimelist.remove(locktimeitem)
+      break
   
   if len(heldlockinfo["queue"]) > 0:
     # Set the lock as held by the next queued session_id.
@@ -682,6 +730,9 @@ def _release_individual_lock(session_id, locktype, lockname):
     # Update the sessiondict to change this lock from a needed lock to a held lock.
     sessiondict[new_lock_holder]["heldlocks"][locktype].append(lockname)
     sessiondict[new_lock_holder]["neededlocks"][locktype].remove(lockname)
+    
+    # Append to the locktimelist indicating when this lock was acquired.
+    locktimelist.append(({locktype: lockname}, datetime.datetime.now()))
     
     # If the session  now holding the lock isn't waiting on any more locks,
     # unblock the session's current AcquireLocks request thread.
@@ -747,10 +798,11 @@ def do_get_status():
   <Side Effects>
     None.
   <Returns>
-    A dictionary with two keys, "heldlockdict" and "sessiondict", is
-    returned. The values of these keys are most of the contents of the global
-    variables by the same names used within the lockserver itself. It excludes
-    the Event objects from the sessiondict data that is returned.
+    A dictionary with the keys, "heldlockdict",  "sessiondict", and
+    "locktimelist" is returned. The values of these keys are most of the
+    contents of the global variables by the same names used within the
+    lockserver itself. It excludes the Event objects from the sessiondict
+    data that is returned.
   """
 
   # We create a sessiondict that 
@@ -768,12 +820,14 @@ def do_get_status():
     # However, the event that is waited on is set and cleared in in the
     # do_acquire_locks() and do_release_locks() functions, so it is useful for
     # unit testing (the code was intentionally organized to make that testable).
-    acquirelocksproceedeventset = sessiondict[session_id]["acquirelocksproceedevent"].is_set()
+    # Note: python <2.6 only supports isSet(), not is_set().
+    acquirelocksproceedeventset = sessiondict[session_id]["acquirelocksproceedevent"].isSet()
     cleansessiondict[session_id]["acquirelocksproceedeventset"] = acquirelocksproceedeventset
   
   status = {}
   status["heldlockdict"] = heldlockdict
   status["sessiondict"] = cleansessiondict
+  status["locktimelist"] = locktimelist
   return status
     
     
@@ -1110,6 +1164,66 @@ class LockserverPublicFunctions(object):
 
 
 
+def monitor_held_lock_times():
+  """
+  Periodically checks whether there are locks that have been held too long.
+  When there is a lock that has been held too long, logs it and also sends
+  an email if settings.DEBUG is False.
+  
+  This function gets started in its own thread.
+  """
+  
+  log.info("[monitor_held_lock_times] thread started.")
+
+  # Run forever.
+  while True:
+    
+    try:
+      
+      # Wait a bit between checks.
+      time.sleep(SECONDS_BETWEEN_LOCK_HOLDING_TIME_CHECKS)
+      
+      # Grab the datalock and get the oldest held lock, if there are any.
+      datalock.acquire()
+      try:
+        if len(locktimelist) == 0:
+          # No locks are held.
+          continue
+        
+        oldestlock = locktimelist[0]
+        
+      finally:
+        datalock.release()
+        
+      held_timedelta = datetime.datetime.now() - oldestlock[1]
+      
+      # Check if the oldest lock has been held too long.
+      if held_timedelta > MAX_EXPECTED_LOCK_HOLDING_TIMEDELTA:
+        message = "Lockserver lock " + str(oldestlock[0])
+        message += " has been held since " + str(oldestlock[1])
+        message += " (timedelta: " + str(held_timedelta) + ")"
+        # Raise an exception which will cause an email to be sent from the
+        # except clause below.
+        raise InternalError(message)
+        
+    # Catch all exceptions so that the monitor thread will never die.
+    except:
+      message = "[monitor_held_lock_times] Something very bad happened: " + traceback.format_exc()
+      log.critical(message)
+      
+      # Send an email to the addresses listed in settings.ADMINS
+      if not settings.DEBUG:
+        subject = "Critical SeattleGeni lockserver error"
+        django.core.mail.mail_admins(subject, message)
+        
+        # Sleep for 30 minutes to make sure we don't flood the admins with error
+        # report emails.
+        time.sleep(60 * 30)
+
+
+
+
+
 def main():
 
   # Initialize global variables.
@@ -1119,6 +1233,9 @@ def main():
   server = ThreadedXMLRPCServer(("127.0.0.1", LISTENPORT), allow_none=True)
 
   log.info("Listening on port " + str(LISTENPORT) + ".")
+  
+  # Start the background thread that watches for locks being held too long.
+  thread.start_new_thread(monitor_held_lock_times, ())
 
   server.register_instance(LockserverPublicFunctions()) 
   while True:

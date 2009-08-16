@@ -59,6 +59,7 @@
 
 """
 
+import datetime
 import socket
 import traceback
 import xmlrpclib
@@ -329,10 +330,45 @@ def _perform_lock_request(request_type, lockserver_handle, user_list=None, node_
 
 
 
-def _assert_valid_lockserver_handle(lockserver_handle):
-  # TODO
-  pass
+def get_status(lockserver_url=LOCKSERVER_URL):
+  """
+  <Purpose>
+    Query the lockserver for its status. This function is for monitoring
+    purposes and will never need to be called during normal operation.
+  <Arguments>
+    lockserver_url
+      The url of the lockserver to call GetStatus on. Defaults to LOCKSERVER_URL.
+  <Exceptions>
+    ProgrammerError
+    InternalError
+      If the lockserver can't be communicated with.
+  <Side Effects>
+    None
+  <Returns>
+    See the documentation for the GetStatus() call in lockserver_daemon.py.
+  """
+  
+  proxy = xmlrpclib.ServerProxy(lockserver_url)
+  try:
+    statusdict = proxy.GetStatus()
     
+    # Convert the locktimelist datetime object string representations back into
+    # datetime objects. Code borrowed from:
+    # http://docs.python.org/library/xmlrpclib.html#datetime-objects
+    locktimelist = []
+    for locktimeitem in statusdict["locktimelist"]:
+      # Convert the ISO8601 string to a datetime object.
+      print locktimeitem[1].value
+      converteddatetime = datetime.datetime.strptime(locktimeitem[1].value, "%Y%m%dT%H:%M:%S")
+      locktimelist.append((locktimeitem[0], converteddatetime))
+    statusdict["locktimelist"] = locktimelist
+    
+    return statusdict
 
-
-
+  except xmlrpclib.Fault:
+    raise ProgrammerError("The lockserver rejected the request: " + traceback.format_exc())
+  except xmlrpclib.ProtocolError:
+    raise InternalError("Unable to communicate with the lockserver: " + traceback.format_exc())
+  except socket.error:
+    raise InternalError("Unable to communicate with the lockserver: " + traceback.format_exc())
+    
