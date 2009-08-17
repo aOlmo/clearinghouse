@@ -203,13 +203,17 @@ def _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_
     # The "returned" key contains a list of tuples where the first item of
     # the tuple is the vessel object and the second is the return value
     # (which is None).
-    for (vessel, ignored_return_value) in parallel_results["returned"]:
+    for (ignored_argument_vessel, returned_vessel) in parallel_results["returned"]:
       # We successfully acquired this vessel.
-      acquired_vessels.append(vessel)
+      # Append the returned vessel from _do_acquire_vessel() rather than
+      # the argument that the parallelize.repy library used. Somewhere
+      # along the way a copy of the argument_vessel is being made so it
+      # doesn't reflect changes made to it.
+      acquired_vessels.append(returned_vessel)
 
     # If we've acquired all of the vessels the user wanted, we're done.
     if len(acquired_vessels) == vesselcount:
-      log.info("Successfully acquired vessel: " + str(vessel))
+      log.info("Successfully acquired vessel: " + str(returned_vessel))
       return acquired_vessels
 
   # If we got here, then we didn't acquire the vessels the user wanted. We
@@ -289,6 +293,9 @@ def _do_acquire_vessel(vessel, geniuser):
   # Update the database to reflect the successful vessel acquisition.
   maindb.record_acquired_vessel(geniuser, vessel)
     
+  # The _acquire_vessels_from_list() function will make use of this return value.
+  return vessel
+
 
 
 
