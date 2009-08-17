@@ -25,7 +25,7 @@ import subprocess
 import repyhelper
 import seattlegeni.common.api.nodemanager
 import seattlegeni.common.api.backend
-
+import db_delete
 repyhelper.translate_and_import('advertise.repy')
 repyhelper.translate_and_import('rsa.repy')
 
@@ -79,19 +79,21 @@ def mock_maindb_getnode(*args):
 def mock_get_pubkey(*args):
   return "node1"
 
+def mock_generate_key(*args):
+  return node_transition_lib.rsa_file_to_publickey("new_owner_key.publickey")
+
 
 def mock_get_node_info(*args):
   mock_node_info={}
   mock_node_info['version']="0.1z"
   mock_node_info['nodename']="127.0.0.1:1234"
-  mock_node_info['nodekey']="node1"
+  mock_node_info['nodekey']=node_transition_lib.rsa_file_to_publickey("nodekey_test.publickey")
   mock_node_info['vessels']={}
-  for i in range(6):
-    mock_node_info['vessels']['v'+str(i)]={}
-    mock_node_info['vessels']['v'+str(i)]['userkeys']=[mock_get_pubkey()]
-    mock_node_info['vessels']['v'+str(i)]['ownerkey']='the owner pubkey'
-    mock_node_info['vessels']['v'+str(i)]['status']="live"
-    mock_node_info['vessels']['v'+str(i)]['advertise']=True
+  mock_node_info['vessels']['v0']={}
+  mock_node_info['vessels']['v0']['userkeys']=[node_transition_lib.rsa_file_to_publickey("new_donation.publickey")]
+  mock_node_info['vessels']['v0']['ownerkey']=node_transition_lib.rsa_file_to_publickey("ownerkey_test.publickey")
+  mock_node_info['vessels']['v0']['status']="live"
+  mock_node_info['vessels']['v0']['advertise']=True
 
   return mock_node_info
 
@@ -102,17 +104,24 @@ def main():
   test_whole()
 
 def test_whole():
+  
+  nodeID = node_transition_lib.rsa_file_to_publickey("nodekey_test.publickey")
+  db_delete.delete_node(node_transition_lib.rsa_publickey_to_string(nodeID))
 
   node_transition_lib.advertise_lookup_helper = mock_advertise_lookup
-  node_transition_lib.rsa_publickey_to_string_helper = mock_get_pubkey  
-  node_transition_lib.known_transition_states = [mock_get_pubkey()] 
-  node_transition_lib.acceptdonationpublickey = mock_get_pubkey()
+  #node_transition_lib.rsa_publickey_to_string_helper = mock_get_pubkey  
+  node_transition_lib.known_transition_states = [node_transition_lib.rsa_file_to_publickey("new_donation.publickey")] 
+  #node_transition_lib.acceptdonationpublickey = mock_get_pubkey()
   seattlegeni.common.api.backend.set_vessel_user_keylist = mock_general_pass
   seattlegeni.common.api.backend.set_vessel_owner_key = mock_general_pass
   seattlegeni.common.api.nodemanager.get_node_info = mock_get_node_info
-  
-  nodestate_tuples = [(("starttest_name", "node1"), ("endtest_name", "endtest_publickey"), mock_general_pass, mock_general_pass, "processfunc_args")]
-  node_transition_lib.node_transition_script(nodestate_tuples, "transition_script_test", 4)
+  seattlegeni.common.api.backend.generate_key = mock_generate_key
+  node_transition_lib.acceptdonationpublickey = node_transition_lib.rsa_file_to_publickey("new_donation.publickey")
+  node_transition_lib.canonicalpublickey = node_transition_lib.rsa_file_to_publickey("new_canonical.publickey")  
+
+  nodestate_tuples = [(("starttest_name", node_transition_lib.acceptdonationpublickey), 
+    ("endtest_name", node_transition_lib.canonicalpublickey), mock_general_pass, mock_general_pass, "processfunc_args")]
+  node_transition_lib.node_transition_function(nodestate_tuples, "transition_script_test", 4)
   
 
 

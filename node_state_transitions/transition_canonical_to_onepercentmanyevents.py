@@ -27,7 +27,7 @@ import node_transition_lib
 import random
 
 
-@log_function_call
+@node_transition_lib.log_function_call
 def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, onepercent_resourcetemplate):
   """
   <Purpose>
@@ -81,7 +81,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
 
   for current_vesselname in node_info['vessels']:
     #check to see if we are the owner of the node
-    if node_info['vessels'][current_vesselname]['ownerkey'] = node_pubkey:
+    if node_info['vessels'][current_vesselname]['ownerkey'] == node_pubkey:
       #this is the case if a second vessel is found in the node, which means
       #that the node is corrupted as it is already been split
       if donated_vesselname:
@@ -94,7 +94,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
 
 
   if not donated_vesselname:
-    raise NodeError("The node :"+node_string+" does not have any vessel that belong to SeattleGENI. Node not in canonical state")
+    raise node_transition_lib.NodeError("The node :"+node_string+" does not have any vessel that belong to SeattleGENI. Node not in canonical state")
 
   #Retrieve the usable ports list for the node
   try:
@@ -102,7 +102,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
   except NodemanagerCommunicationError, e:
     raise NodemanagerCommunicationError("Unable to retrieve usable ports for node: "+node_string+". "+str(e))
 
-  node_transition_lib.log("List of usable ports in node: "+node_string+". "+str(usable_ports_list)
+  node_transition_lib.log("List of usable ports in node: "+node_string+". "+str(usable_ports_list))
 
   #shuffle the list of ports so when the vessel is split the vessels get a random subset
   random.shuffle(usable_ports_list)
@@ -185,7 +185,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
       node_transition_lib.log("Setting the vessel ports in the database for vessel "+new_vessel+" with port list: "+used_ports_list)
       maindb.set_vessel_ports(new_vessel, used_ports_list)
     except:
-      raise DatabaseError("Failed to create vessel entry or change vessel entry for vessel: "+new_vessel)
+      raise node_transition_lib.DatabaseError("Failed to create vessel entry or change vessel entry for vessel: "+new_vessel)
     finally:
       #release the node lock and destroy lock handle
       lockserver.unlock_node(lockserver_handle, nodeID)
@@ -199,7 +199,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
 
 
 
-@log_function_call
+@node_transition_lib.log_function_call
 def main():
   """
   <Purpose>
@@ -233,21 +233,25 @@ def main():
     state to onepercentmanyevents and transition them back to the canonical state.
   """
 
-  statefunctionargtuplelist = [
-    (("canonical_state", canonicalpublickey), ("movingto_onepercent_state", movingtoonepercentmanyeventspublickey), noop, noop),
+  state_function_arg_tuplelist = [
+    (("canonical_state", node_transition_lib.canonicalpublickey), ("movingto_onepercent_state", 
+      node_transition_lib.movingtoonepercentmanyeventspublickey), 
+      node_transition_lib.noop, node_transition_lib.noop),
 
-    (("movingto_onepercent_state", movingtoonepercentmanyeventspublickey),
-      ("onepercentmanyevents_state", onepercentmanyeventspublickey), onepercentmanyevents_divide, noop, onepercentmanyevents_resourcetemplate),
+    (("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey),
+      ("onepercentmanyevents_state", node_transition_lib.onepercentmanyeventspublickey), 
+      onepercentmanyevents_divide, node_transition_lib.noop,onepercentmanyevents_resourcetemplate),
 
-    (("movingto_onepercent_state", movingtoonepercentmanyeventspublickey), ("canonical_state", canonicalpublickey), combine_vessels,
-      noop, movingtoonepercentmanyeventspublickey)]
+    (("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey), 
+      ("canonical_state", node_transition_lib.canonicalpublickey), node_transition_lib.combine_vessels, 
+      node_transition_lib.noop, node_transition_lib.movingtoonepercentmanyeventspublickey)]
  
   sleeptime = 10
   process_name = "canonical_to_onepercentmanyevents"
   parallel_instances = 10
 
   #call process_nodes_and_change_state() to start the node state transition
-  process_nodes_and_change_state(state_function_arg_tuplelist, process_name, sleeptime, parallel_instances) 
+  node_transition_lib.process_nodes_and_change_state(state_function_arg_tuplelist, process_name, sleeptime, parallel_instances) 
 
 
 

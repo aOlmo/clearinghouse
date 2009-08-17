@@ -44,10 +44,11 @@ import sys
 import time
 import traceback
 import repyhelper
-import seattlegeni.common.api.nodemanager
+from seattlegeni.common.api import nodemanager
 import seattlegeni.common.util.log
-import seattlegeni.common.api.maindb
-import seattlegeni.common.api.lockserver
+from seattlegeni.common.api import maindb
+from seattlegeni.common.api import lockserver
+from seattlegeni.common.api import backend
 from seattlegeni.common.util.decorators import log_function_call
 from seattlegeni.common.exceptions import *
 
@@ -82,7 +83,7 @@ known_transition_states = [canonicalpublickey, acceptdonationpublickey,
 
 
 @log_function_call
-def change_node_state(change_nodestate_function_tuplelist, transition_script_name, sleeptime, parallel_instances=1):
+def process_nodes_and_change_state(change_nodestate_function_tuplelist, transition_script_name, sleeptime, parallel_instances=1):
   """
   <Purpose>
     locate all the nodes in a certain state and apply the function thats in 
@@ -114,7 +115,7 @@ def change_node_state(change_nodestate_function_tuplelist, transition_script_nam
   log("Starting state transition script: "+transition_script_name+".....")
 
   #initialize the nodemanager. does a time_update()
-  seattlegeni.common.api.nodemanager.init_nodemanager()
+  nodemanager.init_nodemanager()
 
   #get a lock so multiple versions of the same script aren't running
   if runonce.getprocesslock("process_lock."+transition_script_name) != True:
@@ -122,19 +123,19 @@ def change_node_state(change_nodestate_function_tuplelist, transition_script_nam
     return
 
   #initialize maindb for future use
-  seattlegeni.common.api.maindb.init_maindb()  
+  maindb.init_maindb()  
 
 
   #continuously run the script and keep checking for nodes whose state needs to be changed
   while True:
-    node_transition_script(change_nodestate_function_tuplelist, transition_script_name, sleeptime, parallel_instances)
+    node_transition_function(change_nodestate_function_tuplelist, transition_script_name, sleeptime, parallel_instances)
 
 
 
 
 
 @log_function_call
-def node_transition_script(change_nodestate_function_tuplelist, transition_script_name, sleeptime, parallel_instances=1):
+def node_transition_function(change_nodestate_function_tuplelist, transition_script_name, sleeptime, parallel_instances=1):
   """
   <Purpose>
     This is the actual script that runs and starts everything up. It gets the list 
@@ -229,6 +230,9 @@ def run_parallel_processes(nodeprocesslist, lockname, parallel_instances, *proce
     log("Error: failed to set up parallelize_initfunction" + str(e))
     return False
 
+
+
+
   try:
     #keep looping until all the threads in the parallel handle are finished running
     while not parallelize_isfunctionfinished(parallel_handle):
@@ -303,29 +307,30 @@ def processnode_function(node_string, startstate_info, endstate_info, nodeproces
   startstate_pubkey = startstate_info[1]
   endstate_pubkey = endstate_info[1]
 
-
   #make sure that the node is just not an empty string, could happend due to bad advertise_lookup
   if not node_string:
     raise NodeError, "An empty node was passed down to processnode() with startstate: "+startstate_info[0]
 
-  #note that the first portion of the noe might be an ip or a NAT string
+  #note that the first portion of the node might be an ip or a NAT string
   ip_or_nat_string, port_string = node_string.split(":")
   port_num = int(port_string)
 
   log("Starting to process node: "+node_string)
 
 
+
  
   #try to retrieve the vessel dictionary for a node, on error raise NodeError exception
   log("Retrieving node vesseldict for node: "+node_string)
   try:
-    node_info = seattlegeni.common.api.nodemanager.get_node_info(ip_or_nat_string, port_num)
+    node_info = nodemanager.get_node_info(ip_or_nat_string, port_num)
        
   except NodemanagerCommunicationError, e:
     raise NodeError("Failed to retrieve node_vesseldict for node: " + node_string + str(e))
 
   log("Node info for node " + node_string + ": "+str(node_info))
   nodeID =  rsa_publickey_to_string_helper(node_info['nodekey'])
+
 
 
   
@@ -342,7 +347,7 @@ def processnode_function(node_string, startstate_info, endstate_info, nodeproces
 
   #retrieve the node data from the database
   try:
-    database_nodeobject = seattlegeni.common.api.maindb.get_node(nodeID)
+    database_nodeobject = maindb.get_node(nodeID)
   except DatabaseError, e:
     raise DatabaseError("Unable to retrieve node from database with nodeID: " + nodeID + str(e))
   else:
@@ -356,10 +361,12 @@ def processnode_function(node_string, startstate_info, endstate_info, nodeproces
     log("The node is not in the right transition state. NodeID is: "+nodeID)
     raise NodeError("Node is no longer in the right state!")
 
+
+
   
   #run the processnode function that was passed originally from the transition scripts
   try:
-    nodeprocess_func(node_string, node_info, *nodeprocess_args)
+    nodeprocess_func(node_string, node_info, database_nodeobject, *nodeprocess_args)
   except Exception, e:
     log("Failed to process node: "+node_string)
     raise NodeProcessError("Could not process node: "+node_string+" "+str(e))
@@ -373,6 +380,8 @@ def processnode_function(node_string, startstate_info, endstate_info, nodeproces
       raise 
     except:
       raise UnexpectedError("Something unexpected happened while setting node state")
+
+
 
 
 @log_function_call
@@ -420,6 +429,9 @@ def get_node_state(node_info, database_nodeobject):
   #actual user who has acquired a vessel.
   node_publickey = database_nodeobject.owner_pubkey
 
+
+
+
   log("Retrieved node from database with publickey: " + node_publickey)
   #go through all the vessels in the dictionary to ensure that if we (SeattleGENI)
   #own the vessel then the vessels might have its 'userkey' as a transitional state
@@ -439,7 +451,7 @@ def get_node_state(node_info, database_nodeobject):
       for state in statelisted:
         #makes sure that two different vessels dont have two different transition state
         if node_state and state != node_state:
-          raise NodeError("More than one state '"+str(vesselstate)+"' and '"+str(state)+"' on the same node")
+          raise NodeError("More than one state '"+str(node_state)+"' and '"+str(state)+"' on the same node")
                        
         node_state = state
         #append the vessel to 
@@ -499,12 +511,13 @@ def set_node_state(start_state, end_state, node_object, node_info, vessel_list):
 
 
 
+
   #initialize a lock
-  lockserver_handle = seattlegeni.common.api.lockserver.create_lockserver_handle(LOCKSERVER_URL)
+  lockserver_handle = lockserver.create_lockserver_handle(LOCKSERVER_URL)
   log("Created lockserver_handle for use on node: "+nodeID)  
 
   #acquire a lock for the node
-  seattlegeni.common.api.lockserver.lock_node(lockserver_handle, nodeID)
+  lockserver.lock_node(lockserver_handle, nodeID)
   log("Acquired node lock for nodeID: "+nodeID)
   
   #use a try/finally block to ensure that the lock is released at the end
@@ -512,7 +525,7 @@ def set_node_state(start_state, end_state, node_object, node_info, vessel_list):
     for current_vessel in vessel_list:
       #change the userkey for a vessel
       ownerkey_list = node_info['vessels'][current_vessel]['userkeys']
-      seattlegeni.common.api.backend.set_vessel_user_keylist(node_object, current_vessel, ownerkey_list)
+      backend.set_vessel_user_keylist(node_object, current_vessel, ownerkey_list)
       log("Changed userkeys for vessel: "+current_vessel)
 
   except Exception, e:
@@ -520,17 +533,17 @@ def set_node_state(start_state, end_state, node_object, node_info, vessel_list):
 
   finally:
     #release the node lock and destroy lock handle
-    seattlegeni.common.api.lockserver.unlock_node(lockserver_handle, nodeID)
+    lockserver.unlock_node(lockserver_handle, nodeID)
     log("released lock for node: "+nodeID)
-    seattlegeni.common.api.lockserver.destroy_lockserver_handle(lockserver_handle) 
-    log("Destroed lockserver_handle for node: "+nodeID)
+    lockserver.destroy_lockserver_handle(lockserver_handle) 
+    log("Destroyed lockserver_handle for node: "+nodeID)
   
     
 
 
 
 @log_function_call
-def add_newnode_to_db(ip, port, node_info):
+def add_newnode_to_db(ip_or_nat_string, port, node_info):
   """
   <Purpose> 
     when new nodes come online, they may be not have the right data in 
@@ -538,13 +551,14 @@ def add_newnode_to_db(ip, port, node_info):
     appropriate data. There are 3 different cases:
     <Case1>
       Database has no entry and Node has donor key as owner key
+      Make sure to give the donor_user credit for their donation
     <Case2>
-      Database has nodeID and Node has donor key
+      Database has nodeID as owner key and Node has donor key
     <Case3>
-      Database has nodeID and Node has nodeID
+      Database has nodeID and Node has nodeID as owner key
 
   <Arguments>
-    ip - the ip address of the node
+    ip_or_nat_string - the ip address of the node
     port - the port number of the node
     node_info - the information about the node, including vesseldict
 
@@ -564,8 +578,10 @@ def add_newnode_to_db(ip, port, node_info):
   nodeID = rsa_publickey_to_string_helper(node_info['nodekey'])
 
   #extract the ownerkey and the vessel that has that info
-  log("Looking for donor key for node: "+nodeID)
+  log("Looking for donor key for node: "+ip_or_nat_string+":"+str(port))
   log("Looking for the vessel that has the transition state in its 'userkeys'")
+
+
 
 
   for vesselname in node_info['vessels']:
@@ -573,67 +589,93 @@ def add_newnode_to_db(ip, port, node_info):
     if listops_intersect(node_info['vessels'][vesselname]['userkeys'], known_transition_states):
       donation_owner_pubkey = node_info['vessels'][vesselname]['ownerkey']
       donation_vesselname = vesselname
-      log("Found donation key in vessel "+donation_vesselname+" : "+donation_owner_pubkey)
+      log("Found donation key in vessel "+donation_vesselname+" : "+str(donation_owner_pubkey))
       break
   else:
-    raise NodeError("Node "+host+":"+str(port)+" does not seem to have a state after checking!")
+    raise NodeError("Node "+ip_or_nat_string+":"+str(port)+" does not seem to have a state after checking!")
+
 
 
   
   #retrieve the node data from the database
   try:
-    database_nodeobject = seattlegeni.common.api.maindb.get_node(nodeID)
-  
-  except DatabaseError, e:
-    log("Database entry does not exist for node: "+nodeID)
+    database_nodeobject = maindb.get_node(nodeID)
+    
+  except DoesNotExistError, e:
+    log("Database entry does not exist for node: "+ip_or_nat_string+":"+str(port))
+    log("This is case 1")
+    log("Generating new keys for node owner_key....")
+    new_node_owner_pubkey = backend.generate_key(ip_or_nat_string+". "+nodeID)
+    log("Generated publickey for node "+ip_or_nat_string+":"+str(port)+" : "+str(new_node_owner_pubkey))
     
     #This is to deal with Case1
     try:
       #attempt to add new node to db
-      database_nodeobject = seattlegeni.common.api.maindb.create_node(nodeID, ip, port, node_info['version'], True, 
-        rsa_publickey_to_string_helper(donation_owner_pubkey), donation_vesselname) 
+      database_nodeobject = maindb.create_node(nodeID, ip_or_nat_string, port, node_info['version'], True, 
+        rsa_publickey_to_string_helper(new_node_owner_pubkey), donation_vesselname) 
      
       log("Added node to the database with nodeID: "+nodeID)
   
     #this exception is passed down from maindb.create_node()
-    except DoesNotExistError:
-      pass
+    except ProgrammerError:
+      raise DatabaseError("Failed to create node object in database. Node already exists in database")
+    except Exception, e:
+      raise DatabaseError("Failed to create node and add to database. "+str(e))    
+
+
+    database_userobject = ""
+    #retrieve the user object for the user that donated the resource
+    try:
+      database_userobject = maindb.get_donor(rsa_publickey_to_string(donation_owner_pubkey))
+      log("Retrieved the userobject of the donor from database: "+str(database_userobject))
     except:
-      raise DatabaseError("Failed to create node and add to database. "+e)    
+      raise DatabaseError("Failed to retrieve the userobject of the donor from the database. "+str(e))
+  
+
+    #give the user credit for their donation of the node
+    try:
+      donation_description = "Crediting user "+database_userobject+" for donation of node "+str(database_nodeobject) 
+      maindb.create_donation(database_nodeobject, database_userobject, donation_description)
+      log("Registering the donation for the user with the donor_key: "+str(donation_owner_pubkey))
+    except:
+      raise DatabaseError("Failed to credit user for donation for user: "+str(database_userobject))
 
   else:
     log("Retrieved node object successfully with nodeID: "+nodeID+" with the node: "+str(database_nodeobject))
     
 
 
+
   #This is for Case2
-  if donation_owner_pubkey != database_nodeobject.owner_pubkey:
+  if donation_owner_pubkey != rsa_string_to_publickey(database_nodeobject.owner_pubkey):
     log("Database has nodeID but node has donation key")
+    log("This is case 2")
     log("Attempting to change the owner for vessel: "+donation_vesselname)
     
     #initialize a lock
-    lockserver_handle = seattlegeni.common.api.lockserver.create_lockserver_handle(LOCKSERVER_URL)
+    lockserver_handle = lockserver.create_lockserver_handle(LOCKSERVER_URL)
     log("Created lockserver_handle for use on node: "+nodeID)
 
     #acquire a lock for the node
-    seattlegeni.common.api.lockserver.lock_node(lockserver_handle, nodeID)
+    lockserver.lock_node(lockserver_handle, nodeID)
     log("Acquired node lock for nodeID: "+nodeID)
 
     #use a try/finally block to ensure that the lock is released at the end
     try:
-      seattlegeni.common.api.backend.set_vessel_owner_key(node_object, donation_vesselname, node_object.owner_pubkey)
+      backend.set_vessel_owner_key(node_object, donation_vesselname, node_object.owner_pubkey)
       
     except Exception, e:
       raise NodeError("Unable to change owner of node: "+nodeID+" "+e)
 
     finally:
       #release the node lock and destroy lock handle
-      seattlegeni.common.api.lockserver.unlock_node(lockserver_handle, nodeID)
+      lockserver.unlock_node(lockserver_handle, nodeID)
       log("released lock for node: "+nodeID)
-      seattlegeni.common.api.lockserver.destroy_lockserver_handle(lockserver_handle)
-      log("Destroed lockserver_handle for node: "+nodeID)
+      lockserver.destroy_lockserver_handle(lockserver_handle)
+      log("Destroyed lockserver_handle for node: "+nodeID)
 
 
+  #For case 3 nothing needs to be done.   
 
 
 
@@ -662,7 +704,7 @@ def find_advertised_nodes(startstate_name, startstate_publickey):
 
   """
  
-  log("Looking for nodes with public key: \n"+startstate_publickey)
+  log("Looking for nodes with public key: \n"+str(startstate_publickey))
 
   #lookup nodes with the startstate_publickey. Lookup upto 10MB of nodes
   #if advertise_lookup fails, try it 10 times before moving on
@@ -675,7 +717,7 @@ def find_advertised_nodes(startstate_name, startstate_publickey):
     except Exception, e:
       #increment fail count
       advertise_lookup_fail_count += 1
-      log("advertise_lookup failed "+str(advertise_lookup_fail_count)+" times, while looking up nodes in "+startstate_name+" state with pub key:\n"+startstate_publickey)
+      log("advertise_lookup failed "+str(advertise_lookup_fail_count)+" times, while looking up nodes in "+startstate_name+" state with pub key:\n"+str(startstate_publickey))
 
       #if the lookup fails 10 times, break out of the while loop and log the info
       if advertise_lookup_fail_count >= 10:
@@ -686,10 +728,124 @@ def find_advertised_nodes(startstate_name, startstate_publickey):
       time.sleep(1)
 
 
+
+
+@log_function_call
+def combine_vessels(node_string, node_info, database_nodeobject, node_state_pubkey):
+  """
+  <Purpose>
+    The purpose of this function is to combine all the vessels of 
+    a node into one vessel.
+
+  <Arguments>
+    node_string - the name of the node. ip:port or NAT:port
+
+    node_info - the information about the node including the vesseldict
+
+    database_nodeobject - This is the nodeobject that was retrieved from our database
+
+    node_state_pubkey - This is the state that the node should be in. After all the 
+      vessels are combined, the final vessel should have this as its state
+
+  <Exceptions>
+    None
+
+  <Side Effects>
+    None
+
+  <Return>
+    extra_vessel - The final combined vessel
+  """
+
+  log("Beginning combine_vessels for the node: "+node_string)
+
+  node_pubkey = database_nodeobject.owner_pubkey
+  nodeID = node_info['nodekey']
+
+  #the list that will hold all the vesselnames of the node
+  vessel_list=[]
+
+  #This is the extra vessel or the vessel that has the transition state
+  extra_vessel = None
+
+
+
+
+
+  log("Finding all the vessels in the node "+node_string+"...")
+  for current_vessel in node_info['vessels']:
+    #check to see if the vessels belong to us (SeattleGENI)
+    if node_info['vessels'][current_vessel]['ownerkey'] == node_pubkey:
+      #add the vessel to the list
+      vessel_list.append(current_vessel)
+      log("Added vessel "+current_vessel+" to vessel_list")
+      
+      #Check to see if the vessel carries the node state key
+      if node_state_pubkey in node_info['vessels'][current_vessel]['userkeys']:
+        #make sure that multiple vessels do not carry the node state
+        if extra_vessel:
+          log("There are multiple vessels with the node_state_pubkey. However we are combining vessels so this doesn't matter")
+          
+        #The extra vessel is the starting vessel that we start to combine with
+        extra_vessel = current_vessel
+
+
+
+
+  #if no vessel was found with the node_state_pubkey, then the node is corrupted
+  if not extra_vessel:
+    raise NodeError("Could not find any vessel with the node state key, therefore couldn't locate the extra vessel")
+
+  #remove the starting vessel from the vessel list
+  vessel_list.remove(extra_vessel)
+
+
+
+
+  #combine all the vessels into one vessel
+  log("Trying to combine all the vessels...")
+  for current_vessel in vessel_list:
+    #create a lock in order to combine vessel using the backend
+    lockserver_handle = lockserver.create_lockserver_handle()
+    node_transition_lib.log("Created lockserver_handle for use on node: "+nodeID)
+
+    #acquire a lock for the node
+    lockserver.lock_node(lockserver_handle, nodeID)
+    node_transition_lib.log("Acquired node lock for nodeID: "+nodeID)
+    
+    #combine the vessels
+    try:
+      combined_vessel = backend.join_vessels(database_nodeobject, extra_vessel, current_vessel)
+      log("Combined vessel "+extra_vessel+" and "+current_vessel+" into "+combined_vessel)
+    except:
+      raise NodeError("Failed to combine the vessels: "+extra_vessel+" and "+current_vessel)
+    finally:
+      #release the node lock and destroy lock handle
+      lockserver.unlock_node(lockserver_handle, nodeID)
+      node_transition_lib.log("released lock for node: "+nodeID)
+      lockserver.destroy_lockserver_handle(lockserver_handle)
+      node_transition_lib.log("Destroyed lockserver_handle for node: "+nodeID)
+
+    extra_vessel = combined_vessel
+
+  #TODO: Does the vessels need to be removed from the Database? ask jsamuel about this
+  return extra_vessel    
+
+
+
+
+
 #helper function now for testing.
 @log_function_call
 def advertise_lookup_helper(startstate_publickey):
   return advertise_lookup(startstate_publickey, maxvals = 10*1024*1024)
+
+
+
+def noop(*args):
+  # in some cases I don't want to do anything (i.e. just change state)
+  pass
+
 
 
 def log(message):

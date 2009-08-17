@@ -27,7 +27,7 @@ import node_transition_lib
 from django.db import transaction
 
 
-@log_function_call
+@node_transition_lib.log_function_call
 def update_database(node_string, node_info, database_nodeobject, update_database_node):
   """
   <Purpose>
@@ -68,7 +68,7 @@ def update_database(node_string, node_info, database_nodeobject, update_database
   try:
     update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num)
   except:
-    raise DatabaseError("Could not update the database for the node: "+node_string)
+    raise node_transition_lib.DatabaseError("Could not update the database for the node: "+node_string)
 
   node_transition_lib.log("updated node database record with version: "+str(database_nodeobject.version) +
     ", status: "+str(database_nodeobject.version))
@@ -84,8 +84,8 @@ def update_database(node_string, node_info, database_nodeobject, update_database
 
 
 
-@log_function_call
-def update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num)
+@node_transition_lib.log_function_call
+def update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num):
   """
   <Purpose>
     Update the database with the information provided
@@ -126,16 +126,17 @@ def update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_
 
     database_object.save()
   except:
-    raise DatabaseError("Unable to modify database to update info on node: "+ip_or_nat_string
+    raise DatabaseError("Unable to modify database to update info on node: "+ip_or_nat_string)
 
   node_transition_lib.log("Updated the database for node: "+ip_or_nat_string+", with the latest info")
 
   return database_object
   
+
   
 
 
-@log_function_call
+@node_transition_lib.log_function_call
 def main():
   """
   <Purpose>
@@ -152,16 +153,17 @@ def main():
     None
   """
 
- state_function_arg_tuplelist = [
-    (("onepercentmanyevents_state", onepercentmanyeventspublickey), 
-      ("onepercentmanyevents_state", onepercentmanyeventspublickey), update_database, noop, update_database_node)]
+  state_function_arg_tuplelist = [
+    (("onepercentmanyevents_state", node_transition_lib.onepercentmanyeventspublickey), 
+      ("onepercentmanyevents_state", node_transition_lib.onepercentmanyeventspublickey), 
+      update_database, node_transition_lib.noop, update_database_node)]
 
   sleeptime = 10
   process_name = "onepercentmanyevents_to_onepercentmanyevents"
   parallel_instances = 10
 
   #call process_nodes_and_change_state() to start the node state transition
-  process_nodes_and_change_state(state_function_arg_tuplelist, process_name, sleeptime, parallel_instances)
+  node_transition_lib.process_nodes_and_change_state(state_function_arg_tuplelist, process_name, sleeptime, parallel_instances)
 
 
 

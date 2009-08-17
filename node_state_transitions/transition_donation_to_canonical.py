@@ -29,7 +29,7 @@ import node_transition_lib
 
 
 
-@log_function_call
+@node_transition_lib.log_function_call
 def main():
   """
   <Purpose>
@@ -46,16 +46,16 @@ def main():
     None
   """
 
- state_function_arg_tuplelist = [
-    (("donation_state", acceptdonationpublickey),
-      ("canonical_state", canonicalpublickey), noop, noop)]
+  state_function_arg_tuplelist = [
+    (("donation_state", node_transition_lib.acceptdonationpublickey),
+      ("canonical_state", node_transition_lib.canonicalpublickey), node_transition_lib.noop, node_transition_lib.noop)]
 
   sleeptime = 10
   process_name = "donation_to_canonical"
   parallel_instances = 10
 
   #call process_nodes_and_change_state() to start the node state transition
-  process_nodes_and_change_state(state_function_arg_tuplelist, process_name, sleeptime, parallel_instances)
+  node_transition_lib.process_nodes_and_change_state(state_function_arg_tuplelist, process_name, sleeptime, parallel_instances)
 
 
 
