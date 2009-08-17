@@ -199,7 +199,8 @@ INSERT INTO seattlegeni.control_vessel
     0, /* We don't consider the vessel dirty initially as that was not represented in the old database. */
     NOW(),
     NOW()
-  FROM geni.control_vessel AS old_vessel;
+  FROM geni.control_vessel AS old_vessel
+  WHERE old_vessel.extra_vessel = 0;
 
 
 
