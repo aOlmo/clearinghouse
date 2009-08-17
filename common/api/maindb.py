@@ -644,6 +644,61 @@ def get_user_with_apikey(username, apikey):
 
 
 
+@log_function_call
+def get_donor(donor_pubkey):
+  """
+  <Purpose>
+    Retrieve the user that has the donor_pubkey,
+  <Arguments>
+    donor_pubkey
+      The key that is the user's donor key.
+  <Exceptions>
+    DoesNotExistError
+      If there is no user with the given donor_pubkey.
+  <Side Effects>
+    None
+  <Returns>
+    The GeniUser object of the user who is the donor.
+  """
+  assert_str(donor_pubkey)
+  
+  try:
+    geniuser = GeniUser.objects.get(donor_pubkey=donor_pubkey)
+    
+  except django.core.exceptions.ObjectDoesNotExist:
+    raise DoesNotExistError("No user exists with the specified donor_pubkey.")
+    
+  except django.core.exceptions.MultipleObjectsReturned:
+    raise InternalError("Multiple records returned when looking up a user by donor_pubkey.")
+
+  return geniuser
+
+
+
+
+
+@log_function_call
+def get_donations_from_node(node):
+  """
+  <Purpose>
+    Retrieve the donation records of the donations from a node.
+  <Arguments>
+    node
+      The Node object of the node from which the donations were made.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of Donation objects.
+  """
+  assert_node(node)
+  
+  return list(Donation.objects.filter(node=node))
+
+
+
+
 
 @log_function_call
 def get_node_identifier_from_vessel(vessel):
