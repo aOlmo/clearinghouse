@@ -413,10 +413,12 @@ def get_users_with_access_to_vessel(vessel):
   """
   assert_vessel(vessel)
 
-  # Let's return it as a list() rather than a django QuerySet.
-  # Using list() causes the QuerySet to be converted to a list, which also
-  # means the query is executed (no lazy loading).
-  return list(VesselUserAccessMap.objects.filter(vessel=vessel))
+  user_list = []
+
+  for vmap in VesselUserAccessMap.objects.filter(vessel=vessel):
+    user_list.append(vmap.user)
+
+  return user_list
 
 
 
@@ -438,11 +440,13 @@ def get_vessels_accessible_by_user(geniuser):
     A list of Vessel objects of the vessels the user has access to.
   """
   assert_geniuser(geniuser)
+  
+  vessel_list = []
+  
+  for vmap in VesselUserAccessMap.objects.filter(user=geniuser):
+    vessel_list.append(vmap.vessel)
 
-  # Let's return it as a list() rather than a django QuerySet.
-  # Using list() causes the QuerySet to be converted to a list, which also
-  # means the query is executed (no lazy loading).
-  return list(VesselUserAccessMap.objects.filter(user=geniuser))
+  return vessel_list
 
 
 
@@ -1333,4 +1337,17 @@ def delete_all_vessels_of_node(node):
   
   Vessel.objects.filter(node=node).delete()
 
+
+
+
+
+def get_active_nodes():
+  return list(Node.objects.filter(is_active=True))
+
+
+
+
+
+def get_vessels_on_node(node):
+  return list(node.vessel_set.all())
 

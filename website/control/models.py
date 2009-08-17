@@ -145,7 +145,7 @@ class Node(models.Model):
     """
     Produces a string representation of the Node instance.
     """
-    return "Node:%s:%s:%d" % (self.node_identifier[:8], self.last_known_ip, self.last_known_port)
+    return "Node:%s:%s:%d" % (self.node_identifier[:10].replace(" ", "_"), self.last_known_ip, self.last_known_port)
 
 
 
