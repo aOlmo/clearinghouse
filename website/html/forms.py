@@ -46,7 +46,6 @@ class PubKeyField(forms.FileField):
 class GeniUserCreationForm(DjangoUserCreationForm):
   affiliation = forms.CharField(error_messages={'required': 'Enter an Affiliation'})
   email = forms.CharField(label="E-mail Address", error_messages={'required': 'Enter an E-mail Address'})
-  #pubkey = forms.FileField(label="My Public Key", required=False)
   pubkey = PubKeyField(label="My Public Key", required=False)
   gen_upload_choice = forms.ChoiceField(label="", choices=((1, 'Generate key pairs for me'), (2, 'Let me upload my public key')))
 

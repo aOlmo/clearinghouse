@@ -59,25 +59,23 @@ def profile(request, info=""):
     info:
       Additional message to display at the top of the page.
   <Exceptions>
-    TODO
+    None
   <Side Effects>
-    None.
+    None
   <Returns>
-    An HTTP response object that represents the user info
-    page on success. A redirect to a login page on error.
+    An HTTP response object that represents the profile page.
   """
+  user = _validate_and_get_geniuser(request)
   
-  # If the user's session has expired, show them an appropriate page.
-  # Note that if @login_required is being used, this might not be
-  # possible, but we should at least check it and raise an exception
-  # if we dont' think it's possible.
+  username = user.username
+  affiliation = user.affiliation
+  port = user.usable_vessel_port
+  info = ""
   
-  try:
-    user = interface.get_logged_in_user(request)
-  except DoesNotExistError:
-    return _show_login(request, 'accounts/login.html', {})
   return direct_to_template(request, 'control/profile.html',
-                            {'geni_user' : user,
+                            {'username' : username, 
+                             'affiliation' : affiliation,
+                             'port' : port, 
                              'info' : info})
 
 
@@ -226,30 +224,30 @@ def logout(request):
 @login_required()
 def help(request):
   user = _validate_and_get_geniuser(request)
-  return direct_to_template(request,'control/help.html', {})
+  return direct_to_template(request,'control/help.html', {'username': user.username})
 
 
 
-# HTML view for the 'My GENI' page
 @login_required()
 def mygeni(request):
   user = _validate_and_get_geniuser(request)
   
-  total_vessel_credits = 10
+  total_vessel_credits = interface.get_total_vessel_credits(user)
   num_acquired_vessels = len(interface.get_acquired_vessels(user))
   avail_vessel_credits = total_vessel_credits - num_acquired_vessels
   percent_total_used = int((num_acquired_vessels * 1.0 / total_vessel_credits * 1.0) * 100.0)
   
   # total_vessel_credits, percent_total_used, avail_vessel_credits
   return direct_to_template(request,'control/mygeni.html', 
-                            {'total_vessel_credits' : total_vessel_credits,
+                            {'username' : user.username,
+                             'total_vessel_credits' : total_vessel_credits,
                              'percent_total_used' : percent_total_used,
                              'avail_vessel_credits' : avail_vessel_credits})
 
 
 
 @login_required()
-def myvessels(request, get_form=False, action_summary="", action_detail="", remove_detail=""):
+def myvessels(request, get_form=False, action_summary="", action_detail="", remove_summary=""):
   user = _validate_and_get_geniuser(request)
   
   if get_form is False:
@@ -264,21 +262,22 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
 
   # return the used resources page constructed from a template
   return direct_to_template(request,'control/myvessels.html',
-                            {'geni_user' : user,
+                            {'username' : user.username,
                              'num_vessels' : len(my_vessels),
                              'my_vessels' : my_vessels,
                              'sh_vessels' : shvessels,
                              'get_form' : get_form,
                              'action_summary' : action_summary,
                              'action_detail' : action_detail,
-                             'remove_detail' : remove_detail})
+                             'remove_summary' : remove_summary})
 
 
 
 @login_required()
 def getdonations(request):
   user = _validate_and_get_geniuser(request)
-  return direct_to_template(request,'control/getdonations.html', {'username' : user.username})
+  #TODO: Remove temporary flag (and get rid of check in template) for disabling installers
+  return direct_to_template(request,'control/getdonations.html', {'username' : user.username, 'installers_enabled' : False})
 
 
 
@@ -305,8 +304,8 @@ def get_resources(request):
     try:
       acquired_vessels = interface.acquire_vessels(user, vessel_num, vessel_type)
     except UnableToAcquireResourcesError, err:
-      action_summary = "Couldn't acquire resources at this time. Details follow:"
-      action_detail = str(err)
+      action_summary = "Couldn't acquire resources at this time."
+      action_detail += str(err)
     except InsufficientUserResourcesError:
       action_summary = "You do not have enough vessel credits to fufill this request."
   
@@ -323,30 +322,28 @@ def del_resource(request):
     return myvessels(request)
 
   if not request.POST['handle']:
-    print ("*** REQUEST.POST HANDLE WAS EMPTY")
     return myvessels(request)
   
   # vessel_handle needs to be a list (even though we only add one handle), 
   # since get_vessel_list expects a list.
   vessel_handle = []
   vessel_handle.append(request.POST['handle'])
-  remove_detail = ""
+  remove_summary = ""
   
-  print "*** ABOUT TO CONVERT HANDLE TO VESSEL, handle: ", request.POST['handle']
   try:
     # convert handle to vessel
     vessel_to_release = interface.get_vessel_list(vessel_handle)
   except DoesNotExistError:
-    remove_detail = "Internal GENI Error. The vessel you are trying to delete does not exist."
+    remove_summary = "Internal GENI Error. The vessel you are trying to delete does not exist."
   except InvalidRequestError, err:
-    remove_detail = "Internal GENI Error. Please contact us! Details: " + str(err)
+    remove_summary = "Internal GENI Error. Please contact us! Details: " + str(err)
   else:
     try:
       interface.release_vessels(user, vessel_to_release)
     except InvalidRequestError, err:
-      remove_detail = "Internal GENI Error. Please contact us! Details: " + str(err)
+      remove_summary = "Internal GENI Error. Please contact us! Details: " + str(err)
   
-  return myvessels(request, remove_detail=remove_detail)
+  return myvessels(request, remove_summary=remove_summary)
 
 
 
@@ -358,15 +355,13 @@ def del_all_resources(request):
   if not request.method == 'POST':
     return myvessels(request)
   
-  remove_detail = ""
+  remove_summary = ""
+  interface.release_all_vessels(user)
   
-  try:
-    interface.release_all_vessels(user)
-  except DoesNotExistError:
-    remove_detail = "Internal GENI Error. The vessel you are trying to delete does not exist."
-  
-  return myvessels(request, remove_detail=remove_detail)
-  
+  return myvessels(request, remove_summary=remove_summary)
+
+
+
 # TODO: This is just temporary to get the existing templates working.
 @login_required()
 def gen_new_key(request):
@@ -416,7 +411,10 @@ def download(request, username):
     user = interface.get_user_for_installers(username)
   except DoesNotExistError:
     validuser = False
-  return direct_to_template(request,'download/installers.html', {'username' : username, 'validuser' : validuser})
+  #TODO: Remove temporary flag (and get rid of check in template) for disabling installers
+  return direct_to_template(request,'download/installers.html', {'username' : username, 
+                                                                 'validuser' : validuser,
+                                                                 'installers_enabled' : False})
 
 
 
@@ -443,7 +441,7 @@ def build_win_installer(request, username):
     description of the error. On success, returns the seattle windows
     distribution file for the user to donate to as username.
   """
-  success,ret = build_installer(username, 'w')
+  success,ret = _build_installer(username, 'w')
   if not success:
       return ret
   redir_url = ret + "seattle_win.zip"
@@ -474,7 +472,7 @@ def build_linux_installer(request, username):
     description of the error. On success, returns the seattle linux
     distribution file for the user to donate to as username.
   """
-  success,ret = build_installer(username, 'l')
+  success,ret = _build_installer(username, 'l')
   if not success:
       return ret
   redir_url = ret + "seattle_linux.tgz"
@@ -505,7 +503,7 @@ def build_mac_installer(request, username):
     description of the error. On success, returns the seattle mac
     distribution file for the user to donate to as username.
   """
-  success,ret = build_installer(username, 'm')
+  success,ret = _build_installer(username, 'm')
   if not success:
       return ret
   redir_url = ret + "seattle_mac.tgz"
@@ -513,7 +511,7 @@ def build_mac_installer(request, username):
 
 
 
-def build_installer(username, dist_char):
+def _build_installer(username, dist_char):
     """
    <Purpose>
       Builds an installer with distrubution char 'dist_char' that

@@ -39,6 +39,7 @@
 """
 
 import traceback
+import datetime
 
 from seattlegeni.common.exceptions import *
 
@@ -674,8 +675,33 @@ def get_vessel_infodict_list(vessel_list):
     vessel_info["vessel_id"] = vessel.name
     
     vessel_info["handle"] = vessel_info["node_id"] + ":" + vessel.name
-    vessel_info["date_expires"] = vessel.date_expires
     
+    date_expires = vessel.date_expires
+    if date_expires is None:
+      # something has gone wrong in the DB, date_expires should never be NULL for an active vessel.
+      vessel_info["expires_in"] = "Unknown"
+    else:
+      expires_in_timedelta = (vessel.date_expires - datetime.datetime.now()).seconds
+      expires_in_hours = expires_in_timedelta / (60 * 60)
+      expires_in_minutes = (expires_in_timedelta / (60)) - (expires_in_hours * 60)
+      #expires_in_seconds = expires_in_timedelta - (expires_in_minutes * 60) - (expires_in_hours * 60 * 60)
+      
+      print "*" * 60
+      print "date_expires: ", date_expires
+      print "expires_in_timedelta: ", expires_in_timedelta
+      print "expires_in_hours: ", expires_in_hours
+      print "expires_in_minutes: ", expires_in_minutes
+      print "formatted string: " + str(expires_in_hours) + "h " + str(expires_in_minutes) + "m"
+      
+      if expires_in_hours < 0 or expires_in_minutes < 0:
+        # we shouldn't ever print this message, as no expired 
+        # vessels should be returned from the interface 
+        vessel_info["expires_in"] = "Expired"
+      elif expires_in_hours == 0:
+        vessel_info["expires_in"] = str(expires_in_minutes) + "m "
+      else:
+        vessel_info["expires_in"] = str(expires_in_hours) + "h " + str(expires_in_minutes) + "m"
+      
     infodict_list.append(vessel_info)
     
   return infodict_list

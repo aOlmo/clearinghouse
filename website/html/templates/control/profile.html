@@ -32,15 +32,15 @@ Profile - GENI
 			  {% endif %}
 				<tr class="odd">
 					<td class="key">Username</td>
-					<td class="value">{{ user.username }}</td>
+					<td class="value">{{ username }}</td>
 				</tr>
 				<tr class="even">
 					<td class="key">Affiliation</td>
-					<td class="value">{{ geni_user.affiliation }}</td>
+					<td class="value">{{ affiliation }}</td>
 				</tr>
 				<tr class="odd">
 					<td class="key">Port</td>
-					<td class="value">{{ geni_user.usable_vessel_port }}</td>
+					<td class="value">{{ port }}</td>
 				</tr>
 				<tr class="even">
 					<td class="key">Public Key</td>
@@ -63,7 +63,7 @@ Profile - GENI
 				  <td class="key">Delete your private key</td>
 				  <td class="value">
 				    <form class="inline" method="POST" action="{% url del_priv %}" target="#"> 
-				      <input type="hidden" name="keyToDelete" value={{ user.username }}> </input>
+				      <input type="hidden" name="keyToDelete" value={{ username }}> </input>
 				      <input id="delete" type="submit" value="Delete"> </input>
 				    </form>
 				  </td>

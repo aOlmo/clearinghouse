@@ -38,15 +38,15 @@ My Vessels - GENI
 			  {% endifnotequal %}
 				
 			  {% ifnotequal action_summary "" %}
-				<div id="action_summary"> {{ action_summary }} <a id="expand" href="#">[+]</a></div>
+				<div id="action_summary"> {{ action_summary }} </div>
 			  {% endifnotequal %}
-
+			  
 			  {% ifnotequal action_detail "" %}
-				<div id="action_detail"> Details: {{ action_detail }} </div>
+				<div id="action_summary"> Details: {{ action_detail }} </div>
 			  {% endifnotequal %}
 				
-				{% ifnotequal remove_detail "" %}
-				<div id="action_summary"> {{ remove_detail }} </div>
+				{% ifnotequal remove_summary "" %}
+				<div id="action_summary"> {{ remove_summary }} </div>
 				{% endifnotequal %}
 			</div>
 			<table class="vessels">
@@ -58,9 +58,9 @@ My Vessels - GENI
 					  </form>
 					  </th>
 					  {% endifnotequal %}
-					<th>Vessel ID</td>
-					<th>Vessel Status</td>
-					<th>Expires in</td>
+					<th>Vessel Location</th>
+					<th>Vessel Name</th>
+					<th>Expires in</th>
 				</tr>
 			{% if my_vessels %}
 				{% for vessel in my_vessels %}
@@ -71,9 +71,9 @@ My Vessels - GENI
   					<input type="hidden" name="handle" value="{{ vessel.handle }}"></input>
   					  </form>
   					</td>
-  					<td> <b>{{ vessel.node_ip }}</b>:{{ vessel.node_port }}:{{ vessel.vessel_id }} </td>
-  					<td> vessel.status? </td>
-  					<td> {{ vessel.date_expires }} </td>
+  					<td><b> {{ vessel.node_ip }} </b></td>
+  					<td> {{ vessel.vessel_id }} </td>
+  					<td> {{ vessel.expires_in }} </td>
   				</tr>
   				{% endfor %}
   			{% else %}

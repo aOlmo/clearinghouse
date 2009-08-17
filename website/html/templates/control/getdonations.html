@@ -26,9 +26,13 @@ Get Donations - GENI
 				<p>Give this link to others so they can donate on your behalf:</p>
 				<a href="{% url installers username %}">https://seattlegeni.cs.washington.edu{% url installers username %}</a>
 			</div>
-			
+			{% if installers_enabled %}
 			{% include "common/installers.html" %}
-
+			{% else %}
+			<br>
+			<p> Sorry, the installers are under construction. </p>
+			{% endif %}
+			
 		</div>
 	</div>
 

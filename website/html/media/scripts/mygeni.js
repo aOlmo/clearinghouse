@@ -40,7 +40,7 @@ function create_block(username, width, isShare) {
 		if (username == "Free" && width > 0) {
 			var get = $(document.createElement('a'));
 			get.attr('id','getresourcesbutton');
-			get.attr('href', '../control/myvessels');
+			get.attr('href', 'myvessels');
 			get.text('get');
 			// get.click(get_resources_dialog);
 			block.append(get);

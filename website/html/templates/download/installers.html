@@ -27,7 +27,13 @@ Get Donations - GENI
 		    {% if validuser %}
 		    <p>Donate resources on behalf of {{ username }}:</p>
 		    </div>
-			  {% include "common/installers.html" %}
+			  
+			  {% if installers_enabled %}
+			   {% include "common/installers.html" %}
+			  {% else %}
+			   <br>
+			   <p> Sorry, the installers are under construction. </p>
+			  {% endif %}
 		    {% else %}
 		    <p>The given username doesn't exist!</p><br>
 		    <p>Please check the username.</p>
