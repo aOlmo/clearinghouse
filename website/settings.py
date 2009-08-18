@@ -7,7 +7,6 @@ For public deployment, see the README.txt file for information about which
 additional changes you'll need to make to this file.
 """
 
-import django
 import os
 
 from seattlegeni.common.util import log
@@ -69,32 +68,6 @@ DATABASE_PORT = ''             # Set to empty string for default. Not used with 
 # Make this unique, and don't share it with anybody.
 # Fill this in!
 SECRET_KEY = ''
-
-
-
-# Called when new database connections are created (see below).
-def _prepare_newly_created_db_connection(sender, **kwargs):
-  from seattlegeni.common.api import maindb
-  maindb.init_maindb()
-
-
-# If this is a modern-enough version of django to support specifying a function
-# to be called on database connection creation, then have it call init_maindb()
-# at that time. This is to help prevent init_maindb() from accidentally not
-# being called when it should be.
-# Maybe this code shouldn't go in settings.py. I was concerned that putting it
-# in maindb, however, might cause the signal to be registered after the database
-# connection was created. As far as I know, putting it in settings.py is the
-# closest to a guarantee that it will be executed.
-if django.VERSION >= (1,1):
-  # connection_created only exists with django >= 1.1
-  from django.db.backends.signals import connection_created
-  connection_created.connect(_prepare_newly_created_db_connection)
-else:
-  log.error("You must use django >= 1.1 in order to support automatically " +
-            "perform custom database connection initialization. (See settings.py)")
-  
-
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
