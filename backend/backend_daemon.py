@@ -75,12 +75,18 @@ class ThreadedXMLRPCServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.Simpl
 
 
 
-def _get_node_handle_from_nodeid(nodeid):
+def _get_node_handle_from_nodeid(nodeid, owner_pubkey=None):
   
   # Raises DoesNotExistError if no such node exists.
   node = maindb.get_node(nodeid)
-  # Raises DoesNotExistError if no such key exists.  
-  owner_privkey = keydb.get_private_key(node.owner_pubkey)
+  
+  # If a specific owner key wasn't provided, use the one that is set in the
+  # database for this node.
+  if owner_pubkey is None:
+    owner_pubkey = node.owner_pubkey
+    
+  # Raises DoesNotExistError if no such key exists.
+  owner_privkey = keydb.get_private_key(owner_pubkey)
   
   return nodemanager.get_node_handle(nodeid, node.last_known_ip, node.last_known_port, node.owner_pubkey, owner_privkey)
 
@@ -242,13 +248,14 @@ class BackendPublicFunctions(object):
     This is a public function of the XMLRPC server. See the module comments at
     the top of the file for a description of how it is used.
     """
-    _assert_number_of_arguments('SetVesselOwner', args, 4)
-    (authcode, nodeid, vesselname, ownerkey) = args
+    _assert_number_of_arguments('SetVesselOwner', args, 5)
+    (authcode, nodeid, vesselname, old_ownerkey, new_ownerkey) = args
     
     assert_str(authcode)
     assert_str(nodeid)
     assert_str(vesselname)
-    assert_str(ownerkey)
+    assert_str(old_ownerkey)
+    assert_str(new_ownerkey)
     
     _assert_valid_authcode(authcode)
     
@@ -256,10 +263,10 @@ class BackendPublicFunctions(object):
     #       will raise an exception if it is not.
     
     # Raises a DoesNotExistError if there is no node with this nodeid.
-    nodehandle = _get_node_handle_from_nodeid(nodeid)
+    nodehandle = _get_node_handle_from_nodeid(nodeid, ownerkey_pubkey=old_ownerkey)
     
     # Raises NodemanagerCommunicationError if it fails.
-    nodemanager.change_owner(nodehandle, vesselname, ownerkey)
+    nodemanager.change_owner(nodehandle, vesselname, new_ownerkey)
     
     
     

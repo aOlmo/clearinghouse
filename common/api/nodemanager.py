@@ -103,7 +103,8 @@ def get_node_info(ip, port):
     None
   <Returns>
     A dictionary as returned by nmclient_getvesseldict(). This is a dictionary
-    that may have the following keys:
+    that will have at least the following keys (slight difference from the the
+    result of nmclient_getvesseldict(), as that doesn't promise the keys exist):
       version
       nodename
       nodekey
@@ -116,6 +117,8 @@ def get_node_info(ip, port):
           advertise
         [secondvesselname]
           ...
+    Node that even though we promise the keys exist, when the value is a key it may
+    be None rather than a key dictionary that rsa.repy likes.
   """
   assert_str(ip)
   assert_int(port)
@@ -136,7 +139,16 @@ def get_node_info(ip, port):
     message = "Failed to communicate with node " + nodestr + ": "
     raise NodemanagerCommunicationError(message + traceback.format_exc())
   
-  return nodeinfo
+  # It's not fun for the client code to have to remember to check whether keys
+  # exist, so make sure they do.
+  fullnodeinfo = {"version":"", "nodename":"", "nodekey":None, "vessels":{}}
+  fullnodeinfo.update(nodeinfo)
+  for vesselname in nodeinfo["vessels"]:
+    fullnodeinfo["vessels"][vesselname] = {"userkeys":[], "ownerkey":None, "ownerinfo":"",
+                                           "status":"", "advertise":False}
+    fullnodeinfo["vessels"][vesselname].update(nodeinfo["vessels"][vesselname])
+  
+  return fullnodeinfo
 
 
 

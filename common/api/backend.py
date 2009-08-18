@@ -238,7 +238,7 @@ def set_vessel_user_keylist(node, vesselname, userkeylist):
 
 
 @log_function_call
-def set_vessel_owner_key(node, vesselname, ownerkey):
+def set_vessel_owner_key(node, vesselname, old_ownerkey, new_ownerkey):
   """
   <Purpose>
     Perform the necessary nodemanager communication to set the owner key
@@ -248,7 +248,11 @@ def set_vessel_owner_key(node, vesselname, ownerkey):
       The Node object of the node which the vessel is on.
     vesselname
       The name of the vessel whose owner key is to be set.
-    ownerkey
+    old_ownerkey
+      A public key string of the owner key that is the current owner key for
+      the vessel. Note that this key (with its correspond private key) must
+      already exist in the keydb before this function is called.
+    new_ownerkey
       A public key string of the owner key to be set for the vessel. Note that
       this key (with its correspond private key) must already exist in the
       keydb before this function is called.
@@ -265,7 +269,7 @@ def set_vessel_owner_key(node, vesselname, ownerkey):
   _require_backend_authcode()
 
   func = _get_backend_proxy().SetVesselOwner
-  args = (backend_authcode, node.node_identifier, vesselname, ownerkey)
+  args = (backend_authcode, node.node_identifier, vesselname, old_ownerkey, new_ownerkey)
   
   _do_backend_request(func, *args)
 
