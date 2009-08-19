@@ -196,7 +196,7 @@ def generate_key(keydecription):
     A new key has been generated and stored in the the keydb with the privided
     description.
   <Returns>
-    The public key part of the key pair.
+    The public key part of the key pair. The key is in string format.
   """
   func = _get_backend_proxy().GenerateKey
   args = (keydecription,)

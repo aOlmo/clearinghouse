@@ -202,7 +202,7 @@ class BackendPublicFunctions(object):
     # Store the private key in the keydb.
     keydb.set_private_key(pubkey, privkey, keydescription)
     
-    # Return the public key.
+    # Return the public key as a string.
     return pubkey
 
 

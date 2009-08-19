@@ -58,7 +58,7 @@ def generate_keypair():
     Requests a key from the keygen daemon if USE_KEYDAEMON is True. If that
     fails or if USE_KEYDAEMON is False, directly generates a key.
   <Returns>
-    A tuple in the format (pubkey, privkey).
+    A tuple in the format (pubkeystr, privkeystr).
   """
   
   if USE_KEYDAEMON:
