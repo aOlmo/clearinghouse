@@ -150,21 +150,57 @@ def init_maindb():
 @log_function_call_and_only_first_argument
 def create_user(username, password, email, affiliation, user_pubkey, user_privkey, donor_pubkey):
   """
-  A 'user' lock should be held on the specified username before calling this
-  function. We assume that code calling this function already checked to
-  see whether a user by this username exists (and did so while holding the
-  lock on that username).
+  <Purpose>
+    Create a new seattlegeni user in the database. This user will be able to
+    login to website, use the seattlegeni xmlrpc api, acquire vessels, etc.
+    
+    A 'user' lock should be held on the specified username before calling this
+    function. The code calling this function should have already checked to
+    see whether a user by this username exists (and did so while holding the
+    lock on that username).
   
-  The code calling this function is responsible for first storing the corresponding
-  private key of donor_pubkey in the keydb. In the case of the website calling this
-  function, the website will make a call to the backend to request a new key.
+    The code calling this function is responsible for first storing the
+    corresponding private key of donor_pubkey in the keydb. In the case of the
+    website calling this function, the website will make a call to the backend
+    to request a new key and that will take care of storing the donor private
+    key in the keydb.
+    
+  <Arguments>
+    username
+      The username of the user to be created.
+    password
+      The user's password.
+    email
+      The user's email address.
+    affiliation
+      The affiliation text provided by the user.
+    user_pubkey
+      A string of the user's public key.
+    user_privkey
+      A string of the user's private key or None. This would be None if the
+      user has provided their own public key rather than had us generate
+      a keypair for them.
+    donor_pubkey
+      A string of the user's donor key. This is a key the user never sees (and
+      probably never knows exists).  
+      
+    <Exceptions>
+      None
+      
+    <Side Effects>
+      Creates a user record in the django user table and a user record in the
+      seattlegeni geniuser table, the two of which have a one-to-one mapping.
+      Does not change the database if creation of either record fails.
+      
+    <Returns>
+      A GeniUser object of the newly created user.
   """
   assert_str(username)
   assert_str(password)
   assert_str(email)
   assert_str(affiliation)
   assert_str(user_pubkey)
-  assert_str(user_privkey)
+  assert_str_or_none(user_privkey)
   assert_str(donor_pubkey)
   
   # We're committing manually to make sure the multiple database writes are
@@ -200,6 +236,20 @@ def create_user(username, password, email, affiliation, user_pubkey, user_privke
 
 @log_function_call
 def regenerate_api_key(geniuser):
+  """
+  <Purpose>
+    Set a new, randomly generated api key for a user.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose api key is to be regenerated.
+  <Exceptions>
+    None
+  <Side Effects>
+    Updates the database as well as the geniuser object passed in with a new,
+    randomly-generated api key.
+  <Returns>
+    None
+  """
   assert_geniuser(geniuser)
   
   # Create a set of potential characters for the api key that includes the
