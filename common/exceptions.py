@@ -60,16 +60,28 @@ class ProgrammerError(SeattleGeniError):
   extend this class for many different cases, this error should be raised
   with a message that clearly explains what the programmer did wrong
   (for example, they passed an argument of the wrong type into a function).
+  
+  Do not catch this exception! You may prevent proper notification about a
+  broken part of seattlegeni. This exception will never be documented that
+  it can be raised. You should assume it's always possible that it be
+  raised. If you really know what you're doing, you can break this rule and
+  catch a ProgrammerError.
   """
   
 
   
 class InternalError(SeattleGeniError):
   """
-  Indicates that some part of the geni system failed. E.g., a communication
-  problem with the lockserver, backend, or database. Can also indicate
-  the database is in a bad state. The text of the raised exception should
-  clearly describe the problems and all related details.
+  Indicates that some part of the seattlegeni system failed. E.g., a
+  communication problem with the lockserver, backend, or database. Can also
+  indicate the database is in a bad state. The text of the raised exception
+  should clearly describe the problems and all related details.
+  
+  Do not catch this exception! You may prevent proper notification about a
+  broken part of seattlegeni. This exception will never be documented that
+  it can be raised. You should assume it's always possible that it be
+  raised. If you really know what you're doing, you can break this rule and
+  catch an InternalError.
   """
 
 
