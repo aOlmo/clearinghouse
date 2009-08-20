@@ -24,10 +24,11 @@
 
 
 import node_transition_lib
+from seattlegeni.common.util.decorators import log_function_call
 from django.db import transaction
 
 
-@node_transition_lib.log_function_call
+@log_function_call
 def update_database(node_string, node_info, database_nodeobject, update_database_node):
   """
   <Purpose>
@@ -60,18 +61,12 @@ def update_database(node_string, node_info, database_nodeobject, update_database
   ip_or_nat_string, port_string = node_string.split(":")
   port_num = int(port_string)
 
-  #retrieve the owner key and nodeID
-  node_pubkey = database_nodeobject.owner_pubkey
-  nodeID = node_info['nodekey']
-    
-
   try:
     update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num)
   except:
     raise node_transition_lib.DatabaseError("Could not update the database for the node: "+node_string)
 
-  node_transition_lib.log("updated node database record with version: "+str(database_nodeobject.version) +
-    ", status: "+str(database_nodeobject.version))
+  node_transition_lib.log("updated node database record with version: "+str(database_nodeobject.last_known_version))
 
   node_transition_lib.log("Commiting transaction...")
   try:
@@ -114,23 +109,23 @@ def update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_
   version = node_info['version']
   
   #if the node objec was inactive, then we are going to make it active
-  if not database_nodeobject.active:
-    node_transition_lib.log("The node "+node_string+" was inactive. Now activating")
+  if not database_nodeobject.is_active:
+    node_transition_lib.log("The node "+ip_or_nat_string+":"+str(port_num)+" was inactive. Now activating")
 
   try:
     #Update all the database info about the node
-    database_object.last_known_version = version
-    database_object.last_known_ip = ip_or_nat_string
-    database_object.last_known_port = port_num
-    database_object.is_active = True
+    database_nodeobject.last_known_version = version
+    database_nodeobject.last_known_ip = ip_or_nat_string
+    database_nodeobject.last_known_port = port_num
+    database_nodeobject.is_active = True
 
-    database_object.save()
+    database_nodeobject.save()
   except:
-    raise DatabaseError("Unable to modify database to update info on node: "+ip_or_nat_string)
+    raise node_transition_lib.DatabaseError("Unable to modify database to update info on node: "+ip_or_nat_string)
 
   node_transition_lib.log("Updated the database for node: "+ip_or_nat_string+", with the latest info")
 
-  return database_object
+  return database_nodeobject
   
 
   

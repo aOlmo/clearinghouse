@@ -25,9 +25,14 @@
 
 import node_transition_lib
 import random
+from seattlegeni.common.api import backend
+from seattlegeni.common.api import lockserver
+from seattlegeni.common.api import maindb
+from seattlegeni.common.api import nodemanager
+from seattlegeni.common.util.decorators import log_function_call
+from seattlegeni.common.exceptions import *
 
-
-@node_transition_lib.log_function_call
+@log_function_call
 def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, onepercent_resourcetemplate):
   """
   <Purpose>
@@ -68,34 +73,10 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
   port_num = int(port_string)
  
   #retrieve the owner key and nodeID
-  node_pubkey = database_nodeobject.owner_pubkey
-  nodeID = node_info['nodekey']
-  donated_vesselname = None
+  nodeID = node_transition_lib._do_rsa_publickey_to_string(node_info['nodekey'])
+  donated_vesselname = database_nodeobject.extra_vessel_name
 
-
-
-
-  #ensure that there is only one vessel in the node before the divid function is run
-  #to make sure that the node is not corrupted.
-  node_transition_lib.log("Going through the node_info to find vesselname: ")
-
-  for current_vesselname in node_info['vessels']:
-    #check to see if we are the owner of the node
-    if node_info['vessels'][current_vesselname]['ownerkey'] == node_pubkey:
-      #this is the case if a second vessel is found in the node, which means
-      #that the node is corrupted as it is already been split
-      if donated_vesselname:
-        raise node_transition_lib.NodeError("There are multiple vessels in node: "+node_string+" before the divide function is run")
-
-      #get the vessel_name of the one vessel
-      donated_vesselname = current_vesselname
-
-
-
-
-  if not donated_vesselname:
-    raise node_transition_lib.NodeError("The node :"+node_string+" does not have any vessel that belong to SeattleGENI. Node not in canonical state")
-
+ 
   #Retrieve the usable ports list for the node
   try:
     usable_ports_list = nodemanager.get_vessel_resources(ip_or_nat_string, port_num, donated_vesselname)['usableports']
@@ -122,13 +103,19 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
   #and the right vessel has the vessel with the exact resources.
   while len(usable_ports_list) >= 10:
     #TODO: ask jsamuel how to do this better
-    desired_resourcedata = onepercent_resourcetemplate % (str(usable_ports_list[0]),str(usable_ports_list[1]), str(usable_ports_list[2]),str(usable_ports_list[3]),str(usable_ports_list[4]),str(usable_ports_list[5]),str(usable_ports_list[6]),str(usable_ports_list[7]),str(usable_ports_list[8]),str(usable_ports_list[9]),str(usable_ports_list[0]),str(usable_ports_list[1]), str(usable_ports_list[2]),str(usable_ports_list[3]),str(usable_ports_list[4]),str(usable_ports_list[5]),str(usable_ports_list[6]),str(usable_ports_list[7]),str(usable_ports_list[8]),str(usable_ports_list[9]))
+    desired_resourcedata = onepercent_resourcetemplate % (str(usable_ports_list[0]), str(usable_ports_list[1]), 
+                           str(usable_ports_list[2]), str(usable_ports_list[3]), str(usable_ports_list[4]),
+                           str(usable_ports_list[5]), str(usable_ports_list[6]), str(usable_ports_list[7]),
+                           str(usable_ports_list[8]), str(usable_ports_list[9]), str(usable_ports_list[0]),
+                           str(usable_ports_list[1]), str(usable_ports_list[2]), str(usable_ports_list[3]),
+                           str(usable_ports_list[4]), str(usable_ports_list[5]), str(usable_ports_list[6]),
+                           str(usable_ports_list[7]), str(usable_ports_list[8]), str(usable_ports_list[9]))
 
     #use the first 10 ports so remove them from the list of usable_ports_list
     used_ports_list = usable_ports_list[:10]
     usable_ports_list = usable_ports_list[10:]
 
-    node_transition_lib.log("Ports we are going to use for the new vessel: "+used_ports_list)
+    node_transition_lib.log("Ports we are going to use for the new vessel: "+str(used_ports_list))
     node_transition_lib.log("Starting to split vessel: "+current_vessel)
 
 
@@ -136,7 +123,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
    
     #create a lock handle to be used
     lockserver_handle = lockserver.create_lockserver_handle()
-    node_transition_lib.log("Created lockserver_handle for use on node: "+nodeID)
+    node_transition_lib.log("Created lockserver_handle for use on node: "+str(nodeID))
 
     #acquire a lock for the node
     lockserver.lock_node(lockserver_handle, nodeID)
@@ -146,7 +133,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
     #create a record for the vessel and add its port to the database
     try:
       leftover_vessel, new_vessel = backend.split_vessel(database_nodeobject, current_vessel, desired_resourcedata)              
-    except:
+    except Exception, e:
       raise node_transition_lib.NodeProcessError("Failed to split vessel: "+current_vessel+". "+str(e))
     finally:
       #release the node lock and destroy lock handle
@@ -157,7 +144,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
 
     node_transition_lib.log("Successfully split vessel: "+current_vessel+" into vessels: "+leftover_vessel+" and "+new_vessel)
    
-    curren_vessel = leftover_vessel
+    current_vessel = leftover_vessel
     new_vessel_infolist.append((new_vessel, used_ports_list))
 
 
@@ -165,33 +152,21 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
 
     #set the user_list for the new vesel to be empty. Remember that user_list is what determines
     #the transition state, and only the extra vessel should have this set.
-    nodemanager.change_users(nodehandle, new_vessel, []) 
+    backend.set_vessel_user_keylist(database_nodeobject, new_vessel, [])
     node_transition_lib.log("Changed the userkeys for the vessel "+new_vessel+" to []")
 
 
-
-
-    #create a record for the vessel and add its port to the database
-    lockserver_handle = lockserver.create_lockserver_handle()
-    node_transition_lib.log("Created lockserver_handle for use on node: "+nodeID)
-
-    #acquire a lock for the node
-    lockserver.lock_node(lockserver_handle, nodeID)
-    node_transition_lib.log("Acquired node lock for nodeID: "+nodeID)
     
     try:
       node_transition_lib.log("Creating a vessel record in the database for vessel "+new_vessel+" for node "+node_string)
-      maindb.create_vessel(database_nodeobject, new_vessel)
-      node_transition_lib.log("Setting the vessel ports in the database for vessel "+new_vessel+" with port list: "+used_ports_list)
-      maindb.set_vessel_ports(new_vessel, used_ports_list)
-    except:
-      raise node_transition_lib.DatabaseError("Failed to create vessel entry or change vessel entry for vessel: "+new_vessel)
-    finally:
-      #release the node lock and destroy lock handle
-      lockserver.unlock_node(lockserver_handle, nodeID)
-      node_transition_lib.log("released lock for node: "+nodeID)
-      lockserver.destroy_lockserver_handle(lockserver_handle)
-      node_transition_lib.log("Destroyed lockserver_handle for node: "+nodeID)
+      vessel_object = maindb.create_vessel(database_nodeobject, new_vessel)
+      node_transition_lib.log("Setting the vessel ports in the database for vessel "+new_vessel+" with port list: "+str(used_ports_list))
+      maindb.set_vessel_ports(vessel_object, used_ports_list)
+    except node_transition_lib.DatabaseError, e:
+      raise node_transition_lib.DatabaseError("Failed to create vessel entry or change vessel entry for vessel: "+new_vessel+". "+str(e))
+    except Exception, e:
+      raise node_transition_lib.UnexpectedError("Unexpected error occured. "+str(e))
+
 
     node_transition_lib.log("Finished splitting vessels up for the node: "+node_string)
 
@@ -199,7 +174,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
 
 
 
-@node_transition_lib.log_function_call
+@log_function_call
 def main():
   """
   <Purpose>
