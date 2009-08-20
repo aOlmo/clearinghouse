@@ -96,6 +96,9 @@ GET_AVAILABLE_VESSELS_ADDER = 10
 # nodes on thousands of subnets.
 GET_AVAILABLE_LAN_VESSELS_MAX_SUBNETS = 10
 
+# The string that is the prefix to all NAT strings in node last_known_ip fields.
+NAT_STRING_PREFIX = "NAT$"
+
 
 
 
@@ -871,7 +874,8 @@ def set_node_owner_pubkey(node, ownerkeystring):
   <Exceptions>
     None
   <Side Effects>
-    The node's owner key is changed in the database.
+    The node's owner key is changed in the database and the node object passed
+    in to the function reflects this.
   <Returns>
     None
   """
@@ -879,6 +883,59 @@ def set_node_owner_pubkey(node, ownerkeystring):
   assert_str(ownerkeystring)
   
   node.owner_pubkey = ownerkeystring
+  node.save()
+
+
+
+
+
+@log_function_call
+def record_node_communication_failure(node):
+  """
+  <Purpose>
+    Let the database know that communication with a node has failed.
+  <Arguments>
+    node
+      The node object of the node that couldn't be communicated with.
+  <Exceptions>
+    None
+  <Side Effects>
+    The node's is_active value is changed to False in the database and the
+    node object passed in to the function reflects this.
+  <Returns>
+    None
+  """
+  assert_node(node)
+  
+  node.is_active = False
+  node.save()
+
+
+
+
+
+@log_function_call
+def record_node_communication_success(node):
+  """
+  <Purpose>
+    Let the database know that communication with a node has succeeded.
+  <Arguments>
+    node
+      The node object of the node that was successfully communicated with.
+  <Exceptions>
+    None
+  <Side Effects>
+    The node's is_active value is changed to True in the database if it
+    wasn't already, the date_last_contacted value is updated in the database
+    to the current time, and the node object passed in to the function
+    reflects these changes.
+  <Returns>
+    None
+  """
+  assert_node(node)
+  
+  node.is_active = True
+  node.date_last_contacted = datetime.now()
   node.save()
 
 
@@ -955,8 +1012,12 @@ def get_acquired_vessels(geniuser):
 
 
 
-def _get_queryset_of_all_available_vessels_for_a_port(port):
-  
+def _get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(port):
+  """
+  Get a queryset of vessels that have a certain port and which are all
+  available to be acquired. There is no restriction on whether these are
+  vessels on nat nodes.
+  """
   queryset = Vessel.objects.filter(acquired_by_user=None)
   # No dirty vessels or inactive nodes.
   queryset = queryset.exclude(is_dirty=True)
@@ -967,7 +1028,41 @@ def _get_queryset_of_all_available_vessels_for_a_port(port):
   # Using order_by('?') is the QuerySet way of saying ORDER BY RAND().
   queryset = queryset.order_by('?')
   
-  log.debug("There are " + str(queryset.count()) + " available vessels on port " + str(port))
+  log.debug("There are " + str(queryset.count()) + " available NAT and non-NAT node vessels on port " + str(port))
+
+  return queryset
+
+
+
+
+
+def _get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(port):
+  """
+  Get a queryset of vessels that have a certain port and which are all
+  available to be acquired. Excludes vessels on nat nodes.
+  """
+  queryset = _get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(port)
+  
+  queryset = queryset.exclude(node__last_known_ip__startswith=NAT_STRING_PREFIX)
+  
+  log.debug("There are " + str(queryset.count()) + " available non-NAT node vessels on port " + str(port))
+
+  return queryset
+
+
+
+
+
+def _get_queryset_of_all_available_vessels_for_a_port_only_nat_nodes(port):
+  """
+  Get a queryset of vessels that have a certain port and which are all
+  available to be acquired. Only includes vessels on nat nodes.
+  """
+  queryset = _get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(port)
+  
+  queryset = queryset.filter(node__last_known_ip__startswith=NAT_STRING_PREFIX)
+  
+  log.debug("There are " + str(queryset.count()) + " available NAT node vessels on port " + str(port))
 
   return queryset
 
@@ -977,15 +1072,34 @@ def _get_queryset_of_all_available_vessels_for_a_port(port):
 
 @log_function_call
 def get_available_rand_vessels(geniuser, vesselcount):
+  """
+  <Purpose>
+    Get a list of potential vessels that could satisfy the user's request for
+    rand vessels.
+  <Arguments>
+    geniuser
+      The user who is requesting vessels.
+    veselcount
+      The number of rand vessels the user has requested.
+  <Exceptions>
+     UnableToAcquireResourcesError
+       If there are not enough resources in seattlegeni to fulfill the request.
+  <Side Effects>
+    None
+  <Returns>
+    A list of vessels that contains at least vesselcount vessels. These may be
+    any type of vessels (some could be on nat nodes, some could be on the same
+    subnet, etc.).
+  """
   assert_geniuser(geniuser)
-  assert_int(vesselcount)
+  assert_positive_int(vesselcount)
   
   # We return more vessels than were asked for. This gives some room for some
   # of the vessels to be inaccessible or already acquired by the time they are
   # attempted to be acquired by the client code.
   returnvesselcount = GET_AVAILABLE_VESSELS_MULTIPLIER * vesselcount + GET_AVAILABLE_VESSELS_ADDER
   
-  allvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port(geniuser.usable_vessel_port)
+  allvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(geniuser.usable_vessel_port)
    
   if allvesselsqueryset.count() < vesselcount:
     message = "Requested " + str(vesselcount) + " rand vessels, but we only have " + str(allvesselsqueryset.count())
@@ -999,9 +1113,68 @@ def get_available_rand_vessels(geniuser, vesselcount):
 
 
 @log_function_call
-def get_available_wan_vessels(geniuser, vesselcount):
+def get_available_nat_vessels(geniuser, vesselcount):
+  """
+  <Purpose>
+    Get a list of potential vessels that could satisfy the user's request for
+    nat vessels.
+  <Arguments>
+    geniuser
+      The user who is requesting vessels.
+    veselcount
+      The number of nat vessels the user has requested.
+  <Exceptions>
+     UnableToAcquireResourcesError
+       If there are not enough resources in seattlegeni to fulfill the request.
+  <Side Effects>
+    None
+  <Returns>
+    A list of vessels that contains at least vesselcount vessels. All vessels
+    in the list will be nat vessels.
+  """
   assert_geniuser(geniuser)
-  assert_int(vesselcount)
+  assert_positive_int(vesselcount)
+  
+  # We return more vessels than were asked for. This gives some room for some
+  # of the vessels to be inaccessible or already acquired by the time they are
+  # attempted to be acquired by the client code.
+  returnvesselcount = GET_AVAILABLE_VESSELS_MULTIPLIER * vesselcount + GET_AVAILABLE_VESSELS_ADDER
+  
+  natvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port_only_nat_nodes(geniuser.usable_vessel_port)
+   
+  if natvesselsqueryset.count() < vesselcount:
+    message = "Requested " + str(vesselcount) + " nat vessels, but we only have " + str(natvesselsqueryset.count())
+    message += " vessels with port " + str(geniuser.usable_vessel_port) + " available." 
+    raise UnableToAcquireResourcesError(message)
+  
+  return list(natvesselsqueryset[:returnvesselcount])
+
+
+
+
+
+@log_function_call
+def get_available_wan_vessels(geniuser, vesselcount):
+  """
+  <Purpose>
+    Get a list of potential vessels that could satisfy the user's request for
+    wan vessels.
+  <Arguments>
+    geniuser
+      The user who is requesting vessels.
+    veselcount
+      The number of wan vessels the user has requested.
+  <Exceptions>
+     UnableToAcquireResourcesError
+       If there are not enough resources in seattlegeni to fulfill the request.
+  <Side Effects>
+    None
+  <Returns>
+    A list of vessels that contains at least vesselcount vessels. No two
+    vessels in the list will have the same last octet of their IP address.
+  """
+  assert_geniuser(geniuser)
+  assert_positive_int(vesselcount)
   
   # We return more vessels than were asked for. This gives some room for some
   # of the vessels to be inaccessible or already acquired by the time they are
@@ -1011,7 +1184,7 @@ def get_available_wan_vessels(geniuser, vesselcount):
   vessellist = []
   includedsubnets = []
   
-  allvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port(geniuser.usable_vessel_port)
+  nonnatvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(geniuser.usable_vessel_port)
    
   # Note: it would be more efficient to have the sql query return vessels
   # in unique subnets, but we would have to be very careful that the UNIQUE
@@ -1020,7 +1193,7 @@ def get_available_wan_vessels(geniuser, vesselcount):
   # subnet. So, instead of worrying about the sql for that which wouldn't
   # be intuitive to do with the django ORM, let's just do that part manually.
   
-  for possiblevessel in allvesselsqueryset:
+  for possiblevessel in nonnatvesselsqueryset:
     
     subnet = possiblevessel.node.last_known_ip.rpartition('.')[0]
     if not subnet:
@@ -1048,41 +1221,103 @@ def get_available_wan_vessels(geniuser, vesselcount):
 
 
 
-@log_function_call
-def get_available_lan_vessels_by_subnet(geniuser, vesselcount):
-  assert_geniuser(geniuser)
-  assert_int(vesselcount)
+def _get_subnet_list():
+  """
+  Returns a randomly-ordered list of subnets that have at least one active
+  non-nat node on the subnet.
+  """
   
-  # Note: This is not compatible with sqlite3. It may only work with mysql.
-  if settings.DATABASE_ENGINE is "sqlite3":
-    raise InternalError("maindb.get_available_lan_vessels_by_subnet() is not supported when using sqlite3")
+  # The commented out code only works on mysql but is more efficient. Leaving
+  # it out for now as it's harder to test, as our tests run on sqlite.
   
   # Get a list of subnets that have at least vesselcount active nodes in the subnet.
   # This doesn't guarantee that there are available vessels for this user on
   # those nodes, but it's a start. We'll narrow it down further after we get
   # the list of possible subnets.
-  subnetsql = """SELECT COUNT(*) AS lansize,
-                        SUBSTRING_INDEX(last_known_ip, '.', 3) AS subnet
-                 FROM control_node
-                 WHERE is_active = TRUE
-                 GROUP BY subnet
-                 HAVING lansize >= %s
-                 ORDER BY RAND()""" % (vesselcount)
+  #
+  #  subnetsql = """SELECT COUNT(*) AS lansize,
+  #                        SUBSTRING_INDEX(last_known_ip, '.', 3) AS subnet
+  #                 FROM control_node
+  #                 WHERE is_active = TRUE
+  #                 GROUP BY subnet
+  #                 HAVING lansize >= %s
+  #                 ORDER BY RAND()""" % (vesselcount)
+  #                 
+  #  cursor = django.db.connection.cursor()
+  #  cursor.execute(subnetsql)
+  #  return cursor.fetchall()
   
-  cursor = django.db.connection.cursor()
-  cursor.execute(subnetsql)
-  subnetlist = cursor.fetchall()
+  # Get a queryset of all active nodes.
+  queryset = Node.objects.filter(is_active=True)
+  queryset = queryset.exclude(last_known_ip__startswith=NAT_STRING_PREFIX)
+  queryset = queryset.order_by('last_known_ip')
+
+  previous_subnet = None
+  subnetlist = []
   
+  # Look through the queryset and build a list of unique subnets.
+  for node in queryset:
+    
+    subnet = node.last_known_ip.rpartition('.')[0]
+    
+    if not subnet:
+      log.error("The node " + str(node) + " has an invalid last_known_ip")
+      continue
+    
+    if subnet != previous_subnet:
+      subnetlist.append(subnet)
+      previous_subnet = subnet
+           
+  # Randomize the order of the subnets.
+  random.shuffle(subnetlist)
+  
+  return subnetlist
+  
+
+
+
+
+@log_function_call
+def get_available_lan_vessels_by_subnet(geniuser, vesselcount):
+  """
+  <Purpose>
+    Get a list of potential subnets (and a list of vessels in the subnet)
+    that could satisfy the user's request for lan vessels.
+  <Arguments>
+    geniuser
+      The user who is requesting vessels.
+    veselcount
+      The number of lan vessels the user has requested.
+  <Exceptions>
+     UnableToAcquireResourcesError
+       If there are not enough resources in seattlegeni to fulfill the request.
+  <Side Effects>
+    None
+  <Returns>
+    A list of vessel lists. Each vessel list contains vessels on the same
+    subnet. Each vessel list has a minimum of vesselcount availalable vessels
+    on the user's port.
+    
+    The number of vessel lists (that is, the number of different subnets)
+    returned may not include all possible subnets that seattlegeni knows about.
+    This is for efficiency reasons. The maximum number of subnets returned
+    can be adjusted through the GET_AVAILABLE_LAN_VESSELS_MAX_SUBNETS
+    constant at the top of this module.
+  """
+  assert_geniuser(geniuser)
+  assert_positive_int(vesselcount)
+  
+  subnetlist = _get_subnet_list()
+
   if len(subnetlist) == 0:
     raise UnableToAcquireResourcesError("No subnets exist with at least " + str(vesselcount) + " active nodes")
   
   subnets_vessels_list = []
   
-  allvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port(geniuser.usable_vessel_port)
+  nonnatvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(geniuser.usable_vessel_port)
   
-  for subnetrow in subnetlist:
-    (lansize, subnet) = subnetrow
-    lanvesselsqueryset = allvesselsqueryset.filter(node__last_known_ip__startswith=subnet + '.')
+  for subnet in subnetlist:
+    lanvesselsqueryset = nonnatvesselsqueryset.filter(node__last_known_ip__startswith=subnet + '.')
     
     if lanvesselsqueryset.count() >= vesselcount:
       # We don't worry about too many vessels being in this list, as it will be 255 at most.
@@ -1447,6 +1682,18 @@ def delete_all_vessels_of_node(node):
 
 
 def get_active_nodes():
+  """
+  <Purpose>
+    Get a list of all active nodes.
+  <Arguments>
+    None
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of Node objects of active nodes.
+  """
   return list(Node.objects.filter(is_active=True))
 
 
@@ -1454,5 +1701,18 @@ def get_active_nodes():
 
 
 def get_vessels_on_node(node):
+  """
+  <Purpose>
+    Get a list of all vessels on a nodes.
+  <Arguments>
+    node
+      The Node object of the node we are interested in.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of Vessel objects of vessels on the node.
+  """
   return list(node.vessel_set.all())
 

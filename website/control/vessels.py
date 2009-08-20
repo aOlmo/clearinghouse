@@ -63,6 +63,39 @@ def acquire_wan_vessels(lockserver_handle, geniuser, vesselcount):
 
 
 @log_function_call
+def acquire_nat_vessels(lockserver_handle, geniuser, vesselcount):
+  """
+  <Purpose>
+    Acquire 'nat' vessels for a geniuser.
+  <Arguments>
+    lockserver_handle
+      The lockserver handle to be used for obtaining node locks.
+    geniuser
+      The GeniUser the vessels should be acquired for.
+    vesselcount
+      The number of vessels to acquire.
+  <Exceptions>
+    UnableToAcquireResourcesError
+      If either the user does not not have enough vessel credits to acquire the
+      number of vessels they requested or if there are not enough vessels
+      available to fulfill the request.
+  <Side Effects>
+    The vessels are acquired for the user. The database has been updated to
+    reflect the acquisition.
+  <Returns>
+    A list of the vessels that were acquired.
+  """
+  
+  # Get a randomized list of nat vessels.
+  vessel_list = maindb.get_available_nat_vessels(geniuser, vesselcount)
+  
+  return _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_list)
+
+
+
+
+
+@log_function_call
 def acquire_lan_vessels(lockserver_handle, geniuser, vesselcount):
   """
   <Purpose>

@@ -295,7 +295,6 @@ def get_logged_in_user(request):
     The GeniUser object of the logged in user, or None if there is no logged in
     user (including if the session has expired).
   """
-  # JCS: I haven't tested this. It may not work as intended.
   username = request.session.get("username", None)
   if username is None:
     raise DoesNotExistError
@@ -457,9 +456,9 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
     geniuser
       The GeniUser which will be assigned the vessels.
     vesselcount
-      The number of vessels to acquire (an integer).
+      The number of vessels to acquire (a positive integer).
     vesseltype
-      The type of vessels to acquire. One of either 'lan', 'wan', or 'rand'.
+      The type of vessels to acquire. One of either 'lan', 'wan', 'nat', or 'rand'.
   <Exceptions>
     UnableToAcquireResourcesError
       If not able to acquire the requested vessels (in this case, no vessels
@@ -474,7 +473,7 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
     A list of the vessels as a result of this function call.
   """
   assert_geniuser(geniuser)
-  assert_int(vesselcount)
+  assert_positive_int(vesselcount)
   assert_str(vesseltype)
 
   # Lock the user.
@@ -498,6 +497,8 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
       acquired_list = vessels.acquire_wan_vessels(lockserver_handle, geniuser, vesselcount)
     elif vesseltype == 'lan':
       acquired_list = vessels.acquire_lan_vessels(lockserver_handle, geniuser, vesselcount)
+    elif vesseltype == 'nat':
+      acquired_list = vessels.acquire_nat_vessels(lockserver_handle, geniuser, vesselcount)
     elif vesseltype == 'rand':
       acquired_list = vessels.acquire_rand_vessels(lockserver_handle, geniuser, vesselcount)
     else:
@@ -636,6 +637,7 @@ def get_vessel_list(vesselhandle_list):
       raise InvalidRequestError("Invalid vesselhandle: " + vesselhandle)
     
     (nodeid, vesselname) = vesselhandle.split(":")
+    # Raises DoesNotExistError if there is no such node/vessel.
     vessel = maindb.get_vessel(nodeid, vesselname)
     vessel_list.append(vessel)
     

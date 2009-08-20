@@ -61,6 +61,19 @@ def assert_int(value):
 
 
 
+def assert_positive_int(value):
+  """
+  <Purpose>
+    Ensure that value is an integer (can be int or long) and is greater than
+    zero.
+  """
+  if not isinstance(value, int) and not isinstance(value, long):
+    raise AssertionError("Expected int or long value, received " + str(type(value)))
+  if value < 1:
+    raise AssertionError("Expected a positive value, received: " + str(value))
+
+
+
 def assert_bool(value):
   """
   <Purpose>

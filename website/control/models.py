@@ -137,7 +137,7 @@ class Node(models.Model):
   node_identifier = models.CharField("Node identifier", max_length=2048)
 
   # The IP address the nodemanager was last known to be accessible through.
-  last_known_ip = models.IPAddressField("Last known nodemanager IP address")
+  last_known_ip = models.CharField("Last known nodemanager IP address or NAT string", max_length=100, db_index=True)
 
   # The port the nodemanager was last known to be accessible through. 
   last_known_port = models.IntegerField("Last known nodemanager port")
