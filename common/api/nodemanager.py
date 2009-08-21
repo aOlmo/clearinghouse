@@ -143,10 +143,13 @@ def get_node_info(ip, port):
   # exist, so make sure they do.
   fullnodeinfo = {"version":"", "nodename":"", "nodekey":None, "vessels":{}}
   fullnodeinfo.update(nodeinfo)
-  for vesselname in nodeinfo["vessels"]:
-    fullnodeinfo["vessels"][vesselname] = {"userkeys":[], "ownerkey":None, "ownerinfo":"",
-                                           "status":"", "advertise":False}
-    fullnodeinfo["vessels"][vesselname].update(nodeinfo["vessels"][vesselname])
+  
+  # The fullnodeinfo["vessels"] dict is now the same dict as that in nodeinfo.
+  for vesselname in fullnodeinfo["vessels"]:
+    fullvesselinfo = {"userkeys":[], "ownerkey":None, "ownerinfo":"",
+                      "status":"", "advertise":False}
+    fullvesselinfo.update(fullnodeinfo["vessels"][vesselname])
+    fullnodeinfo["vessels"][vesselname] = fullvesselinfo
   
   return fullnodeinfo
 
