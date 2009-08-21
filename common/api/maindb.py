@@ -63,8 +63,10 @@ from seattlegeni.website.control.models import VesselUserAccessMap
 
 
 
-# The number of vessel credits each user gets regardless of donations.
-FREE_VESSEL_CREDITS_PER_USER = 10
+# The number of free vessel credits each user gets regardless of donations.
+# This is the value set for newly-created users. Changing this value only
+# affects new user accounts, not existing ones.
+DEFAULT_FREE_VESSEL_CREDITS = 10
 
 # A user gets 10 vessel credits for every donation they make.
 VESSEL_CREDITS_FOR_DONATIONS_MULTIPLIER = 10
@@ -217,7 +219,8 @@ def create_user(username, password, email, affiliation, user_pubkey, user_privke
     geniuser = GeniUser(username=username, password='', email=email,
                         affiliation=affiliation, user_pubkey=user_pubkey,
                         user_privkey=user_privkey, donor_pubkey=donor_pubkey,
-                        usable_vessel_port=port)
+                        usable_vessel_port=port,
+                        free_vessel_credits=DEFAULT_FREE_VESSEL_CREDITS)
     # Set the password using this function so that it gets hashed by django.
     geniuser.set_password(password)
     geniuser.save()
@@ -1357,7 +1360,7 @@ def get_user_free_vessel_credits(geniuser):
   """
   assert_geniuser(geniuser)
 
-  return FREE_VESSEL_CREDITS_PER_USER
+  return geniuser.free_vessel_credits
 
 
 

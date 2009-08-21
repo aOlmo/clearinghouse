@@ -261,6 +261,7 @@ user_pubkey
 user_privkey
 api_key
 donor_pubkey
+free_vessel_credits
 date_created
 date_modified
 */
@@ -272,6 +273,7 @@ INSERT INTO seattlegeni.control_geniuser
          old_geniuser.privkey,
          '',
          old_geniuser.donor_pubkey,
+         old_geniuser.vcount_base,
          NOW(),
          NOW()
   FROM geni.control_user AS old_geniuser;

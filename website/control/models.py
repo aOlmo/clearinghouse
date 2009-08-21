@@ -105,6 +105,14 @@ class GeniUser(DjangoUser):
   # We index this field with custom sql. See the file sql/geniuser.sql.
   donor_pubkey = models.CharField("Donor public Key", max_length=2048)
   
+  # The number of vessels the user is allowed to acquire regardless of whether
+  # they have made donations. When the user makes donations, they still get
+  # these free vessel credits, as well. This is stored in the database rather
+  # than a constant for all users as there are some users we want to special
+  # case and give extra free resources to. Unfortunately, "free" has more than
+  # one meaning in English. This is more accurately "gratis_vessel_credits".
+  free_vessel_credits = models.IntegerField("Free (gratis) vessel credits", db_index=True)
+  
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)
   date_modified = models.DateTimeField("Date modified in DB", auto_now=True, db_index=True)
