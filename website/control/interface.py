@@ -41,6 +41,8 @@
 import traceback
 import datetime
 
+import django.contrib.auth
+
 from seattlegeni.common.exceptions import *
 
 from seattlegeni.common.api import backend
@@ -54,6 +56,8 @@ from seattlegeni.common.util.assertions import *
 
 from seattlegeni.common.util.decorators import log_function_call
 from seattlegeni.common.util.decorators import log_function_call_and_only_first_argument
+from seattlegeni.common.util.decorators import log_function_call_without_arguments
+from seattlegeni.common.util.decorators import log_function_call_without_return
 
 from seattlegeni.website.control import vessels
 
@@ -239,39 +243,63 @@ def get_user_with_apikey(username, apikey):
   assert_str(apikey)
   
   return maindb.get_user_with_apikey(username, apikey)  
+
   
 
 
-# JTC: Why do we store the username in the request session dict, when
-# the username is already available as request.user?
-def login_user(request):
-  request.session["username"] = request.user.username
 
-#@log_function_call
-#def login_user(request, geniuser):
-#  """
-#  <Purpose>
-#    Log in a user to a session. This allows future requests that are part of
-#    same session to obtain the user object through calls to get_logged_in_user().
-#    This function should not be used through the xmlrpc frontend as there is
-#    no concept of the session there.
-#  <Arguments>
-#    request
-#      The HttpRequest object of the user's request through the frontend.
-#    geniuser
-#      The GeniUser object of the user to be logged in.
-#  <Exceptions>
-#    None
-#  <Side Effects>
-#    Associates the user with a session corresponding to the request.
-#  <Returns>
-#    None
-#  """
-#  assert_geniuser(geniuser)
-#  
-#  # JCS: I haven't tested this. It may not work as intended.
-#  request.session["username"] = geniuser.username
-
+# Not logging arguments. The call to get_user_with_password()
+# made within this function will log those details.
+@log_function_call_without_arguments
+def login_user(request, username, password):
+  """
+  <Purpose>
+    Log a user in to a session if the username and password are valid. This
+    allows future requests that are part ofsame session to obtain the user
+    object through calls to get_logged_in_user(). This function should not
+    be used through the xmlrpc frontend as there is no concept of the session
+    there.
+  <Arguments>
+    request
+      The HttpRequest object of the user's request through the frontend.
+    username
+      The username of the user to be logged in.
+    password
+      The password of the user to be logged in.
+  <Exceptions>
+    DoesNotExistError
+      If there is no user with the provided username and password.
+  <Side Effects>
+    Associates the user with a session corresponding to the request.
+  <Returns>
+    None
+  """
+  assert_str(username)
+  assert_str(password)
+  
+  # Raises a DoesNotExistError if there is no such user. We could actually
+  # skip this and only rely on authenticate, but I'd like to make sure that
+  # the get_user_with_password function gets called before letting the user
+  # access the site. The the note further down about checking the is_active
+  # field for one example of why.
+  get_user_with_password(username, password)
+  
+  # The auth.authenticate() method must be called before the auth.login()
+  # method, as this method sets some values in the user object that are
+  # required by auth.login().
+  djangouser = django.contrib.auth.authenticate(username=username, password=password)
+  
+  # Note that we aren't checking the is_active field which is part of the base
+  # django user class. If we want to be able to disable user accounts, we need
+  # to be sure to do it in a way that will work for all frontends, including
+  # xmlrpc. So, for example, the get_user_with_* methods could be changed.
+  # If we looked for it only here, then the user could still perform actions
+  # via xmlrpc.
+  
+  # Logs the user in via django's auth platform. This associates the user
+  # with the current session. 
+  django.contrib.auth.login(request, djangouser)
+  
 
 
 
@@ -292,13 +320,14 @@ def get_logged_in_user(request):
   <Side Effects>
     None
   <Returns>
-    The GeniUser object of the logged in user, or None if there is no logged in
-    user (including if the session has expired).
+    The GeniUser object of the logged in user.
   """
-  username = request.session.get("username", None)
-  if username is None:
+  # See http://docs.djangoproject.com/en/dev/topics/auth/#authentication-in-web-requests
+  # for an explanation of request.user.is_authenticated().
+  if request.user.is_authenticated():
+    return maindb.get_user(request.user.username)
+  else:
     raise DoesNotExistError
-  return maindb.get_user(username)
 
 
 
@@ -319,7 +348,6 @@ def logout_user(request):
   <Returns>
     None
   """
-  # JCS: I haven't tested this. It may not work as intended.
   request.session.flush()
   
   
@@ -370,7 +398,7 @@ def delete_private_key(geniuser):
 
 
 
-@log_function_call
+@log_function_call_without_return
 def get_private_key(geniuser):
   """
   <Purpose>

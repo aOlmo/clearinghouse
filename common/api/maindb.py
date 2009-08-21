@@ -33,10 +33,10 @@
 from datetime import datetime
 from datetime import timedelta
 
+import django.contrib.auth.models
 import django.core.exceptions
 import django.db
 
-from django.contrib.auth.models import check_password
 from django.db import transaction
 
 import random
@@ -655,7 +655,7 @@ def get_user_with_password(username, password):
   # Throws a DoesNotExistError if there is no such user.
   geniuser = get_user(username)
 
-  if not check_password(password, geniuser.password):
+  if not django.contrib.auth.models.check_password(password, geniuser.password):
     # Intentionally vague message to prevent a security problem if this ever
     # gets displayed on the frontend.
     raise DoesNotExistError("No such user.")

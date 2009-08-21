@@ -26,7 +26,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.views.generic.simple import direct_to_template
 from django.views.generic.simple import redirect_to
-import django.contrib.auth as djangoauth
 
 # Make available all of our own standard exceptions.
 from seattlegeni.common.exceptions import *
@@ -188,28 +187,16 @@ def login(request):
     if request.POST.has_key('jsenabled') and request.POST['jsenabled'] == 'false':
       return _show_login(request, ltemplate, {'err' : "Please enable javascript and try again."}, form)
 
-    user = djangoauth.authenticate(username=request.POST['username'], password=request.POST['password'])
-    if user is not None:
-      if user.is_active:
-        # logs the user in via django's auth platform. (this associates the user with the current session) 
-        djangoauth.login(request, user)
-        try:
-          # only clear out the cookie if we actually authenticate and login ok
-          request.session.delete_test_cookie()
-        except:
-          pass
-        # Login successful, redirect to the user's profile.
-        # JTC: MIGHT NOT BE NEEDED. Should be able to just use request.user
-        interface.login_user(request)
-        
-        return HttpResponseRedirect(reverse("profile"))
-      else:
-        # Return a 'disabled account' error message
-        return _show_login(request, ltemplate, {'err' : "This account has been disabled."}, form)
+    try:
+      interface.login_user(request, request.POST['username'], request.POST['password'])
+    except DoesNotExistError:
+      return _show_login(request, ltemplate, {'err' : "Wrong username or password."}, form)
       
-    # Return an 'invalid login' error message.
-    return _show_login(request, ltemplate, {'err' : "Wrong username or password."}, form)
-
+    # only clear out the cookie if we actually authenticate and login ok
+    request.session.delete_test_cookie()
+    
+    return HttpResponseRedirect(reverse("profile"))
+      
   # request type is GET, show a fresh login page
   return _show_login(request, ltemplate, {})
 
