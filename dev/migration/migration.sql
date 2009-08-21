@@ -116,7 +116,9 @@ INSERT INTO seattlegeni.control_node
     old_donation.ip,
     old_donation.port,
     old_donation.version,
-    NULL, /* The old seattlegeni didn't keep a meaningful last_heard value. */
+    /* The old seattlegeni didn't keep a meaningful last_heard value, but we don't want
+     * django to consider this NULL, which it seems to if it's 0000-00-00 00:00:00. */
+    NOW(),
     old_donation.active,
     FALSE,
     old_donation.owner_pubkey,
