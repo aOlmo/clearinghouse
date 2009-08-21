@@ -327,7 +327,7 @@ def create_node(node_identifier, last_known_ip, last_known_port, last_known_vers
   node = Node(node_identifier=node_identifier, last_known_ip=last_known_ip,
               last_known_port=last_known_port, last_known_version=last_known_version,
               is_active=is_active, owner_pubkey=owner_pubkey,
-              extra_vessel_name=extra_vessel_name)
+              extra_vessel_name=extra_vessel_name, is_broken=False)
   node.save()
 
   return node
@@ -805,13 +805,17 @@ def delete_user_private_key(geniuser):
 
 
 @log_function_call
-def get_donations_by_user(geniuser):
+def get_donations_by_user(geniuser, include_inactive_and_broken=False):
   """
   <Purpose>
-    Retrieve a list of all donations made by a user.
+    Retrieve a list of all donations made by a user. By default, only includes
+    donations from nodes that are active and not broken.
   <Arguments>
     geniuser
       The user whose donations are to be retrieved.
+    include_inactive_and_broken
+      Whether to include donations by the user that are from nodes which are
+      inactive and/or broken. Default is False.
   <Exceptions>
     None
   <Side Effects>
@@ -821,10 +825,15 @@ def get_donations_by_user(geniuser):
   """
   assert_geniuser(geniuser)
   
+  queryset = Donation.objects.filter(donor=geniuser)
+  if not include_inactive_and_broken:
+    queryset = queryset.filter(node__is_active=True)
+    queryset = queryset.filter(node__is_broken=False)
+  
   # Let's return it as a list() rather than a django QuerySet.
   # Using list() causes the QuerySet to be converted to a list, which also
   # means the query is executed (no lazy loading).
-  return list(Donation.objects.filter(donor=geniuser))
+  return list(queryset)
 
 
 
@@ -924,7 +933,7 @@ def record_node_communication_success(node):
     Let the database know that communication with a node has succeeded.
   <Arguments>
     node
-      The node object of the node that was successfully communicated with.
+      The Node object of the node that was successfully communicated with.
   <Exceptions>
     None
   <Side Effects>
@@ -939,6 +948,35 @@ def record_node_communication_success(node):
   
   node.is_active = True
   node.date_last_contacted = datetime.now()
+  node.save()
+
+
+
+
+
+@log_function_call
+def mark_node_as_broken(node):
+  """
+  <Purpose>
+    Let the database know that the node is broken (that is, what's one the node
+    doesn't match our database). There currently isn't a corresponding function
+    to mark the node as not broken because fixing a node will be a manual
+    process.
+  <Arguments>
+    node
+      The Node object of the node that is broken.
+  <Exceptions>
+    None
+  <Side Effects>
+    The node's is_broken value is changed to True in the database if it
+    wasn't already. The node object passed to the function is correspondingly
+    updated.
+  <Returns>
+    None
+  """
+  assert_node(node)
+  
+  node.is_broken = True
   node.save()
 
 
@@ -1025,6 +1063,7 @@ def _get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(port):
   # No dirty vessels or inactive nodes.
   queryset = queryset.exclude(is_dirty=True)
   queryset = queryset.exclude(node__is_active=False)
+  queryset = queryset.exclude(node__is_broken=True)
   # Make sure we only get vessels with the user's assigned port.
   queryset = queryset.filter(vesselport__port__exact=port)
   # Randomize the vessels returned by the query.
@@ -1241,7 +1280,8 @@ def _get_subnet_list():
   #  subnetsql = """SELECT COUNT(*) AS lansize,
   #                        SUBSTRING_INDEX(last_known_ip, '.', 3) AS subnet
   #                 FROM control_node
-  #                 WHERE is_active = TRUE
+  #                 WHERE is_active = TRUE AND
+  #                       is_broken = FALSE
   #                 GROUP BY subnet
   #                 HAVING lansize >= %s
   #                 ORDER BY RAND()""" % (vesselcount)
@@ -1252,6 +1292,7 @@ def _get_subnet_list():
   
   # Get a queryset of all active nodes.
   queryset = Node.objects.filter(is_active=True)
+  queryset = queryset.filter(is_broken=False)
   queryset = queryset.exclude(last_known_ip__startswith=NAT_STRING_PREFIX)
   queryset = queryset.order_by('last_known_ip')
 
@@ -1615,6 +1656,7 @@ def get_vessels_needing_cleanup():
   """
   queryset = Vessel.objects.filter(is_dirty=True)
   queryset = queryset.filter(node__is_active=True)
+  queryset = queryset.filter(node__is_broken=False)
   return list(queryset)
 
 
@@ -1649,10 +1691,13 @@ def does_vessel_need_cleanup(vessel):
     # The vessel was deleted.
     return (False, "The vessel no longer exists")
   
-  if vessel.node.is_active is False:
+  if not vessel.node.is_active:
     return (False, "The node the vessel is on is not active")
   
-  if vessel.is_dirty is False:
+  if vessel.node.is_broken:
+    return (False, "The node the vessel is on is broken")
+  
+  if not vessel.is_dirty:
     return (False, "The vessel is not dirty")
   
   return (True, "")
@@ -1697,7 +1742,7 @@ def get_active_nodes():
   <Returns>
     A list of Node objects of active nodes.
   """
-  return list(Node.objects.filter(is_active=True))
+  return list(Node.objects.filter(is_active=True, is_broken=False))
 
 
 

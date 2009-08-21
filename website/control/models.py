@@ -162,6 +162,17 @@ class Node(models.Model):
   # If they were deleted from the database, we wouldn't have the owner key to
   # be able to contact them if they came back online later.
   is_active = models.BooleanField(db_index=True)
+  
+  # The node gets marked as broken if we detect that the state of the node
+  # doesn't exactly match what we have in our database. By 'state', we don't
+  # just mean the state being advertised (the user key of the extra vessel),
+  # but rather all aspects of the node that we have in our database which
+  # aren't trivial to fix. This includes the extra vessel not having the node
+  # state key, vessels that our database has for the node not actually existing
+  # on the node, etc. A node that is broken generally implies some human
+  # intervention will be required to repair things, as well as find out what
+  # caused the breakage.
+  is_broken = models.BooleanField(db_index=True)
 
   # The SeattleGeni's owner key for this node. The private key is always stored
   # in the Key DB and is accessible using this public key.

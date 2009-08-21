@@ -63,6 +63,7 @@ last_known_port
 last_known_version
 date_last_contacted
 is_active
+is_broken
 owner_pubkey
 extra_vessel_name
 date_created
@@ -117,6 +118,7 @@ INSERT INTO seattlegeni.control_node
     old_donation.version,
     NULL, /* The old seattlegeni didn't keep a meaningful last_heard value. */
     old_donation.active,
+    FALSE,
     old_donation.owner_pubkey,
     /* We'll get an empty string in the database when there isn't an extra_vessel for this node. */
     (SELECT name FROM geni.control_vessel WHERE donation_id = old_donation.id AND extra_vessel = 1 LIMIT 1),
