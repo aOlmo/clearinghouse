@@ -24,12 +24,16 @@
 
 
 import node_transition_lib
+import traceback
 from seattlegeni.common.util.decorators import log_function_call
+from seattlegeni.common.api import lockserver
+from seattlegeni.common.api import maindb
+from seattlegeni.common.api import nodemanager
 from django.db import transaction
 
 
 @log_function_call
-def update_database(node_string, node_info, database_nodeobject, update_database_node):
+def update_database(node_string, nodeID, update_database_node):
   """
   <Purpose>
     The purpose of this function is to update the database
@@ -37,11 +41,9 @@ def update_database(node_string, node_info, database_nodeobject, update_database
   <Arguments>
     node_string - the name of the node. ip:port or NAT:port
 
-    node_info - the information about the node including the vesseldict
+    nodeID - the unique ID or the per node key for the node
 
-    database_nodeobject - This is the nodeobject that was retrieved from our database
-
-    update_node - This is a function that updates the database. May be replaced 
+    update_database_node - This is a function that updates the database. May be replaced 
       in the future.
 
   <Exceptions>
@@ -61,18 +63,40 @@ def update_database(node_string, node_info, database_nodeobject, update_database
   ip_or_nat_string, port_string = node_string.split(":")
   port_num = int(port_string)
 
+  #create a lock handle to be used
+  lockserver_handle = lockserver.create_lockserver_handle()
+  node_transition_lib.log("Created lockserver_handle for use on node: "+str(nodeID))
+
+  #acquire a lock for the node
+  lockserver.lock_node(lockserver_handle, nodeID)
+  node_transition_lib.log("Acquired node lock for nodeID: "+nodeID)
+
+  
+
+  # Update the database after acquiring the lock
   try:
+    # Retrieve the node info and the databse node object.
+    node_info = nodemanager.get_node_info(ip_or_nat_string, port_num)
+    database_nodeobject = maindb.get_node(nodeID)
+
+    node_transition_lib.log("Retrieved database node object for node: " + node_string)
+
     update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num)
-  except:
-    raise node_transition_lib.DatabaseError("Could not update the database for the node: "+node_string)
+  
+    node_transition_lib.log("updated node database record with version: "+str(database_nodeobject.last_known_version))
+    node_transition_lib.log("Commiting transaction...")
 
-  node_transition_lib.log("updated node database record with version: "+str(database_nodeobject.last_known_version))
-
-  node_transition_lib.log("Commiting transaction...")
-  try:
     transaction.commit()
   except transaction.TransactionManagementError:
     pass
+  except:
+    raise node_transition_lib.NodeError("Unable to update the database for the node: " + node_string + traceback.format_exc())
+  finally:
+    #release the node lock and destroy lock handle
+    lockserver.unlock_node(lockserver_handle, nodeID)
+    node_transition_lib.log("released lock for node: "+nodeID)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+    node_transition_lib.log("Destroyed lockserver_handle for node: "+nodeID)
 
   return
 

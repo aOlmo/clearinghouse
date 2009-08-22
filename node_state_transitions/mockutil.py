@@ -4,11 +4,34 @@ import random
 from seattlegeni.common.api import backend
 from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import nodemanager
+from seattlegeni.common.api import maindb
 
 from seattlegeni.common.exceptions import *
 
 from seattlegeni.node_state_transitions import node_transition_lib
 
+from seattle import repyhelper
+
+repyhelper.translate_and_import("rsa.repy")
+
+
+
+testusername = "testuser"
+
+node_ip = "127.0.0.1"
+node_port = 1224
+node_address = node_ip + ":" + str(node_port)
+
+nodeid_key = {"e" : 1, "n" : 2}
+nodeid_key_str = str(nodeid_key["e"]) + " " + str(nodeid_key["n"])
+
+donor_key = {"e" : 3, "n" : 4}
+donor_key_str = str(donor_key["e"]) + " " + str(donor_key["n"])
+
+per_node_key = {"e" : 5, "n" : 6}
+per_node_key_str = str(per_node_key["e"]) + " " + str(per_node_key["n"])
+
+extra_vessel_name = "v1"
 
 
 
@@ -80,3 +103,122 @@ def mock_nodemanager_get_vesselresources():
   nodemanager.get_vessel_resources = _mock_get_vessel_resources
 
 
+
+
+# How many times backend.set_vessel_owner_key() has been called.
+set_vessel_owner_key_call_count = 0
+
+def mock_backend_set_vessel_owner_key():
+
+  global set_vessel_owner_key_call_count
+
+  def _mock_set_vessel_owner_key(node, vesselname, old_ownerkey, new_ownerkey):
+
+    global set_vessel_owner_key_call_count
+
+    print "[_mock_set_vessel_owner_key] called: ", node, vesselname, old_ownerkey, new_ownerkey
+
+    assert(node == maindb.get_active_nodes()[0])
+    assert(vesselname == extra_vessel_name)
+    assert(old_ownerkey == donor_key_str)
+    assert(new_ownerkey == per_node_key_str)
+
+    set_vessel_owner_key_call_count += 1
+  
+  set_vessel_owner_key_call_count = 0
+
+  backend.set_vessel_owner_key = _mock_set_vessel_owner_key
+
+
+
+
+# How many times backend.set_vessel_user_keylist() has been called.
+set_vessel_user_keylist_call_count = 0
+
+def mock_backend_set_vessel_user_keylist(expected_key_list):
+
+  global set_vessel_user_keylist_call_count
+
+  def _mock_set_vessel_user_keylist(node, vesselname, userkeylist):
+
+    global set_vessel_user_keylist_call_count
+
+    print "[_mock_set_vessel_user_keylist] called: ", node, vesselname, userkeylist
+
+    assert(node == maindb.get_active_nodes()[0])
+
+    # Make sure that the name of the vessel is correct, if we are setting
+    # the keylist for the extra vessel.
+
+    if userkeylist != []:
+      assert(vesselname == extra_vessel_name)
+
+    assert(userkeylist == expected_key_list or userkeylist == [])
+
+    set_vessel_user_keylist_call_count += 1
+
+  set_vessel_user_keylist_call_count = 0
+
+  backend.set_vessel_user_keylist = _mock_set_vessel_user_keylist
+
+
+
+
+#How many times backend.split_vessel() has been called
+split_vessel_call_count = 0
+
+def mock_backend_split_vessel():
+
+  global split_vessel_call_count
+
+  def _mock_split_vessel(node, vesselname, resource_data):
+
+    global split_vessel_call_count
+
+    print "[_mock_split_vessel] called: ", node, vesselname, resource_data
+
+    assert(node == maindb.get_active_nodes()[0])
+    assert(vesselname == extra_vessel_name)
+
+    split_vessel_call_count += 1
+    return (vesselname, "new_vessel"+str(split_vessel_call_count))
+
+  split_vessel_call_count = 0
+
+  backend.split_vessel = _mock_split_vessel
+
+
+
+
+#How many times backend.join_vessels() has been called
+join_vessels_call_count = 0
+
+def mock_backend_join_vessels():
+
+  global join_vessels_call_count
+
+  def _mock_join_vessels(node, extra_vesselname, other_vesselname):
+
+    global join_vessels_call_count
+
+    print "[_mock_join_vessels] called: ", node, extra_vesselname, other_vesselname
+
+    assert(node == maindb.get_active_nodes()[0])
+    assert(extra_vesselname == extra_vessel_name)
+
+    join_vessels_call_count += 1
+    return extra_vesselname
+
+  join_vessels_call_count = 0
+
+  backend.join_vessels = _mock_join_vessels
+
+
+
+
+#mock up for pubkey to string
+def _mock_pubkey_to_string(pubkey):
+  pub_string = str(pubkey['e'])+" "+str(pubkey['n'])
+  return pub_string
+
+node_transition_lib._do_rsa_publickey_to_string = _mock_pubkey_to_string

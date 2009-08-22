@@ -235,7 +235,8 @@ def run_parallel_processes(nodeprocesslist, lockname, parallel_instances, *proce
   """
 
   try:
-    parallel_handle = parallelize_initfunction(nodeprocesslist, processnode_function, parallel_instances, *processargs)
+    # Note that processnode is a function.
+    parallel_handle = parallelize_initfunction(nodeprocesslist, processnode, parallel_instances, *processargs)
 
   except Exception, e: 
     log("Error: failed to set up parallelize_initfunction" + str(e))
@@ -245,24 +246,24 @@ def run_parallel_processes(nodeprocesslist, lockname, parallel_instances, *proce
 
 
   try:
-    #keep looping until all the threads in the parallel handle are finished running
+    # Keep looping until all the threads in the parallel handle are finished running.
     while not parallelize_isfunctionfinished(parallel_handle):
-      #check to see if the lock is still held.
+      # Check to see if the process lock is still held.
       if not runonce.stillhaveprocesslock("process_lock."+lockname):
         log("The lock for "+lockname+" has been lost. Exiting transitional script")
         raise ValueError("Lost the process_lock for the transition script!")
     
-      #sleep for a sec to give the parallel_handle to finish
+      # Sleep for a sec to give the parallel_handle to finish.
       time.sleep(1)
 
-    #get the results to the parallel_handle for the node processing
+    # Get the results to the parallel_handle for the node processing.
     nodeprocessresults = parallelize_getresults(parallel_handle)
 
 
     success_count = 0
     failure_count = 0
 
-    #accoutn for all the succesful results
+    # Account for all the succesful results.
     for nodename, returnvalue in nodeprocessresults['returned']:
       if returnvalue:
         log("Succes on node "+nodename+". Returnvalue: "+str(returnvalue))
@@ -272,24 +273,24 @@ def run_parallel_processes(nodeprocesslist, lockname, parallel_instances, *proce
         failure_count += 1
 
 
-    #write to the log for all the nodes that had an exception
+    # Write to the log for all the nodes that had an exception.
     for nodename, exceptionstring in nodeprocessresults['exception']:
       log("Failure on node "+nodename+"\nException String: "+exceptionstring+"\n")
       failure_count += 1
 
   
-    #write to the log for all the nodes that were aborted
+    # Write to the log for all the nodes that were aborted.
     for nodename in nodeprocessresults['aborted']:
       log("The processnode_function was aborted for the node "+nodename)
       failure_count += 1
 
 
   finally:
-    #clean up the parallel_handle and make sure that the handle is closed
+    # Clean up the parallel_handle and make sure that the handle is closed.
     log("Cleaning up and closing parallel_handle")
     parallelize_closefunction(parallel_handle)
 
-  #everything worked out fine in the parallel_handle
+  # Everything worked out fine in the parallel_handle.
   return (success_count, failure_count)
 
 
@@ -297,7 +298,7 @@ def run_parallel_processes(nodeprocesslist, lockname, parallel_instances, *proce
 
     
 @log_function_call
-def processnode_function(node_string, startstate_info, endstate_info, nodeprocess_func, nodeerror_func, *nodeprocess_args):
+def processnode(node_string, startstate_info, endstate_info, nodeprocess_func, nodeerror_func, *nodeprocess_args):
   """
   <Purpose>
     First check the current state of the node, to ensure that it is in the
@@ -339,25 +340,24 @@ def processnode_function(node_string, startstate_info, endstate_info, nodeproces
     if any exceptions occured
   """
  
-  #the pubkey for the state
+  # The pubkey for the state.
   startstate_pubkey = startstate_info[1]
   endstate_pubkey = endstate_info[1]
 
   try:
-    #make sure that the node is just not an empty string, could happend due to bad advertise_lookup
+    # Make sure that the node is just not an empty string, could happend due to bad advertise_lookup.
     if not node_string:
       raise NodeError, "An empty node was passed down to processnode() with startstate: "+startstate_info[0]
 
-    #note that the first portion of the node might be an ip or a NAT string
+    # Note that the first portion of the node might be an ip or a NAT string.
     ip_or_nat_string, port_string = node_string.split(":")
     port_num = int(port_string)
 
     log("Starting to process node: "+node_string)
 
 
-
  
-    #try to retrieve the vessel dictionary for a node, on error raise NodeError exception
+    # Try to retrieve the vessel dictionary for a node, on error raise NodeError exception.
     log("Retrieving node vesseldict for node: "+node_string)
     try:
       node_info = nodemanager.get_node_info(ip_or_nat_string, port_num)
@@ -369,31 +369,22 @@ def processnode_function(node_string, startstate_info, endstate_info, nodeproces
     nodeID =  _do_rsa_publickey_to_string(node_info['nodekey'])
 
 
-
   
-    #if the nodes are in acceptdonationstate, update/check the database
-    #to ensure that it matches the node information
+    # If the nodes are in acceptdonationstate, update/check the database
+    # to ensure that it matches the node information.
     if startstate_pubkey == acceptdonationpublickey:
       log("Node in acceptdonationpublickey. Calling add_newnode_to_db() to check that node is correctly in database")
-      add_new_node_to_db(ip_or_nat_string, port_num, node_info)         
+      add_new_node_to_db(node_string, nodeID)         
       log("Returned from add_newnode_to_db() and database should be in right state...")
 
 
-
-    log("Accessing database to retrieve node with nodeID: "+nodeID)
-
-    #retrieve the node data from the database
-    try:
-      database_nodeobject = maindb.get_node(nodeID)
-    except:
-      raise DatabaseError("Unable to retrieve node from database with nodeID: " + nodeID + str(e))
-  
-    log("Retrieved node object successfully with nodeID: "+nodeID+" with the node: "+str(database_nodeobject))
     
-    #retrieve the node state and and the list of vessels
-    current_node_state_pubkey = get_node_state(node_info, database_nodeobject)
+    # Retrieve the node state and and the list of vessels.
+    current_node_state_pubkey = get_node_state(nodeID, node_string)
+
+
     
-    #make sure that the node is in the right state
+    # Make sure that the node is in the right state.
     if current_node_state_pubkey != startstate_pubkey:
       log("The node is not in the right transition state. NodeID is: "+nodeID+
          "Current state is "+str(current_node_state_pubkey)+". Should be in state "+
@@ -401,24 +392,25 @@ def processnode_function(node_string, startstate_info, endstate_info, nodeproces
       raise NodeError("Node is no longer in the right state!")
 
 
-
   
-    #run the processnode function that was passed originally from the transition scripts
+    # Run the processnode function that was passed originally from the transition scripts.
     try:
-      nodeprocess_func(node_string, node_info, database_nodeobject, *nodeprocess_args)
+      nodeprocess_func(node_string, nodeID, *nodeprocess_args)
     except Exception, e:
       log("Failed to process node: "+node_string)
       raise NodeProcessError("Could not process node: "+node_string+" "+str(e))
 
-    #set the node state now that the node has been processed
+
+
+    # Set the node state now that the node has been processed.
     try:
       log("Trying to set new state for node: "+node_string)
-      set_node_state(database_nodeobject, endstate_pubkey)
+      set_node_state(nodeID, endstate_pubkey)
       log("Finished setting new state "+endstate_info[0]+" on node "+node_string) 
     except NodeError, e:
-      raise NodeError("Failed to set the node state for node: "+node_string+". "+str(e)) 
+      raise NodeError("Failed to set the node state for node: "+node_string+". "+traceback.format_exc()) 
     except:
-      raise UnexpectedError("Something unexpected happened while setting node state")
+      raise UnexpectedError("Something unexpected happened while setting node state "+traceback.format_exc())
 
   except NodeError:
     log("Node data problem when processing node: "+node_string)
@@ -444,7 +436,7 @@ def processnode_function(node_string, startstate_info, endstate_info, nodeproces
 
 
 @log_function_call
-def get_node_state(node_info, database_nodeobject):
+def get_node_state(nodeID, node_string):
   """
   <Purpose>
     Given a node, find out what state the node is in (canonical, onepercent,
@@ -452,10 +444,9 @@ def get_node_state(node_info, database_nodeobject):
     be held in the extra vessel, which should have only one userkey
 
   <Arguments>
-    node_info - This contains the node information such as the nodeID (per
-      node key), ip, port as well as the vesseldict. 
+    nodeID - This is the unique ID or the per node key for the node 
 
-    database_nodeobject - this is the object that was retrieved from the database
+    node_string - This is the node address in the form ip:port or NAT:port
 
   <Exceptions>
     NodeError - raised if the extra vessel is not found in the node_info or
@@ -468,24 +459,55 @@ def get_node_state(node_info, database_nodeobject):
     node_state - the state that the node is in.
   """
 
-  #retrieve the nodeID
-  nodeID = database_nodeobject.node_identifier
+  ip_or_nat_string, port_string = node_string.split(":")
+  port_num = int(port_string)
 
-  log("Starting get node state for node "+nodeID)
-  extra_vessel_name = database_nodeobject.extra_vessel_name
-  log("Name of extra vessel: "+extra_vessel_name)
+
+  # Initialize a lock.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  log("Created lockserver_handle for use on node: ")
+
+  # Acquire a lock for the node.
+  lockserver.lock_node(lockserver_handle, nodeID)
+  log("Acquired node lock for nodeID: "+nodeID)
+
+
+  # Do everything after acquiring a lock.
+  try:
+
+    # Retrieve the node info and the node database object.
+    node_info = nodemanager.get_node_info(ip_or_nat_string, port_num)
+    database_nodeobject = maindb.get_node(nodeID)
+
+    log("Starting get node state for node "+nodeID)
+    extra_vessel_name = database_nodeobject.extra_vessel_name
+    log("Name of extra vessel: "+extra_vessel_name)
  
-  #check to see that the extra vessel exists in node_info
-  if extra_vessel_name not in node_info["vessels"]:
-    raise NodeError("The extra_vessel_name '" + extra_vessel_name + "' doesn't exist on the node.")
+    #check to see that the extra vessel exists in node_info
+    if extra_vessel_name not in node_info["vessels"]:
+      raise NodeError("The extra_vessel_name '" + extra_vessel_name + "' doesn't exist on the node. "+traceback.format_exc())
 
-  extra_vessel_info = node_info["vessels"][extra_vessel_name]
+    extra_vessel_info = node_info["vessels"][extra_vessel_name]
 
-  #make sure that the extra vessel has only one state key
-  if len(extra_vessel_info["userkeys"]) != 1:
-    raise NodeError("The extra_vessel_name '" + extra_vessel_name +
+    #make sure that the extra vessel has only one state key
+    if len(extra_vessel_info["userkeys"]) != 1:
+      raise NodeError("The extra_vessel_name '" + extra_vessel_name +
                     "' doesn't contain one key, it contains " + str(len(extra_vessel_info["userkeys"])))
  
+  except NodemanagerCommunicationError, e:
+    raise NodeError("Failed to retrieve node_vesseldict for node: " + node_string + traceback.format_exc())
+  except NodeError, e:
+    raise
+  except:
+    raise NodeError("Failed to get the node state for the node "+node_string+"  "+traceback.format_exc())
+  finally:
+    #release the node lock and destroy lock handle
+    lockserver.unlock_node(lockserver_handle, nodeID)
+    log("released lock for node: "+nodeID)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+    log("Destroyed lockserver_handle for node: "+nodeID)
+
+
   return extra_vessel_info["userkeys"][0]
 
   
@@ -493,7 +515,7 @@ def get_node_state(node_info, database_nodeobject):
   
  
 @log_function_call
-def set_node_state (database_nodeobject, end_state):
+def set_node_state (nodeID, end_state):
   """
   <Purpose>
     given a list of vessels, change the userkeys of all the vessels.
@@ -518,28 +540,33 @@ def set_node_state (database_nodeobject, end_state):
     None
   """
 
-  nodeID = database_nodeobject.node_identifier
-  #newstatekey_str = _do_rsa_publickey_to_string(end_state)
 
-  #initialize a lock
+  # Initialize a lock.
   lockserver_handle = lockserver.create_lockserver_handle()
   log("Created lockserver_handle for use on node: ")
 
-  #acquire a lock for the node
+  # Acquire a lock for the node.
   lockserver.lock_node(lockserver_handle, nodeID)
   log("Acquired node lock for nodeID: "+nodeID)
 
-  #use a try/finally block to ensure that the lock is released at the end
+  # Use a try/finally block to ensure that the lock is released at the end.
   try:
-    backend.set_vessel_user_keylist(database_nodeobject, database_nodeobject.extra_vessel_name, [end_state])
+    # Retrieve the database object then use it to set the transition state.
+    database_nodeobject = maindb.get_node(nodeID)
+
+
+    # Convert the end_state pubkey to string format and then set the key.
+    final_state_str = _do_rsa_publickey_to_string(end_state)
+    backend.set_vessel_user_keylist(database_nodeobject, database_nodeobject.extra_vessel_name, [final_state_str])
     log("Successfully changed the node state to "+str(end_state))
 
+
   except NodemanagerCommunicationError, e:
-    raise NodeError("Failed to retrieve node_vesseldict for node: " + nodeID + str(e))
+    raise NodeError("Failed to retrieve node_vesseldict for node: " + nodeID + traceback.format_exc())
   except Exception, e:
-    raise NodeError("Unable to change state of node: "+nodeID+" "+str(e))
+    raise NodeError("Unable to change state of node: "+nodeID+" "+traceback.format_exc())
   finally:
-    #release the node lock and destroy lock handle
+    # Release the node lock and destroy lock handle.
     lockserver.unlock_node(lockserver_handle, nodeID)
     log("released lock for node: "+nodeID)
     lockserver.destroy_lockserver_handle(lockserver_handle) 
@@ -550,7 +577,7 @@ def set_node_state (database_nodeobject, end_state):
 
 
 @log_function_call
-def add_new_node_to_db(ip_or_nat_string, port, node_info):
+def add_new_node_to_db(node_string, nodeID):
   """
   <Purpose> 
     when new nodes come online, they may be not have the right data in 
@@ -566,11 +593,9 @@ def add_new_node_to_db(ip_or_nat_string, port, node_info):
       case we are all set.
 
   <Arguments>
-    ip_or_nat_string - the ip address of the node
+    node_string - The node address in ip:port or NAT:port format
 
-    port - the port number of the node
-
-    node_info - the information about the node, including vesseldict
+    nodeID - The unique ID or the per-node-key for the node
 
   <Exceptions>
     NodeError - if the node does not have a valid state
@@ -584,134 +609,140 @@ def add_new_node_to_db(ip_or_nat_string, port, node_info):
     None
   """
 
-  nodeID = _do_rsa_publickey_to_string(node_info['nodekey'])
+  ip_or_nat_string, port_string = node_string.split(":")
+  port_num = int(port_string)
 
-  #extract the ownerkey and the vessel that has that info
-  log("Looking for donor key for node: "+ip_or_nat_string+":"+str(port))
-  log("Looking for the vessel that has the transition state in its 'userkeys'")
-
-
-
-
-  for vesselname in node_info['vessels']:
-    log("looking in vessel "+vesselname+".....")
-    if listops_intersect(node_info['vessels'][vesselname]['userkeys'], known_transition_states):
-      donation_owner_pubkey = node_info['vessels'][vesselname]['ownerkey']
-      donation_vesselname = vesselname
-      log("Found donation key in vessel "+donation_vesselname+" : "+str(donation_owner_pubkey))
-      break
-  else:
-    raise NodeError("Node "+ip_or_nat_string+":"+str(port)+" does not seem to have a state after checking!")
-
-
-
-
-  #initialize a lock
+  # Initialize a lock.
   lockserver_handle = lockserver.create_lockserver_handle()
   log("Created lockserver_handle for use on node: "+nodeID)
 
-  #acquire a lock for the node
+  # Acquire a lock for the node.
   lockserver.lock_node(lockserver_handle, nodeID)
   log("Acquired node lock for nodeID: "+nodeID)
   
 
-  #retrieve the node data from the database
+  
   try:
-    database_nodeobject = maindb.get_node(nodeID)
-    
-  except DoesNotExistError, e:
-    log("Database entry does not exist for node: "+ip_or_nat_string+":"+str(port))
-    log("This is case 1")
-    log("Generating new keys for node owner_key....")
-    new_node_owner_pubkey = backend.generate_key(ip_or_nat_string+". "+nodeID)
-    log("Generated publickey for node "+ip_or_nat_string+":"+str(port)+" : "+str(new_node_owner_pubkey))
-    
-    #This is to deal with Case1
+
+    # Retrieve the node_info after the lock is acquired
+    node_info = nodemanager.get_node_info(ip_or_nat_string, port_num)
+
+    # Extract the ownerkey and the vessel that has that info.
+    log("Looking for donor key for node: "+node_string)
+    log("Looking for the vessel that has the transition state in its 'userkeys'")
+
+
+
+    # Find the extra vessel of the node
+    for vesselname in node_info['vessels']:
+      log("looking in vessel "+vesselname+".....")
+      if acceptdonationpublickey in node_info['vessels'][vesselname]['userkeys']:
+        donation_owner_pubkey = node_info['vessels'][vesselname]['ownerkey']
+        donation_vesselname = vesselname
+        log("Found donation key in vessel "+donation_vesselname+" : "+str(donation_owner_pubkey))
+        break
+    else:
+      raise NodeError("Node "+node_string+" does not seem to have a state after checking!" + traceback.format_exc())
+
+
+
     try:
-      #attempt to add new node to db
-      database_nodeobject = maindb.create_node(nodeID, ip_or_nat_string, port, node_info['version'], 
-        True, new_node_owner_pubkey, donation_vesselname) 
+      # Retrieve the node object if it's already in the database
+      database_nodeobject = maindb.get_node(nodeID)
+    except DoesNotExistError, e:
+      # If the node object does not exist in the database, add it.
+      log("Database entry does not exist for node: "+node_string)
+      log("This is case 1")
+      log("Generating new keys for node owner_key....")
+
+
+
+      new_node_owner_pubkey = backend.generate_key(ip_or_nat_string+". "+nodeID)
+      log("Generated publickey for node "+node_string+" : "+str(new_node_owner_pubkey))
+
+
+    
+      # This is to deal with Case1.
+      try:
+        # Attempt to add new node to db.
+        database_nodeobject = maindb.create_node(nodeID, ip_or_nat_string, port_num, node_info['version'], 
+                                                True, new_node_owner_pubkey, donation_vesselname) 
      
-      log("Added node to the database with nodeID: "+nodeID)  
-    except Exception, e:
-      raise DatabaseError("Failed to create node and add to database. "+str(e))    
+        log("Added node to the database with nodeID: "+nodeID)  
+      except:
+        raise DatabaseError("Failed to create node and add to database. " + traceback.format_exc())    
 
 
 
-    database_userobject = ""
-    #retrieve the user object for the user that donated the resource
-    try:
-      database_userobject = maindb.get_donor(rsa_publickey_to_string(donation_owner_pubkey))
-      log("Retrieved the userobject of the donor from database: "+str(database_userobject))
-    except:
-      raise DatabaseError("Failed to retrieve the userobject of the donor from the database. "+str(e))
+      database_userobject = ""
+      # Retrieve the user object for the user that donated the resource
+      try:
+        database_userobject = maindb.get_donor(rsa_publickey_to_string(donation_owner_pubkey))
+        log("Retrieved the userobject of the donor from database: "+str(database_userobject))
+      except:
+        raise DatabaseError("Failed to retrieve the userobject of the donor from the database. " + traceback.format_exc())
   
 
 
-    #give the user credit for their donation of the node
-    donation_description = "Crediting user "+str(database_userobject)+" for donation of node "+str(database_nodeobject) 
-    try:
-      maindb.create_donation(database_nodeobject, database_userobject, donation_description)
-      log("Registering the donation for the user with the donor_key: "+str(donation_owner_pubkey))
-    except Exception, e:
-      raise DatabaseError("Failed to credit user for donation for user: "+str(database_userobject)+str(e))
+      #give the user credit for their donation of the node
+      donation_description = "Crediting user "+str(database_userobject)+" for donation of node "+str(database_nodeobject) 
+      try:
+        maindb.create_donation(database_nodeobject, database_userobject, donation_description)
+        log("Registering the donation for the user with the donor_key: "+str(donation_owner_pubkey))
+      except Exception, e:
+        raise DatabaseError("Failed to credit user for donation for user: "+str(database_userobject) + traceback.format_exc())
  
+
+
+    # We are finished adding node object, or retrieving node object from database
+    log("Retrieved node object successfully with nodeID: "+nodeID+" with the node: "+str(database_nodeobject))
+    
+
+
+
+
+    #This is triggered for Case1 and Case2
+    if donation_owner_pubkey != rsa_string_to_publickey(database_nodeobject.owner_pubkey):
+      log("Database has nodeID but node has donation key")
+      log("Checking to make sure that the donation was credited")
+
+
+      #check to see if the donor was credited
+      donation_list = maindb.get_donations_from_node(database_nodeobject)
+      if len(donation_list) == 0:
+        donation_description = "Crediting user "+str(database_userobject)+" for donation of node "+str(database_nodeobject)
+      
+        #attempt to give the user credit for their donation
+        try:
+          maindb.create_donation(database_nodeobject, database_userobject, donation_description)
+          log("Registering the donation for the user with the donor_key: "+str(donation_owner_pubkey))
+        except Exception, e:
+          raise DatabaseError("Failed to credit user for donation for user: "+str(database_userobject) + traceback.format_exc())
+
+
+
+      log("Attempting to change the owner for vessel: "+donation_vesselname)
+    
+    
+      # Convert the donation key to string format, and set the vesse
+      donation_owner_pubkey_str = _do_rsa_publickey_to_string(donation_owner_pubkey)
+      backend.set_vessel_owner_key(database_nodeobject, donation_vesselname, 
+                                   donation_owner_pubkey_str, database_nodeobject.owner_pubkey)
+      log("Successfully changed the owner_key to "+donation_owner_pubkey_str)
+      # End of if statement
+
+  except NodeError: 
+    raise
+  except DatabaseError:
+    raise
+  except NodemanagerCommunicationError, e:
+    raise NodeError("Failed to communicate with the node: " + node_string + traceback.format_exc())
   finally:
     #release the node lock and destroy lock handle
     lockserver.unlock_node(lockserver_handle, nodeID)
     log("released lock for node: "+nodeID)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-    log("Destroyed lockserver_handle for node: "+nodeID) 
-
-  log("Retrieved node object successfully with nodeID: "+nodeID+" with the node: "+str(database_nodeobject))
-    
-
-
-
-  #This is for Case2
-  if donation_owner_pubkey != rsa_string_to_publickey(database_nodeobject.owner_pubkey):
-    log("Database has nodeID but node has donation key")
-    log("Checking to make sure that the donation was credited")
-
-
-    #check to see if the donor was credited
-    donation_list = maindb.get_donations_from_node(database_nodeobject)
-    if len(donation_list) == 0:
-      donation_description = "Crediting user "+str(database_userobject)+" for donation of node "+str(database_nodeobject)
-      #attempt to give the user credit for their donation
-      try:
-        maindb.create_donation(database_nodeobject, database_userobject, donation_description)
-        log("Registering the donation for the user with the donor_key: "+str(donation_owner_pubkey))
-      except Exception, e:
-        raise DatabaseError("Failed to credit user for donation for user: "+str(database_userobject)+str(e))
-
-
-
-    log("Attempting to change the owner for vessel: "+donation_vesselname)
-    
-    #initialize a lock
-    lockserver_handle = lockserver.create_lockserver_handle()
-    log("Created lockserver_handle for use on node: "+nodeID)
-
-    #acquire a lock for the node
-    lockserver.lock_node(lockserver_handle, nodeID)
-    log("Acquired node lock for nodeID: "+nodeID)
-
-    #use a try/finally block to ensure that the lock is released at the end
-    try:
-      donation_owner_pubkey_str = _do_rsa_publickey_to_string(donation_owner_pubkey)
-      backend.set_vessel_owner_key(database_nodeobject, donation_vesselname, 
-                                   donation_owner_pubkey_str, database_nodeobject.owner_pubkey)
-      log("Successfully changed the owner_key to "+donation_owner_pubkey_str)
-    except Exception, e:
-      raise NodeProcessError("Unable to change owner of node: "+nodeID+" "+str(e))
-
-    finally:
-      #release the node lock and destroy lock handle
-      lockserver.unlock_node(lockserver_handle, nodeID)
-      log("released lock for node: "+nodeID)
-      lockserver.destroy_lockserver_handle(lockserver_handle)
-      log("Destroyed lockserver_handle for node: "+nodeID)
+    log("Destroyed lockserver_handle for node: "+nodeID)
 
   #For case 3 nothing needs to be done.   
 
@@ -774,7 +805,7 @@ def find_advertised_nodes(startstate_name, startstate_publickey):
 
 
 @log_function_call
-def combine_vessels(node_string, node_info, database_nodeobject, node_state_pubkey):
+def combine_vessels(node_string, nodeID, node_state_pubkey):
   """
   <Purpose>
     The purpose of this function is to combine all the vessels of 
@@ -804,11 +835,12 @@ def combine_vessels(node_string, node_info, database_nodeobject, node_state_pubk
 
   log("Beginning combine_vessels for the node: "+node_string)
 
-  node_pubkey = database_nodeobject.owner_pubkey
-  nodeID = node_info['nodekey']
+  # Extract the ip the port number
+  ip_or_nat_string, port_string = node_string.split(":")
+  port_num = int(port_string)
 
   #the list that will hold all the vesselnames of the node
-  vessel_list=[]
+  vessel_list = []
 
 
 
@@ -822,13 +854,25 @@ def combine_vessels(node_string, node_info, database_nodeobject, node_state_pubk
 
 
 
-  #This is the extra vessel or the vessel that has the transition state
-  extra_vessel = database_nodeobject.extra_vessel_name
-
-
-
   #combine the vessels
   try:
+
+    # Try to retrieve the vessel dictionary for a node, on error raise NodeError exception.
+    log("Retrieving node vesseldict for node: "+node_string)  
+    node_info = nodemanager.get_node_info(ip_or_nat_string, port_num)    
+
+    log("Retrieving database node object for node: "+node_string)
+    database_nodeobject = maindb.get_node(nodeID)
+    
+
+
+    node_pubkey = database_nodeobject.owner_pubkey
+    
+    #This is the extra vessel or the vessel that has the transition state
+    extra_vessel = database_nodeobject.extra_vessel_name 
+
+
+ 
     log("Finding all the vessels in the node "+node_string+"...")
     for current_vessel in node_info['vessels']:
       #check to see if the vessels belong to us (SeattleGENI)
@@ -851,18 +895,23 @@ def combine_vessels(node_string, node_info, database_nodeobject, node_state_pubk
       log("Combined vessel "+extra_vessel+" and "+current_vessel+" into "+combined_vessel)
       extra_vessel = combined_vessel
 
+    log("Finished combining all the vessels for node: "+node_string)
+
     try:
-      #delete all the 
+      #delete all the vessel recoreds from database 
       maindb.delete_all_vessels_of_node(database_nodeobject)
+      log("Removed all the vessel records from the database for node: "+node_string)
     except Exception, e:
       raise DatabaseError("Unable to delete all vessel records from the database for node "+
-                         node_string+". "+str(e))
+                         node_string+". " + traceback.format_exc())
 
 
-  except DatabaseError, e:
-    raise DatabaseError(e)
+  except DatabaseError:
+    raise
+  except NodemanagerCommunicationError, e:
+    raise NodeError("Failed to communicate with the node: " + node_string + traceback.format_exc())
   except:
-    raise NodeError("Failed to combine the vessels for node"+node_string)
+    raise NodeError("Failed to combine the vessels for node" + node_string + traceback.format_exc())
   finally:
     #release the node lock and destroy lock handle
     lockserver.unlock_node(lockserver_handle, nodeID)
@@ -879,12 +928,16 @@ def combine_vessels(node_string, node_info, database_nodeobject, node_state_pubk
 #helper function now for testing.
 @log_function_call
 def _do_advertise_lookup(startstate_publickey):
+  """ Do an advertise lookup. This function is used mainly for easier
+      testing purposes. """
   return advertise_lookup(startstate_publickey, maxvals = 10*1024*1024)
 
 
 
+
+
 def noop(*args):
-  # in some cases I don't want to do anything (i.e. just change state)
+  """ in some cases I don't want to do anything (i.e. just change state)"""
   pass
 
 

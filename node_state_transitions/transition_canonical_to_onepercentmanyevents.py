@@ -25,6 +25,7 @@
 
 import node_transition_lib
 import random
+import traceback
 from seattlegeni.common.api import backend
 from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import maindb
@@ -33,7 +34,7 @@ from seattlegeni.common.util.decorators import log_function_call
 from seattlegeni.common.exceptions import *
 
 @log_function_call
-def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, onepercent_resourcetemplate):
+def onepercentmanyevents_divide (node_string, nodeID, onepercent_resourcetemplate):
   """
   <Purpose>
     The purpose of this function is to take a node thats in canonical state
@@ -43,11 +44,9 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
   <Arguments>
     node_string - the name of the node. ip:port or NAT:port
 
-    node_info - the information about the node including the vesseldict
+    nodeID - The unique ID or the per node key of the node
  
     onepercent_resourcetemplate - the file that has information about resources
-
-    database_nodeobject - This is the nodeobject that was retrieved from our database
 
   <Exceptions>
     NodeError - Error raised if node is not in the right state 
@@ -71,104 +70,110 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
   #note that the first portion of the node might be an ip or a NAT string
   ip_or_nat_string, port_string = node_string.split(":")
   port_num = int(port_string)
- 
-  #retrieve the owner key and nodeID
-  nodeID = node_transition_lib._do_rsa_publickey_to_string(node_info['nodekey'])
-  donated_vesselname = database_nodeobject.extra_vessel_name
 
+
+
+  #create a lock handle to be used
+  lockserver_handle = lockserver.create_lockserver_handle()
+  node_transition_lib.log("Created lockserver_handle for use on node: "+str(nodeID))
+
+  #acquire a lock for the node
+  lockserver.lock_node(lockserver_handle, nodeID)
+  node_transition_lib.log("Acquired node lock for nodeID: "+nodeID)
  
-  #Retrieve the usable ports list for the node
+  
+  
   try:
+    # Retrieve the node database object
+    database_nodeobject = maindb.get_node(nodeID)
+    donated_vesselname = database_nodeobject.extra_vessel_name
+
+
+ 
+    #Retrieve the usable ports list for the node
     usable_ports_list = nodemanager.get_vessel_resources(ip_or_nat_string, port_num, donated_vesselname)['usableports']
-  except NodemanagerCommunicationError, e:
-    raise NodemanagerCommunicationError("Unable to retrieve usable ports for node: "+node_string+". "+str(e))
+  
+    node_transition_lib.log("List of usable ports in node: "+node_string+". "+str(usable_ports_list))
 
-  node_transition_lib.log("List of usable ports in node: "+node_string+". "+str(usable_ports_list))
-
-  #shuffle the list of ports so when the vessel is split the vessels get a random subset
-  random.shuffle(usable_ports_list)
+    #shuffle the list of ports so when the vessel is split the vessels get a random subset
+    random.shuffle(usable_ports_list)
 
 
 
-
-  #the vessel that we start with
-  current_vessel = donated_vesselname
-  node_transition_lib.log("Name of starting vessel: "+current_vessel)
-
-  #this will contain a list of (vessel_name, port_list)
-  new_vessel_infolist = []
-
-  #keep splittiing the vessel until we run out of resources  
-  #Note that when split_vessel is called the left vessel has the leftover (extra vessel)
-  #and the right vessel has the vessel with the exact resources.
-  while len(usable_ports_list) >= 10:
-    #TODO: ask jsamuel how to do this better
-    desired_resourcedata = onepercent_resourcetemplate % (str(usable_ports_list[0]), str(usable_ports_list[1]), 
-                           str(usable_ports_list[2]), str(usable_ports_list[3]), str(usable_ports_list[4]),
-                           str(usable_ports_list[5]), str(usable_ports_list[6]), str(usable_ports_list[7]),
-                           str(usable_ports_list[8]), str(usable_ports_list[9]), str(usable_ports_list[0]),
-                           str(usable_ports_list[1]), str(usable_ports_list[2]), str(usable_ports_list[3]),
-                           str(usable_ports_list[4]), str(usable_ports_list[5]), str(usable_ports_list[6]),
-                           str(usable_ports_list[7]), str(usable_ports_list[8]), str(usable_ports_list[9]))
-
-    #use the first 10 ports so remove them from the list of usable_ports_list
-    used_ports_list = usable_ports_list[:10]
-    usable_ports_list = usable_ports_list[10:]
-
-    node_transition_lib.log("Ports we are going to use for the new vessel: "+str(used_ports_list))
-    node_transition_lib.log("Starting to split vessel: "+current_vessel)
+    #the vessel that we start with
+    current_vessel = donated_vesselname
+    node_transition_lib.log("Name of starting vessel: "+current_vessel)
 
 
 
+    #keep splittiing the vessel until we run out of resources  
+    #Note that when split_vessel is called the left vessel has the leftover (extra vessel)
+    #and the right vessel has the vessel with the exact resources.
+    while len(usable_ports_list) >= 10:
+      #TODO: ask jsamuel how to do this better
+      desired_resourcedata = onepercent_resourcetemplate % (str(usable_ports_list[0]), str(usable_ports_list[1]), 
+                             str(usable_ports_list[2]), str(usable_ports_list[3]), str(usable_ports_list[4]),
+                             str(usable_ports_list[5]), str(usable_ports_list[6]), str(usable_ports_list[7]),
+                             str(usable_ports_list[8]), str(usable_ports_list[9]), str(usable_ports_list[0]),
+                             str(usable_ports_list[1]), str(usable_ports_list[2]), str(usable_ports_list[3]),
+                             str(usable_ports_list[4]), str(usable_ports_list[5]), str(usable_ports_list[6]),
+                             str(usable_ports_list[7]), str(usable_ports_list[8]), str(usable_ports_list[9]))
+
+
+
+      #use the first 10 ports so remove them from the list of usable_ports_list
+      used_ports_list = usable_ports_list[:10]
+      usable_ports_list = usable_ports_list[10:]
+
+      node_transition_lib.log("Ports we are going to use for the new vessel: "+str(used_ports_list))
+      node_transition_lib.log("Starting to split vessel: "+current_vessel)
+
+
+
+      #split the current vessel. The exact vessel is the right vessel and the extra vessel is the left vessel
+      #create a record for the vessel and add its port to the database
+
+      leftover_vessel, new_vessel = backend.split_vessel(database_nodeobject, current_vessel, desired_resourcedata)                    
+
+      node_transition_lib.log("Successfully split vessel: "+current_vessel+" into vessels: "+leftover_vessel+" and "+new_vessel)
    
-    #create a lock handle to be used
-    lockserver_handle = lockserver.create_lockserver_handle()
-    node_transition_lib.log("Created lockserver_handle for use on node: "+str(nodeID))
-
-    #acquire a lock for the node
-    lockserver.lock_node(lockserver_handle, nodeID)
-    node_transition_lib.log("Acquired node lock for nodeID: "+nodeID)
-
-    #split the current vessel. The exact vessel is the right vessel and the extra vessel is the left vessel
-    #create a record for the vessel and add its port to the database
-    try:
-      leftover_vessel, new_vessel = backend.split_vessel(database_nodeobject, current_vessel, desired_resourcedata)              
-    except Exception, e:
-      raise node_transition_lib.NodeProcessError("Failed to split vessel: "+current_vessel+". "+str(e))
-    finally:
-      #release the node lock and destroy lock handle
-      lockserver.unlock_node(lockserver_handle, nodeID)
-      node_transition_lib.log("released lock for node: "+nodeID)
-      lockserver.destroy_lockserver_handle(lockserver_handle)
-      node_transition_lib.log("Destroyed lockserver_handle for node: "+nodeID)
-
-    node_transition_lib.log("Successfully split vessel: "+current_vessel+" into vessels: "+leftover_vessel+" and "+new_vessel)
-   
-    current_vessel = leftover_vessel
-    new_vessel_infolist.append((new_vessel, used_ports_list))
+      current_vessel = leftover_vessel
 
 
 
+      #set the user_list for the new vesel to be empty. Remember that user_list is what determines
+      #the transition state, and only the extra vessel should have this set.
+      backend.set_vessel_user_keylist(database_nodeobject, new_vessel, [])
+      node_transition_lib.log("Changed the userkeys for the vessel "+new_vessel+" to []")
 
-    #set the user_list for the new vesel to be empty. Remember that user_list is what determines
-    #the transition state, and only the extra vessel should have this set.
-    backend.set_vessel_user_keylist(database_nodeobject, new_vessel, [])
-    node_transition_lib.log("Changed the userkeys for the vessel "+new_vessel+" to []")
 
 
-    
-    try:
-      node_transition_lib.log("Creating a vessel record in the database for vessel "+new_vessel+" for node "+node_string)
-      vessel_object = maindb.create_vessel(database_nodeobject, new_vessel)
-      node_transition_lib.log("Setting the vessel ports in the database for vessel "+new_vessel+" with port list: "+str(used_ports_list))
-      maindb.set_vessel_ports(vessel_object, used_ports_list)
-    except node_transition_lib.DatabaseError, e:
-      raise node_transition_lib.DatabaseError("Failed to create vessel entry or change vessel entry for vessel: "+new_vessel+". "+str(e))
-    except Exception, e:
-      raise node_transition_lib.UnexpectedError("Unexpected error occured. "+str(e))
+      # Add the newly created vessel to the database and then add the ports associated with
+      # the vessel to the database also    
+      try:
+        node_transition_lib.log("Creating a vessel record in the database for vessel "+new_vessel+" for node "+node_string)
+        vessel_object = maindb.create_vessel(database_nodeobject, new_vessel)
+        node_transition_lib.log("Setting the vessel ports in the database for vessel "+new_vessel+" with port list: "+str(used_ports_list))
+        maindb.set_vessel_ports(vessel_object, used_ports_list)
+      except:
+        raise node_transition_lib.DatabaseError("Failed to create vessel entry or change vessel entry for vessel: "+
+                                               new_vessel+". "+traceback.format_exc())
 
 
     node_transition_lib.log("Finished splitting vessels up for the node: "+node_string)
+
+  except NodemanagerCommunicationError, e:
+    raise NodemanagerCommunicationError("Unable to retrieve usable ports for node: "+node_string+". "+traceback.format_exc())
+  except node_transition_lib.DatabaseError, e:
+    raise
+  except Exception, e:
+    raise node_transition_lib.NodeError("Failed to split vessels for node: "+node_string+". "+traceback.format_exc())
+  finally:
+    #release the node lock and destroy lock handle
+    lockserver.unlock_node(lockserver_handle, nodeID)
+    node_transition_lib.log("released lock for node: "+nodeID)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+    node_transition_lib.log("Destroyed lockserver_handle for node: "+nodeID)
 
 
 
