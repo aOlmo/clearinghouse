@@ -54,6 +54,9 @@ sleep 1 # Wait a moment to make sure it has started (backend is used by other co
 echo "Gracefully restarting apache."
 apache2ctl graceful
 
+echo "Starting check_active_db_nodes.py."
+$SUDO_CMD python $SEATTLEGENI_DIR/polling/check_active_db_nodes.py >>$LOG_DIR/check_active_db_nodes.log 2>&1 &
+
 echo "TODO: start node state transition scripts"
 
 echo "All components started. Kill this process (CTRL-C or 'kill $$') to stop all started components (except apache)."

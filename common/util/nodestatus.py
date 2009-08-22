@@ -42,6 +42,8 @@ from seattlegeni.common.util import log
 
 from seattlegeni.common.exceptions import *
 
+from seattlegeni.website import settings
+
 from seattle import repyhelper
 from seattle import repyportability
 
@@ -64,19 +66,19 @@ def _readfilecontents(filename):
 # Decrease the amount of logging output.
 log.loglevel = log.LOG_LEVEL_INFO
 
-# The node_state_transitions/ directory is two directories up from the 
-# directory that this module is in (which is the common/util/ directory).
-statekeydir = os.path.join(os.path.dirname(__file__), "..", "..", "node_state_transitions")
-
-statekeyfiles = {"acceptdonation" : os.path.join(statekeydir, "acceptdonation.publickey"),
-                 "canonical" : os.path.join(statekeydir, "canonical.publickey"),
-                 "onepercentmanyevents" : os.path.join(statekeydir, "onepercentmanyevents.publickey"),
-                 "movingtoonepercent_manyevents" : os.path.join(statekeydir, "movingtoonepercent_manyevents.publickey"),
+# A dictionary where the names are names we use to refer to the keys and the
+# values are the names of the public key files. All public key files will be
+# considered relative to the directory specified in settings.STATE_KEYS_DIR.
+statekeyfiles = {"acceptdonation" : "acceptdonation.publickey",
+                 "canonical" : "canonical.publickey",
+                 "onepercentmanyevents" : "onepercentmanyevents.publickey",
+                 "movingtoonepercent_manyevents" : "movingtoonepercent_manyevents.publickey",
                  }
 
 statekeys = {}
 for keyname in statekeyfiles:
-  statekeys[keyname] = rsa_string_to_publickey(_readfilecontents(statekeyfiles[keyname]))
+  keyfilefullpath = os.path.join(settings.STATE_KEYS_DIR, statekeyfiles[keyname])
+  statekeys[keyname] = rsa_string_to_publickey(_readfilecontents(keyfilefullpath))
 
 
 

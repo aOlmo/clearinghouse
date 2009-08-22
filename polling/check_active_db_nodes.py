@@ -22,7 +22,10 @@
   that only the database will be directly modified.
 """
 
-import os
+import django.core.mail
+import django.db
+
+import sys
 import time
 import traceback
 
@@ -35,7 +38,7 @@ from seattlegeni.common.exceptions import *
 
 from seattlegeni.common.util import nodestatus
 
-
+from seattlegeni.website import settings
 
 
 
@@ -68,42 +71,61 @@ def main():
     
     while True:
       
-      active_nodes = maindb.get_active_nodes()
-      log.info("Starting check of " + str(len(active_nodes)) + " active nodes.")
+      # Catch unexpected exceptions to log/send mail.
+      try:
+      
+        # We shouldn't be running in production with settings.DEBUG = True. 
+        # Just in case, though, tell django to reset its list of saved queries
+        # each time through the loop.
+        if settings.DEBUG:
+          django.db.reset_queries()
+        
+        active_nodes = maindb.get_active_nodes()
+        log.info("Starting check of " + str(len(active_nodes)) + " active nodes.")
+      
+        checked_node_count = 0
+        
+        for node in active_nodes:
+          
+          checked_node_count += 1
+          log.info("Checking node " + str(checked_node_count) + ": " + str(node))
+          
+          nodestatus.check_node(node, readonly=READONLY, lockserver_handle=lockserver_handle)
+          
+        # Print summary info.
+        log.info("Nodes checked: " + str(checked_node_count))
+        nodes_with_problems = nodestatus.get_node_problem_info()
+        nodes_with_problems_count = len(nodes_with_problems.keys())
+        log.info("Nodes without problems: " + str(checked_node_count - nodes_with_problems_count))
+        log.info("Nodes with problems: " + str(nodes_with_problems_count))
+        
+        # Print information about the database changes made.
+        log.info("Number of database actions taken:")
+        actionstaken = nodestatus.get_actions_taken()
+        for actionname in actionstaken:
+          log.info("\t" + actionname + ": " + str(len(actionstaken[actionname])) + 
+                   " " + str(actionstaken[actionname]))
     
-      checked_node_count = 0
-      
-      for node in active_nodes:
+        nodestatus.reset_collected_data()
         
-        checked_node_count += 1
-        log.info("Checking node " + str(checked_node_count) + ": " + str(node))
-        
-        nodestatus.check_node(node, readonly=READONLY, lockserver_handle=lockserver_handle)
-        
-      # Print summary info.
-      log.info("Nodes checked: " + str(checked_node_count))
-      nodes_with_problems = nodestatus.get_node_problem_info()
-      nodes_with_problems_count = len(nodes_with_problems.keys())
-      log.info("Nodes without problems: " + str(checked_node_count - nodes_with_problems_count))
-      log.info("Nodes with problems: " + str(nodes_with_problems_count))
-      
-      # Print information about the database changes made.
-      log.info("Number of database actions taken:")
-      actionstaken = nodestatus.get_actions_taken()
-      for actionname in actionstaken:
-        log.info("\t" + actionname + ": " + str(len(actionstaken[actionname])) + 
-                 " " + str(actionstaken[actionname]))
+        log.info("Sleeping for " + str(SLEEP_SECONDS_BETWEEN_RUNS) + " seconds.")
+        time.sleep(SLEEP_SECONDS_BETWEEN_RUNS)
   
-      nodestatus.reset_collected_data()
-      
-      log.info("Sleeping for " + str(SLEEP_SECONDS_BETWEEN_RUNS) + " seconds.")
-      time.sleep(SLEEP_SECONDS_BETWEEN_RUNS)
-
-  except:
-    log.critical("Unexpected exception: " + traceback.format_exc())
-    # For the moment, let's have this kill the script. It just seems risky to
-    # let this continue if there are bugs.
-    raise
+      except KeyboardInterrupt:
+        raise
+  
+      except:
+        message = "Unexpected exception in check_active_db_nodes.py: " + traceback.format_exc()
+        log.critical(message)
+    
+        # Send an email to the addresses listed in settings.ADMINS
+        if not settings.DEBUG:
+          subject = "Critical SeattleGeni check_active_db_nodes.py error"
+          django.core.mail.mail_admins(subject, message)
+          
+          # Sleep for ten minutes to make sure we don't flood the admins with error
+          # report emails.
+          time.sleep(600)
 
   finally:
     lockserver.destroy_lockserver_handle(lockserver_handle)
@@ -116,4 +138,5 @@ if __name__ == "__main__":
   try:
     main()
   except KeyboardInterrupt:
-    pass
+    log.info("Exiting on KeyboardInterrupt.")
+    sys.exit(0)
