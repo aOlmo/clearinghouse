@@ -955,6 +955,34 @@ def record_node_communication_success(node):
 
 
 @log_function_call
+def mark_node_as_inactive(node):
+  """
+  <Purpose>
+    Let the database know that the node is inactive. You shouldn't use this
+    method if communication with a node fails. Instead, only use this if there
+    is some other reason to mark the node as inactive (e.g. the node is up
+    but the nodeid is wrong, indicating it's not seattle instance we expected).
+  <Arguments>
+    node
+      The Node object of the node that is broken.
+  <Exceptions>
+    None
+  <Side Effects>
+    The node's is_broken value is changed to True in the database if it
+    wasn't already. The node object passed to the function is correspondingly
+    updated.
+  <Returns>
+    None
+  """
+  assert_node(node)
+  
+  node.is_active = False
+  node.save()
+
+
+
+
+@log_function_call
 def mark_node_as_broken(node):
   """
   <Purpose>
