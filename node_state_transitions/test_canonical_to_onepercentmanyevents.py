@@ -259,8 +259,7 @@ def run_moving2onepercent_to_canonical_test():
   transitionlist.append((("startstatename", node_transition_lib.movingtoonepercentmanyeventspublickey),
                         ("endstatename", node_transition_lib.canonicalpublickey),
                          node_transition_lib.combine_vessels,
-                         node_transition_lib.noop,
-                         node_transition_lib.movingtoonepercentmanyeventspublickey))
+                         node_transition_lib.noop))
 
   print "Starting canonical to movingtoonepercentmanyevents test....."
 

@@ -33,7 +33,7 @@ from django.db import transaction
 
 
 @log_function_call
-def update_database(node_string, nodeID, update_database_node):
+def update_database(node_string, node_info, database_nodeobject, update_database_node):
   """
   <Purpose>
     The purpose of this function is to update the database
@@ -41,7 +41,9 @@ def update_database(node_string, nodeID, update_database_node):
   <Arguments>
     node_string - the name of the node. ip:port or NAT:port
 
-    nodeID - the unique ID or the per node key for the node
+    node_info - a dictionary containing information about the node
+
+    node_database - a node object from the database
 
     update_database_node - This is a function that updates the database. May be replaced 
       in the future.
@@ -58,47 +60,27 @@ def update_database(node_string, nodeID, update_database_node):
 
   node_transition_lib.log("Beginning update_database on node: "+node_string)
 
-  #extract the ip/NAT and the port
-  #note that the first portion of the node might be an ip or a NAT string
-  ip_or_nat_string, port_string = node_string.split(":")
-  port_num = int(port_string)
+  # Extract the ip/NAT and the port.
+  # Note that the first portion of the node might be an ip or a NAT string.
+  ip_or_nat_string, port_num = node_transition_lib.split_node_string(node_string)
 
-  #create a lock handle to be used
-  lockserver_handle = lockserver.create_lockserver_handle()
-  node_transition_lib.log("Created lockserver_handle for use on node: "+str(nodeID))
-
-  #acquire a lock for the node
-  lockserver.lock_node(lockserver_handle, nodeID)
-  node_transition_lib.log("Acquired node lock for nodeID: "+nodeID)
-
-  
-
-  # Update the database after acquiring the lock
+  # Update the database with the most up to date info about the node.
+  # Currently only updates the node version 
   try:
-    # Retrieve the node info and the databse node object.
-    node_info = nodemanager.get_node_info(ip_or_nat_string, port_num)
-    database_nodeobject = maindb.get_node(nodeID)
-
     node_transition_lib.log("Retrieved database node object for node: " + node_string)
-
     update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num)
-  
     node_transition_lib.log("updated node database record with version: "+str(database_nodeobject.last_known_version))
-    node_transition_lib.log("Commiting transaction...")
+  except:
+    raise DatabaseError("Unable to update the database." + traceback.formact_exc())
 
+  try:
+    node_transition_lib.log("Commiting transaction...")
     transaction.commit()
   except transaction.TransactionManagementError:
     pass
-  except:
-    raise node_transition_lib.NodeError("Unable to update the database for the node: " + node_string + traceback.format_exc())
-  finally:
-    #release the node lock and destroy lock handle
-    lockserver.unlock_node(lockserver_handle, nodeID)
-    node_transition_lib.log("released lock for node: "+nodeID)
-    lockserver.destroy_lockserver_handle(lockserver_handle)
-    node_transition_lib.log("Destroyed lockserver_handle for node: "+nodeID)
 
   return
+
 
 
 
@@ -132,12 +114,12 @@ def update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_
 
   version = node_info['version']
   
-  #if the node objec was inactive, then we are going to make it active
+  # If the node objec was inactive, then we are going to make it active.
   if not database_nodeobject.is_active:
     node_transition_lib.log("The node "+ip_or_nat_string+":"+str(port_num)+" was inactive. Now activating")
 
   try:
-    #Update all the database info about the node
+    # Update all the database info about the node.
     database_nodeobject.last_known_version = version
     database_nodeobject.last_known_ip = ip_or_nat_string
     database_nodeobject.last_known_port = port_num
