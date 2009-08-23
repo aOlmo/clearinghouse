@@ -92,10 +92,8 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
   # has the leftover (extra vessel)and the right vessel has 
   # the vessel with the exact resources.
   while len(usable_ports_list) >= 10:
-    #TODO: ask jsamuel how to do this better
     desired_resourcedata = get_resource_data(onepercent_resourcetemplate, usable_ports_list)
                            
-
     #use the first 10 ports so remove them from the list of usable_ports_list
     used_ports_list = usable_ports_list[:10]
     usable_ports_list = usable_ports_list[10:]
@@ -103,11 +101,20 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
     node_transition_lib.log("Ports we are going to use for the new vessel: "+str(used_ports_list))
     node_transition_lib.log("Starting to split vessel: "+current_vessel)
 
-    #split the current vessel. The exact vessel is the right vessel and the extra vessel is the left vessel
-    #create a record for the vessel and add its port to the database
+    # Split the current vessel. The exact vessel is the right vessel 
+    # and the extra vessel is the left vessel. 
     leftover_vessel, new_vessel = backend.split_vessel(database_nodeobject, current_vessel, desired_resourcedata)                    
     node_transition_lib.log("Successfully split vessel: "+current_vessel+" into vessels: "+leftover_vessel+" and "+new_vessel)
     current_vessel = leftover_vessel
+
+    # Make sure to update the database and record the new
+    # name of the extra vessel as when backend.split_vessels()
+    # is called, the old vessel does not exist anymore. 
+    # Instead two new vessels are created, where the first
+    # vessel is the extra vessel with leftover resources
+    # and the second vessel has the actual amount of resources
+    database_nodeobject.extra_vessel_name = current_vessel
+    database_nodeobject.save()
 
     #set the user_list for the new vesel to be empty. Remember that user_list is what determines
     #the transition state, and only the extra vessel should have this set.
@@ -115,7 +122,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
     node_transition_lib.log("Changed the userkeys for the vessel "+new_vessel+" to []")
 
     # Add the newly created vessel to the database and then add the ports associated with
-    # the vessel to the database also    
+    # the vessel to the database also.    
     try:
       node_transition_lib.log("Creating a vessel record in the database for vessel "+new_vessel+" for node "+node_string)
       vessel_object = maindb.create_vessel(database_nodeobject, new_vessel)

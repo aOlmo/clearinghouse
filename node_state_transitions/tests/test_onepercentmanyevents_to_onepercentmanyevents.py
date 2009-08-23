@@ -31,7 +31,7 @@ import django.test.utils
 from seattlegeni.node_state_transitions import node_transition_lib
 from seattlegeni.node_state_transitions import transition_onepercentmanyevents_to_onepercentmanyevents
 from seattlegeni.common.api import maindb
-import mockutil
+from seattlegeni.node_state_transitions import mockutil
 
 
 
@@ -144,6 +144,17 @@ def run_database_update_test():
   assert(success_count == 1)
   assert(failure_count == 0)
 
+  assert_database_info()
+
+  assert(mockutil.set_vessel_owner_key_call_count == 0)
+  assert(mockutil.set_vessel_user_keylist_call_count == 1)  
+
+
+
+
+
+def assert_database_info():
+
   active_nodes_list = maindb.get_active_nodes()
 
   assert(len(active_nodes_list) == 1)
@@ -151,14 +162,13 @@ def run_database_update_test():
   assert(active_nodes_list[0].last_known_ip == mockutil.node_ip)
   assert(active_nodes_list[0].last_known_port == mockutil.node_port)
   assert(active_nodes_list[0].extra_vessel_name == mockutil.extra_vessel_name)
+  assert(active_nodes_list[0].owner_pubkey == mockutil.per_node_key_str)
 
   testuser = maindb.get_user(mockutil.testusername)
   donations_list = maindb.get_donations_by_user(testuser)
 
   assert(len(donations_list) == 1)
   assert(donations_list[0].node == active_nodes_list[0])
-  assert(mockutil.set_vessel_owner_key_call_count == 0)
-  assert(mockutil.set_vessel_user_keylist_call_count == 1)  
 
 
 

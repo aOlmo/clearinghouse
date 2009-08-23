@@ -28,12 +28,13 @@ settings.TEST_DATABASE_NAME = 'test_seattlegeni'
 
 import django.db
 import django.test.utils
+import os
 
 from seattlegeni.node_state_transitions import node_transition_lib
 from seattlegeni.node_state_transitions import transition_canonical_to_onepercentmanyevents
 from seattlegeni.common.api import maindb
-import mockutil
-
+from seattlegeni.node_state_transitions import mockutil
+from seattlegeni.website import settings
 
 
 #vessel dictionary for this test
@@ -84,6 +85,9 @@ def setup_test():
   # Creates a new test database and runs syncdb against it.
   django.db.connection.creation.create_test_db()
 
+  # Make sure all the variables are its default values  
+  mockutil.mockutil_cleanup_variables()
+
   # Create a user who has the donation key.
   user_object = maindb.create_user(mockutil.testusername, "password", "example@example.com", "affiliation", 
                     "10 11", "2 2 2", mockutil.donor_key_str)
@@ -94,7 +98,7 @@ def setup_test():
 
   # Create a donation for user
   maindb.create_donation(node_object, user_object, "Making a donation")
-  
+
   # Setup all the mock functions
   mockutil.mock_nodemanager_get_node_info(mockutil.nodeid_key, "10.0test", vessels_dict)
   mockutil.mock_lockserver_calls()
@@ -144,19 +148,8 @@ def run_can_to_moving1percent_test():
   assert(success_count == 1)
   assert(failure_count == 0)
 
-  active_nodes_list = maindb.get_active_nodes()
+  assert_database_info()
 
-  assert(len(active_nodes_list) == 1)
-  assert(active_nodes_list[0].node_identifier == mockutil.nodeid_key_str)
-  assert(active_nodes_list[0].last_known_ip == mockutil.node_ip)
-  assert(active_nodes_list[0].last_known_port == mockutil.node_port)
-  assert(active_nodes_list[0].extra_vessel_name == mockutil.extra_vessel_name)
-
-  testuser = maindb.get_user(mockutil.testusername)
-  donations_list = maindb.get_donations_by_user(testuser)
-
-  assert(len(donations_list) == 1)
-  assert(donations_list[0].node == active_nodes_list[0])
   assert(mockutil.set_vessel_owner_key_call_count == 0)
   assert(mockutil.set_vessel_user_keylist_call_count == 1)  
 
@@ -177,8 +170,8 @@ def run_moving2onepercent_to_onepercent_test():
   mockutil.mock_backend_set_vessel_user_keylist([mockutil._mock_pubkey_to_string(
                                                 node_transition_lib.onepercentmanyeventspublickey)])
 
-
-  onepercentmanyevents_resource_fd = file("onepercentmanyevents.resources")
+  file_path = os.path.join(settings.STATE_KEYS_DIR, "onepercentmanyevents.resources")
+  onepercentmanyevents_resource_fd = file(file_path)
   onepercentmanyevents_resourcetemplate = onepercentmanyevents_resource_fd.read()
   onepercentmanyevents_resource_fd.close()
 
@@ -198,19 +191,8 @@ def run_moving2onepercent_to_onepercent_test():
   assert(success_count == 1)
   assert(failure_count == 0)
 
-  active_nodes_list = maindb.get_active_nodes()
+  assert_database_info()
 
-  assert(len(active_nodes_list) == 1)
-  assert(active_nodes_list[0].node_identifier == mockutil.nodeid_key_str)
-  assert(active_nodes_list[0].last_known_ip == mockutil.node_ip)
-  assert(active_nodes_list[0].last_known_port == mockutil.node_port)
-  assert(active_nodes_list[0].extra_vessel_name == mockutil.extra_vessel_name)
-
-  testuser = maindb.get_user(mockutil.testusername)
-  donations_list = maindb.get_donations_by_user(testuser)
-
-  assert(len(donations_list) == 1)
-  assert(donations_list[0].node == active_nodes_list[0])
   assert(mockutil.set_vessel_owner_key_call_count == 0)
   
   # Note that the call to set_vessel_user_keylist should be 10.
@@ -218,11 +200,19 @@ def run_moving2onepercent_to_onepercent_test():
   # and one time for setting the actual state of the node.
   assert(mockutil.set_vessel_user_keylist_call_count == 10)
 
+  active_nodes_list = maindb.get_active_nodes()
   vessel_list_per_node = maindb.get_vessels_on_node(active_nodes_list[0])
 
   #testing to see if the vessels exist after splitting
   assert(mockutil.split_vessel_call_count == 9)
   assert(len(vessel_list_per_node) == 9)
+
+  for i in range(len(vessel_list_per_node)):
+    # Note that the vessel names go from 1-9 rather then 0-8
+    assert(vessel_list_per_node[i].node == active_nodes_list[0])
+    assert(vessel_list_per_node[i].name == "new_vessel"+str(1+i))
+
+  assert(active_nodes_list[0].extra_vessel_name == "extra_vessel_split9")
 
 
 
@@ -246,6 +236,8 @@ def run_moving2onepercent_to_canonical_test():
 
     maindb.create_vessel(active_nodes_list[0], "vessel"+str(i))
 
+
+
   vessels_dict[mockutil.extra_vessel_name]["userkeys"] = [node_transition_lib.movingtoonepercentmanyeventspublickey]
   vessels_dict[mockutil.extra_vessel_name]["ownerkey"] = active_nodes_list[0].owner_pubkey
 
@@ -268,6 +260,24 @@ def run_moving2onepercent_to_canonical_test():
   assert(success_count == 1)
   assert(failure_count == 0)
 
+  assert_database_info()
+
+  assert(mockutil.set_vessel_owner_key_call_count == 0)
+
+  assert(mockutil.set_vessel_user_keylist_call_count == 1)
+
+  active_nodes_list = maindb.get_active_nodes()
+  vessel_list_per_node = maindb.get_vessels_on_node(active_nodes_list[0])
+
+  #testing to see if the vessels were deleted after join_vessels was called
+  assert(mockutil.join_vessels_call_count == 9)
+  assert(len(vessel_list_per_node) == 0)
+  assert(active_nodes_list[0].extra_vessel_name == "extra_vessel_join9")
+
+
+
+def assert_database_info():
+
   active_nodes_list = maindb.get_active_nodes()
 
   assert(len(active_nodes_list) == 1)
@@ -275,23 +285,13 @@ def run_moving2onepercent_to_canonical_test():
   assert(active_nodes_list[0].last_known_ip == mockutil.node_ip)
   assert(active_nodes_list[0].last_known_port == mockutil.node_port)
   assert(active_nodes_list[0].extra_vessel_name == mockutil.extra_vessel_name)
+  assert(active_nodes_list[0].owner_pubkey == mockutil.per_node_key_str)
 
   testuser = maindb.get_user(mockutil.testusername)
   donations_list = maindb.get_donations_by_user(testuser)
 
   assert(len(donations_list) == 1)
   assert(donations_list[0].node == active_nodes_list[0])
-  assert(mockutil.set_vessel_owner_key_call_count == 0)
-
-  assert(mockutil.set_vessel_user_keylist_call_count == 1)
-
-  vessel_list_per_node = maindb.get_vessels_on_node(active_nodes_list[0])
-
-  #testing to see if the vessels were deleted after join_vessels was called
-  assert(mockutil.join_vessels_call_count == 9)
-  assert(len(vessel_list_per_node) == 0)
-
-
 
 
 

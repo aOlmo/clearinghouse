@@ -33,7 +33,35 @@ per_node_key_str = str(per_node_key["e"]) + " " + str(per_node_key["n"])
 
 extra_vessel_name = "v1"
 
+def mockutil_cleanup_variables():
+  global testusername
+  global node_ip
+  global node_port
+  global node_address
+  global nodeid_key
+  global nodeid_key_str
+  global donor_key
+  global donor_key_str
+  global per_node_key
+  global per_node_key_str
+  global extra_vessel_name
 
+  testusername = "testuser"
+
+  node_ip = "127.0.0.1"
+  node_port = 1224
+  node_address = node_ip + ":" + str(node_port)
+
+  nodeid_key = {"e" : 1, "n" : 2}
+  nodeid_key_str = str(nodeid_key["e"]) + " " + str(nodeid_key["n"])
+
+  donor_key = {"e" : 3, "n" : 4}
+  donor_key_str = str(donor_key["e"]) + " " + str(donor_key["n"])
+
+  per_node_key = {"e" : 5, "n" : 6}
+  per_node_key_str = str(per_node_key["e"]) + " " + str(per_node_key["n"])
+
+  extra_vessel_name = "v1"
 
 def mock_transitionlib_do_advertise_lookup(nodeaddress_list_to_return):
   
@@ -174,6 +202,7 @@ def mock_backend_split_vessel():
   def _mock_split_vessel(node, vesselname, resource_data):
 
     global split_vessel_call_count
+    global extra_vessel_name
 
     print "[_mock_split_vessel] called: ", node, vesselname, resource_data
 
@@ -181,7 +210,9 @@ def mock_backend_split_vessel():
     assert(vesselname == extra_vessel_name)
 
     split_vessel_call_count += 1
-    return (vesselname, "new_vessel"+str(split_vessel_call_count))
+    extra_vessel_name = "extra_vessel_split"+str(split_vessel_call_count)
+    return ("extra_vessel_split"+str(split_vessel_call_count), 
+            "new_vessel"+str(split_vessel_call_count))
 
   split_vessel_call_count = 0
 
@@ -200,6 +231,7 @@ def mock_backend_join_vessels():
   def _mock_join_vessels(node, extra_vesselname, other_vesselname):
 
     global join_vessels_call_count
+    global extra_vessel_name
 
     print "[_mock_join_vessels] called: ", node, extra_vesselname, other_vesselname
 
@@ -207,7 +239,10 @@ def mock_backend_join_vessels():
     assert(extra_vesselname == extra_vessel_name)
 
     join_vessels_call_count += 1
-    return extra_vesselname
+
+    extra_vessel_name = "extra_vessel_join"+str(join_vessels_call_count)
+
+    return extra_vessel_name
 
   join_vessels_call_count = 0
 

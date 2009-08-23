@@ -71,7 +71,7 @@ def update_database(node_string, node_info, database_nodeobject, update_database
     update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num)
     node_transition_lib.log("updated node database record with version: "+str(database_nodeobject.last_known_version))
   except:
-    raise DatabaseError("Unable to update the database." + traceback.formact_exc())
+    raise node_transition_lib.DatabaseError("Unable to update the database." + traceback.format_exc())
 
   try:
     node_transition_lib.log("Commiting transaction...")

@@ -42,6 +42,7 @@ import runonce
 import sys
 import time
 import traceback
+import os
 import repyhelper
 from seattlegeni.common.api import nodemanager
 import seattlegeni.common.util.log
@@ -50,6 +51,7 @@ from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import backend
 from seattlegeni.common.util.decorators import log_function_call
 from seattlegeni.common.exceptions import *
+from seattlegeni.website import settings
 
 # Import all the repy files.
 repyhelper.translate_and_import('advertise.repy')
@@ -62,13 +64,20 @@ repyhelper.translate_and_import('random.repy')
 
 
 
-canonicalpublickey = rsa_file_to_publickey("canonical.publickey")
+def _file_pubkey_to_string(key_file_name):
+  """ Retrieve pubkey from file and return the string form of key"""
+  return rsa_file_to_publickey(os.path.join(settings.STATE_KEYS_DIR, key_file_name))  
+
+
+
+
+canonicalpublickey = _file_pubkey_to_string("canonical.publickey")
 # The key used for new donations...
-acceptdonationpublickey = rsa_file_to_publickey("acceptdonation.publickey")
+acceptdonationpublickey = _file_pubkey_to_string("acceptdonation.publickey")
 
 # Used for our first attempt at doing something sensible...
-movingtoonepercentmanyeventspublickey = rsa_file_to_publickey("movingtoonepercent_manyevents.publickey")
-onepercentmanyeventspublickey = rsa_file_to_publickey("onepercentmanyevents.publickey")
+movingtoonepercentmanyeventspublickey = _file_pubkey_to_string("movingtoonepercent_manyevents.publickey")
+onepercentmanyeventspublickey = _file_pubkey_to_string("onepercentmanyevents.publickey")
 
 known_transition_states = [canonicalpublickey, acceptdonationpublickey,
                               movingtoonepercentmanyeventspublickey, 
@@ -383,6 +392,7 @@ def processnode(node_string, startstate_info, endstate_info, nodeprocess_func, n
     if startstate_pubkey == acceptdonationpublickey:
       add_new_node_to_db(node_string, node_info)         
       log("Successfully added node to the database for node" + node_string)
+      log("The database should reflect the node information accurately")
 
     # Get the database object    
     database_nodeobject = maindb.get_node(nodeID)
@@ -587,10 +597,11 @@ def add_new_node_to_db(node_string, node_info):
   except DoesNotExistError:
     # If the node object does not exist in the database, add it.
     # This is situation 1, where nothing has been done yet.
-    log("Database entry does not exist for node: "+node_string)
+    log("Database entry does not exist for node: " + node_string)
     database_nodeobject = create_new_node_object(node_string, node_info, donated_vesselname)
+    log("Successfully added node to the database: " + node_string)    
      
-  # We are finished adding node object, or retrieving node object from database
+  # We are finished adding node object, or retrieving node object from database.
   log("Retrieved node object successfully with nodeID: " + nodeID + 
       " with the node: " + str(database_nodeobject))
     
@@ -624,7 +635,10 @@ def add_new_node_to_db(node_string, node_info):
     # recovering from a crash. This is in situation 2 if the length
     # of donation_list is 0
     if len(donation_list) == 0:
+      log("The donation has not been credited yet for node " + node_string)
       create_donation_record(database_nodeobject, donor_key)
+    else:
+      log("The donation has already been credited for node " + node_string)
 
     log("Attempting to change the owner for vessel: " + donated_vesselname)
     
@@ -731,6 +745,7 @@ def create_donation_record(database_nodeobject, donor_key):
       
   # Attempt to give the user credit for their donation
   try:
+    log("Attempting to credit donation for the node " + database_nodeobject.node_identifier)
     maindb.create_donation(database_nodeobject, database_userobject, 
                            donation_description)
   except:
@@ -919,7 +934,9 @@ def get_combined_vessel(database_nodeobject, extra_vessel, vessel_list):
   # Loop through all the vessels in the vessel list and do a 
   # join_vessels call to the backend to join each vessel with
   # the extra vessel. Be the end we should have only one vessel,
-  # which should be the extra_vessel
+  # which should be the extra_vessel. Make sure to also update
+  # the database with each iteration to ensure that the
+  # extra_vessel_name gets updated appropriately
   for current_vessel in vessel_list:
     try: 
       combined_vessel = backend.join_vessels(database_nodeobject, extra_vessel, current_vessel)
@@ -927,10 +944,16 @@ def get_combined_vessel(database_nodeobject, extra_vessel, vessel_list):
       raise NodeError("Unable to combine vessel " + current_vessel +
                       " with vessel " + extra_vessel + traceback.format_exc())
     
+    # Update the database and change the name of the extra_vessel_name for the node
+    database_nodeobject.extra_vessel_name = combined_vessel
+    database_nodeobject.save()
+
     log("Combined vessel " + extra_vessel + " and " + current_vessel + " into " + combined_vessel)
+    log("Set database nodeobjects extra_vessel_name to " + database_nodeobject.extra_vessel_name)
     extra_vessel = combined_vessel
 
   log("Finished combining all the vessels for node: " + database_nodeobject.node_identifier)
+  
   return extra_vessel
 
 
@@ -980,6 +1003,10 @@ def get_vessel_list(node_info, node_pubkey, extra_vessel, node_string):
   vessel_list.remove(extra_vessel)
 
   return vessel_list
+
+
+
+
 
 def split_node_string(node_string):
   """
@@ -1100,6 +1127,7 @@ def init_log(logname):
 #
 #  except:
 #    raise UnexpectedError, "Circular logger was not setup properly"
+
 
 
 
