@@ -125,12 +125,7 @@ def update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_
 
   try:
     # Update all the database info about the node.
-    database_nodeobject.last_known_version = version
-    database_nodeobject.last_known_ip = ip_or_nat_string
-    database_nodeobject.last_known_port = port_num
-    database_nodeobject.is_active = True
-
-    database_nodeobject.save()
+    maindb.record_node_communication_success(database_nodeobject, version, ip_or_nat_string, port_num)
   except:
     raise node_transition_lib.DatabaseError("Unable to modify database to update info on node: "+ip_or_nat_string)
 

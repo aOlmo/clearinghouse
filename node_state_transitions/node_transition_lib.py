@@ -951,8 +951,7 @@ def get_combined_vessel(database_nodeobject, extra_vessel, vessel_list):
                       " with vessel " + extra_vessel + traceback.format_exc())
     
     # Update the database and change the name of the extra_vessel_name for the node
-    database_nodeobject.extra_vessel_name = combined_vessel
-    database_nodeobject.save()
+    maindb.set_node_extra_vessel_name(database_nodeobject, combined_vessel)
 
     log("Combined vessel " + extra_vessel + " and " + current_vessel + " into " + combined_vessel)
     log("Set database nodeobjects extra_vessel_name to " + database_nodeobject.extra_vessel_name)

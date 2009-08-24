@@ -927,27 +927,70 @@ def record_node_communication_failure(node):
 
 
 @log_function_call
-def record_node_communication_success(node):
+def record_node_communication_success(node, version, ip, port):
   """
   <Purpose>
-    Let the database know that communication with a node has succeeded.
+    Let the database know that communication with a node has succeeded and
+    provide updated information about the node. This is really only intended
+    to be used by transition scripts.
   <Arguments>
     node
       The Node object of the node that was successfully communicated with.
+    version
+      The version of seattle the node reports it is running.
+    ip
+      The ip address or NAT string the nodemanager is currently accessible at.
+    port
+      The port the nodemanager is currently accessible at.
   <Exceptions>
     None
   <Side Effects>
     The node's is_active value is changed to True in the database if it
     wasn't already, the date_last_contacted value is updated in the database
-    to the current time, and the node object passed in to the function
-    reflects these changes.
+    to the current time, and the version, ip and port are updated. The node
+    object passed in to the function reflects these changes.
   <Returns>
     None
   """
   assert_node(node)
+  assert_str(version)
+  assert_str(ip)
+  assert_positive_int(port)
   
+  node.last_known_version = version
+  node.last_known_ip = ip
+  node.last_known_port = port
   node.is_active = True
   node.date_last_contacted = datetime.now()
+  node.save()
+
+
+
+
+
+@log_function_call
+def set_node_extra_vessel_name(node, extra_vessel_name):
+  """
+  <Purpose>
+    Let the database know the name of the extra vessel on a node has changed.
+    This is only intended to be used by transition scripts.
+  <Arguments>
+    node
+      The Node object of the node that was successfully communicated with.
+    extra_vessel_name
+      The new name of the extra vessel on the node.
+  <Exceptions>
+    None
+  <Side Effects>
+    The node's extra_vessel_name value is changed in the database and the node
+    object passed in to the function reflects the change.
+  <Returns>
+    None
+  """
+  assert_node(node)
+  assert_str(extra_vessel_name)
+  
+  node.extra_vessel_name = extra_vessel_name
   node.save()
 
 

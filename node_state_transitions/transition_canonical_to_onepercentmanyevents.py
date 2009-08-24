@@ -130,8 +130,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
     # Instead two new vessels are created, where the first
     # vessel is the extra vessel with leftover resources
     # and the second vessel has the actual amount of resources
-    database_nodeobject.extra_vessel_name = current_vessel
-    database_nodeobject.save()
+    maindb.set_node_extra_vessel_name(database_nodeobject, current_vessel)
 
     #set the user_list for the new vesel to be empty. Remember that user_list is what determines
     #the transition state, and only the extra vessel should have this set.
