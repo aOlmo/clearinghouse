@@ -103,8 +103,9 @@ def setup_test():
   mockutil.mock_transitionlib_do_advertise_lookup([mockutil.node_address])
   mockutil.mock_backend_set_vessel_owner_key()
   mockutil.mock_backend_split_vessel()
-  mockutil.mock_backend_set_vessel_user_keylist([mockutil._mock_pubkey_to_string(
-                                                node_transition_lib.onepercentmanyeventspublickey)])
+  # set_vessel_user_keylist_call_count won't be called because the
+  # node_transition_lib will see that it's a state change to the same state.
+  mockutil.mock_backend_set_vessel_user_keylist(None)
  
 
 
@@ -149,7 +150,9 @@ def run_database_update_test():
   assert_database_info()
 
   assert(mockutil.set_vessel_owner_key_call_count == 0)
-  assert(mockutil.set_vessel_user_keylist_call_count == 1)  
+  # set_vessel_user_keylist_call_count won't be called because the
+  # node_transition_lib will see that it's a state change to the same state.
+  assert(mockutil.set_vessel_user_keylist_call_count == 0)  
 
 
 

@@ -28,7 +28,6 @@ settings.TEST_DATABASE_NAME = 'test_seattlegeni'
 
 import django.db
 import django.test.utils
-import os
 
 from seattlegeni.node_state_transitions import node_transition_lib
 from seattlegeni.node_state_transitions import transition_canonical_to_onepercentmanyevents
@@ -36,6 +35,14 @@ from seattlegeni.node_state_transitions import transition_canonical_to_onepercen
 from seattlegeni.common.api import maindb
 
 from seattlegeni.node_state_transitions.tests import mockutil
+
+from seattle import repyhelper
+from seattle import repyportability
+
+repyhelper.translate_and_import('rsa.repy')
+
+
+
 
 
 #vessel dictionary for this test
@@ -229,7 +236,7 @@ def run_moving2onepercent_to_canonical_test():
   for i in range(9):
     vessels_dict["vessel"+str(i)]={}
     vessels_dict["vessel"+str(i)]["userkeys"] = []
-    vessels_dict["vessel"+str(i)]["ownerkey"] = active_nodes_list[0].owner_pubkey
+    vessels_dict["vessel"+str(i)]["ownerkey"] = rsa_string_to_publickey(active_nodes_list[0].owner_pubkey)
     vessels_dict["vessel"+str(i)]["ownerinfo"] = ""
     vessels_dict["vessel"+str(i)]["status"] = ""
     vessels_dict["vessel"+str(i)]["advertise"] = True
@@ -239,7 +246,7 @@ def run_moving2onepercent_to_canonical_test():
 
 
   vessels_dict[mockutil.extra_vessel_name]["userkeys"] = [node_transition_lib.movingtoonepercentmanyeventspublickey]
-  vessels_dict[mockutil.extra_vessel_name]["ownerkey"] = active_nodes_list[0].owner_pubkey
+  vessels_dict[mockutil.extra_vessel_name]["ownerkey"] = rsa_string_to_publickey(active_nodes_list[0].owner_pubkey)
 
   mockutil.mock_nodemanager_get_node_info(mockutil.nodeid_key, "10.0test", vessels_dict)
   mockutil.mock_backend_set_vessel_owner_key()

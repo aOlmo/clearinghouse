@@ -44,6 +44,7 @@ import traceback
 import os
 
 from seattle import repyhelper
+from seattle import repyportability
 from seattle import runonce
 
 import seattlegeni.common.util.log
@@ -52,6 +53,9 @@ from seattlegeni.common.api import nodemanager
 from seattlegeni.common.api import maindb
 from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import backend
+
+# For setting the backend authcode.
+import seattlegeni.backend.config
 
 from seattlegeni.common.util.decorators import log_function_call
 
@@ -70,20 +74,20 @@ repyhelper.translate_and_import('random.repy')
 
 
 
-def _file_pubkey_to_string(key_file_name):
-  """ Retrieve pubkey from file and return the string form of key"""
+def _state_key_file_to_publickey(key_file_name):
+  """ Retrieve pubkey from file and return the dictionary form of key"""
   return rsa_file_to_publickey(os.path.join(settings.STATE_KEYS_DIR, key_file_name))  
 
 
 
 
-canonicalpublickey = _file_pubkey_to_string("canonical.publickey")
+canonicalpublickey = _state_key_file_to_publickey("canonical.publickey")
 # The key used for new donations...
-acceptdonationpublickey = _file_pubkey_to_string("acceptdonation.publickey")
+acceptdonationpublickey = _state_key_file_to_publickey("acceptdonation.publickey")
 
 # Used for our first attempt at doing something sensible...
-movingtoonepercentmanyeventspublickey = _file_pubkey_to_string("movingtoonepercent_manyevents.publickey")
-onepercentmanyeventspublickey = _file_pubkey_to_string("onepercentmanyevents.publickey")
+movingtoonepercentmanyeventspublickey = _state_key_file_to_publickey("movingtoonepercent_manyevents.publickey")
+onepercentmanyeventspublickey = _state_key_file_to_publickey("onepercentmanyevents.publickey")
 
 known_transition_states = [canonicalpublickey, acceptdonationpublickey,
                               movingtoonepercentmanyeventspublickey, 
@@ -121,6 +125,8 @@ def process_nodes_and_change_state(change_nodestate_function_tuplelist, transiti
   <Return>
     None
   """
+  
+  backend.set_backend_authcode(seattlegeni.backend.config.authcode)
 
   init_log(transition_script_name)
   log("Starting state transition script: "+transition_script_name+".....")
@@ -420,9 +426,12 @@ def processnode(node_string, startstate_info, endstate_info, nodeprocess_func, n
       raise NodeError("Could not process node: " + node_string + traceback.format_exc())
 
     # Set the node state now that the node has been processed.
-    log("Trying to set new state for node: " + node_string)
-    set_node_state(database_nodeobject, endstate_pubkey)
-    log("Finished setting new state " + endstate_info[0] + " on node " + node_string) 
+    if startstate_pubkey != endstate_pubkey:
+      log("Trying to set new state for node: " + node_string)
+      set_node_state(database_nodeobject, endstate_pubkey)
+      log("Finished setting new state " + endstate_info[0] + " on node " + node_string) 
+    else:
+      log("Not setting node state: start state and end state are the same.")
 
   except NodeError:
     log("Node data problem when processing node: " + node_string + traceback.format_exc())
@@ -796,8 +805,11 @@ def find_extra_vessel_name_and_donor_key(node_info, node_string):
          str(donation_key))
       return (donation_vesselname, donation_key)       
 
-  raise NodeError("Node "+node_string+" does not seem to have a state after checking!" +
-                     traceback.format_exc())
+  raise NodeError("Node "+node_string+" has no vessel with the acceptdonation " + 
+                  "state key in the userkeys.")
+
+
+
 
 
 @log_function_call 
@@ -859,7 +871,7 @@ def combine_vessels(node_string, node_info, database_nodeobject):
   """
   <Purpose>
     The purpose of this function is to combine all the vessels of 
-    a node into one vessel.
+    a node into the extra vessel.
 
   <Arguments>
     node_string - the name of the node. ip:port or NAT:port
@@ -880,22 +892,22 @@ def combine_vessels(node_string, node_info, database_nodeobject):
     None
 
   <Return>
-    extra_vessel - The final combined vessel
+    None
   """
 
   log("Beginning combine_vessels for the node: "+node_string)
 
-  node_pubkey = database_nodeobject.owner_pubkey
+  node_pubkey_string = database_nodeobject.owner_pubkey
     
   #This is the extra vessel or the vessel that has the transition state
   extra_vessel = database_nodeobject.extra_vessel_name 
 
   #the list that will hold all the vesselnames of the node
-  vessel_list = get_vessel_list(node_info, node_pubkey, extra_vessel, node_string)
+  vessel_list = get_vessel_list(node_info, node_pubkey_string, extra_vessel, node_string)
 
   # Combine all the vessels into one vessel.
   log("Trying to combine all the vessels...")
-  extra_vessel = get_combined_vessel(database_nodeobject, extra_vessel, vessel_list)
+  create_combined_vessel(database_nodeobject, extra_vessel, vessel_list)
 
   try:
     # Delete all the vessel recoreds from database. 
@@ -905,14 +917,12 @@ def combine_vessels(node_string, node_info, database_nodeobject):
     raise DatabaseError("Unable to delete all vessel records from the database for node "+
                         node_string+". " + traceback.format_exc())
 
-  return extra_vessel    
-
 
 
 
 
 @log_function_call
-def get_combined_vessel(database_nodeobject, extra_vessel, vessel_list):
+def create_combined_vessel(database_nodeobject, extra_vessel, vessel_list):
   """
   <Purpose>
     Combine all the vessels into one vessel, given a list of vessels
@@ -965,7 +975,7 @@ def get_combined_vessel(database_nodeobject, extra_vessel, vessel_list):
 
 
 @log_function_call
-def get_vessel_list(node_info, node_pubkey, extra_vessel, node_string):
+def get_vessel_list(node_info, node_pubkey_string, extra_vessel, node_string):
   """
   <Purpose>
     Retrieve a list of vessels that are in this node that
@@ -975,7 +985,7 @@ def get_vessel_list(node_info, node_pubkey, extra_vessel, node_string):
   <Arguments>
     node_info - a dictionary with node information
     
-    node_pubkey - this is the per-node key. Its the key
+    node_pubkey_string - this is the per-node key. Its the key
       that determines if we are the owner of the vessel.
 
     extra_vessel - the name of the extra vessel
@@ -992,13 +1002,15 @@ def get_vessel_list(node_info, node_pubkey, extra_vessel, node_string):
 
   vessel_list = []
 
+  node_pubkey_dict = rsa_string_to_publickey(node_pubkey_string)
+
   # Go through all the vessels and check if we are the owner of the
   # vessel. If we are then we add the vessel to the vessel_list,
   # which are the list of vessels that needs to be combined. 
   log("Finding all the vessels in the node "+node_string+"...")
   for current_vessel in node_info['vessels']:
     # Check to see if the vessels belong to us (SeattleGENI).
-    if node_info['vessels'][current_vessel]['ownerkey'] == node_pubkey:
+    if node_info['vessels'][current_vessel]['ownerkey'] == node_pubkey_dict:
       # Add the vessel to the list.
       vessel_list.append(current_vessel)
       log("Added vessel "+current_vessel+" to vessel_list")
@@ -1033,7 +1045,11 @@ def split_node_string(node_string):
 def _do_advertise_lookup(startstate_publickey):
   """ Do an advertise lookup. This function is used mainly for easier
       testing purposes. """
-  return advertise_lookup(startstate_publickey, maxvals = 10*1024*1024)
+  nodelist = advertise_lookup(startstate_publickey, maxvals = 10*1024*1024)
+  # There can sometimes be empty strings in the list returned by advertise_lookup.
+  while "" in nodelist:
+    nodelist.remove("")
+  return nodelist
 
 
 
