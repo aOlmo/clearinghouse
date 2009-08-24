@@ -32,9 +32,10 @@ import os
 
 from seattlegeni.node_state_transitions import node_transition_lib
 from seattlegeni.node_state_transitions import transition_canonical_to_onepercentmanyevents
+
 from seattlegeni.common.api import maindb
-from seattlegeni.node_state_transitions import mockutil
-from seattlegeni.website import settings
+
+from seattlegeni.node_state_transitions.tests import mockutil
 
 
 #vessel dictionary for this test

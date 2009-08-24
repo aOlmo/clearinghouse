@@ -23,13 +23,18 @@
 """
 
 
-import node_transition_lib
-import traceback
-from seattlegeni.common.util.decorators import log_function_call
-from seattlegeni.common.api import lockserver
-from seattlegeni.common.api import maindb
-from seattlegeni.common.api import nodemanager
 from django.db import transaction
+
+import traceback
+
+from seattlegeni.common.util.decorators import log_function_call
+
+from seattlegeni.common.api import maindb
+
+from seattlegeni.node_state_transitions import node_transition_lib
+
+
+
 
 
 @log_function_call

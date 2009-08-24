@@ -38,19 +38,25 @@
   resource differently.
 """
 
-import runonce
 import sys
 import time
 import traceback
 import os
-import repyhelper
-from seattlegeni.common.api import nodemanager
+
+from seattle import repyhelper
+from seattle import runonce
+
 import seattlegeni.common.util.log
+
+from seattlegeni.common.api import nodemanager
 from seattlegeni.common.api import maindb
 from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import backend
+
 from seattlegeni.common.util.decorators import log_function_call
+
 from seattlegeni.common.exceptions import *
+
 from seattlegeni.website import settings
 
 # Import all the repy files.

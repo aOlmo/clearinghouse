@@ -30,8 +30,10 @@ import django.test.utils
 
 from seattlegeni.node_state_transitions import node_transition_lib
 from seattlegeni.node_state_transitions import transition_onepercentmanyevents_to_onepercentmanyevents
+
 from seattlegeni.common.api import maindb
-from seattlegeni.node_state_transitions import mockutil
+
+from seattlegeni.node_state_transitions.tests import mockutil
 
 
 

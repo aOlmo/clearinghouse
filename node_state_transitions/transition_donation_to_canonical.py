@@ -25,7 +25,9 @@
 """
 
 
-import node_transition_lib
+from seattlegeni.node_state_transitions import node_transition_lib
+
+
 
 
 
