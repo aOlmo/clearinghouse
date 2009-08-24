@@ -40,18 +40,54 @@ from seattlegeni.common.util.decorators import log_function_call_without_return
 # For user registration input validation
 from seattlegeni.common.util import validations
 
+from seattlegeni.website import settings
+
 # All of the work that needs to be done is passed through the controller interface.
 from seattlegeni.website.control import interface
 
 from seattlegeni.website.html import forms
 
-# Paths for building the installers
-PATH_TO_DROP_USER_INSTALLER_FOLDERS = "/var/www/dist/geni/"
-PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT = "/home/geni/live/seattlegeni/website/html/customize_installers.py"
+from seattle import repyhelper
+from seattle import repyportability
+
+repyhelper.translate_and_import('rsa.repy')
+
+
+
+
+
+# Path to the customize_installers.py. In this case, it's in the same directory
+# as this views.py file.
+PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT = os.path.join(os.path.dirname(__file__), 
+                                                  "customize_installers.py")
+
+
+
+
+
+def _state_key_file_to_publickey_string(key_file_name):
+  """
+  Read a public key file from the the state keys directory and return it in
+  a key string format.
+  """
+  fullpath = os.path.join(settings.STATE_KEYS_DIR, key_file_name)
+  return rsa_publickey_to_string(rsa_file_to_publickey(fullpath))
+
+
+
+
+
+# The key used as the state key for new donations.
+ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonation.publickey")
+
+SEATTLE_OWNER_PUBKEY = "22599311712094481841033180665237806588790054310631222126405381271924089573908627143292516781530652411806621379822579071415593657088637116149593337977245852950266439908269276789889378874571884748852746045643368058107460021117918657542413076791486130091963112612854591789518690856746757312472362332259277422867 12178066700672820207562107598028055819349361776558374610887354870455226150556699526375464863913750313427968362621410763996856543211502978012978982095721782038963923296750730921093699612004441897097001474531375768746287550135361393961995082362503104883364653410631228896653666456463100850609343988203007196015297634940347643303507210312220744678194150286966282701307645064974676316167089003178325518359863344277814551559197474590483044733574329925947570794508677779986459413166439000241765225023677767754555282196241915500996842713511830954353475439209109249856644278745081047029879999022462230957427158692886317487753201883260626152112524674984510719269715422340038620826684431748131325669940064404757120601727362881317222699393408097596981355810257955915922792648825991943804005848347665699744316223963851263851853483335699321871483966176480839293125413057603561724598227617736944260269994111610286827287926594015501020767105358832476708899657514473423153377514660641699383445065369199724043380072146246537039577390659243640710339329506620575034175016766639538091937167987100329247642670588246573895990251211721839517713790413170646177246216366029853604031421932123167115444834908424556992662935981166395451031277981021820123445253"
+
+
+
 
 
 @log_function_call_without_return
-@login_required()
+@login_required
 def profile(request, info=""):
   """
   <Purpose>
@@ -83,6 +119,9 @@ def profile(request, info=""):
                              'affiliation' : affiliation,
                              'port' : port, 
                              'info' : info})
+
+
+
 
 
 def register(request):
@@ -137,6 +176,7 @@ def register(request):
 
 
 
+
 def _show_login(request, ltemplate, template_dict, form=None):
     """
     <Purpose>
@@ -180,6 +220,8 @@ def _show_login(request, ltemplate, template_dict, form=None):
     return direct_to_template(request, ltemplate, template_dict)
   
   
+  
+  
 
 def login(request):
   
@@ -209,20 +251,26 @@ def login(request):
 
 
 
+
+
 def logout(request):
   interface.logout_user(request)
   return HttpResponseRedirect(reverse("profile"))
 
 
 
-@login_required()
+
+
+@login_required
 def help(request):
   user = _validate_and_get_geniuser(request)
   return direct_to_template(request,'control/help.html', {'username': user.username})
 
 
 
-@login_required()
+
+
+@login_required
 def mygeni(request):
   user = _validate_and_get_geniuser(request)
   
@@ -240,7 +288,9 @@ def mygeni(request):
 
 
 
-@login_required()
+
+
+@login_required
 def myvessels(request, get_form=False, action_summary="", action_detail="", remove_summary=""):
   user = _validate_and_get_geniuser(request)
   
@@ -267,14 +317,18 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
 
 
 
-@login_required()
+
+
+@login_required
 def getdonations(request):
   user = _validate_and_get_geniuser(request)
   return direct_to_template(request,'control/getdonations.html', {'username' : user.username})
 
 
 
-@login_required()
+
+
+@login_required
 def get_resources(request):
   user = _validate_and_get_geniuser(request)
   
@@ -305,8 +359,12 @@ def get_resources(request):
   # return a My Vessels page with the updated vessels/vessel acquire details/errors
   return myvessels(request, get_form, action_summary=action_summary, action_detail=action_detail)
   
+  
+  
+  
+  
 
-@login_required()
+@login_required
 def del_resource(request):
   user = _validate_and_get_geniuser(request)
   
@@ -340,7 +398,9 @@ def del_resource(request):
 
 
 
-@login_required()
+
+
+@login_required
 def del_all_resources(request):
   user = _validate_and_get_geniuser(request)
   
@@ -355,15 +415,19 @@ def del_all_resources(request):
 
 
 
+
+
 # TODO: This is just temporary to get the existing templates working.
-@login_required()
+@login_required
 def gen_new_key(request):
   pass
 
 
 
+
+
 @log_function_call
-@login_required()
+@login_required
 def del_priv(request):
   user = _validate_and_get_geniuser(request)
   if user.user_privkey == "":
@@ -377,8 +441,10 @@ def del_priv(request):
 
 
 
+
+
 @log_function_call
-@login_required()
+@login_required
 def priv_key(request):
   user = _validate_and_get_geniuser(request)
   response = HttpResponse(user.user_privkey, mimetype='text/plain')
@@ -387,13 +453,17 @@ def priv_key(request):
 
 
 
+
+
 @log_function_call
-@login_required()
+@login_required
 def pub_key(request):
   user = _validate_and_get_geniuser(request)
   response = HttpResponse(user.user_pubkey, mimetype='text/plain')
   response['Content-Disposition'] = 'attachment; filename=' + str(user.username) + '.publickey'
   return response
+
+
 
 
 
@@ -406,6 +476,8 @@ def download(request, username):
     validuser = False
   return direct_to_template(request,'download/installers.html', {'username' : username, 
                                                                  'validuser' : validuser})
+
+
 
 
 
@@ -440,6 +512,9 @@ def build_win_installer(request, username):
   return HttpResponseRedirect(redir_url)
 
 
+
+
+
 def build_linux_installer(request, username):
   """
  <Purpose>
@@ -471,6 +546,9 @@ def build_linux_installer(request, username):
   return HttpResponseRedirect(redir_url)
 
 
+
+
+
 def build_mac_installer(request, username):
   """
  <Purpose>
@@ -499,6 +577,8 @@ def build_mac_installer(request, username):
       return HttpResponse("Installer build failed.")
   redir_url = ret + "seattle_mac.tgz"
   return HttpResponseRedirect(redir_url)
+
+
 
 
 
@@ -540,12 +620,10 @@ def _build_installer(username, dist_char):
     ret = HttpResponse("Couldn't get user.")
     return False, ret
    
-  prefix = PATH_TO_DROP_USER_INSTALLER_FOLDERS + "%s_dist"%(username)
-  temp_installinfo_dir = prefix + "/install_info"
+  prefix = os.path.join(settings.INSTALLERS_DIR, "%s_dist"%(username))
+  temp_installinfo_dir = os.path.join(prefix, "install_info")
 
   user_pubkey = user.donor_pubkey
-  acceptdonation_pubkey = "129774128041544992483840782113037451944879157105918667490875002217516699749307491907386666192386877354906201798442050236403095676275904600258748306841717805688118184641552438954898004036758248379889058675795451813045872492421308274734660011578944922609099087277851338277313994200761054957165602579454496913499 5009584846657937317736495348478482159442951678179796433038862287646668582746026338819112599540128338043099378054889507774906339128900995851308672478258731140180190140468013856238094738039659798409337089186188793214102866350638939419805677190812074478208301019935069545923355193838949699496492397781457581193908714041831854374243557949384786876738266983181127249134779897575097946022340850779201939355412918841366370355327173665360672716628991450762121558255087503128279166537142360507802367604402756069070736597174937086480718583392482692614171062272186494071564184129689431325498982800811856338274118203718702345272278560446589165471494375651361750852019147810160148921625729542290638336334809398971313397822221564079037502214439643276240764600598988028102968157487817931720659847520822457976835172247118797446828110946660365132205322939204586763411439281848784213195825380220677820416073940040666481776343542973130000147584659760068373009458649543362607042577145752915876989793197702723812196638625607032478537457723974278728977851718860740932725872670723883052328375429048891803294991318092625440596678842926089139554432813900387338150959410412520854154851406242710420276841944243411402577440698771918699717808708127522759621651"
-  seattle_pubkey = "22599311712094481841033180665237806588790054310631222126405381271924089573908627143292516781530652411806621379822579071415593657088637116149593337977245852950266439908269276789889378874571884748852746045643368058107460021117918657542413076791486130091963112612854591789518690856746757312472362332259277422867 12178066700672820207562107598028055819349361776558374610887354870455226150556699526375464863913750313427968362621410763996856543211502978012978982095721782038963923296750730921093699612004441897097001474531375768746287550135361393961995082362503104883364653410631228896653666456463100850609343988203007196015297634940347643303507210312220744678194150286966282701307645064974676316167089003178325518359863344277814551559197474590483044733574329925947570794508677779986459413166439000241765225023677767754555282196241915500996842713511830954353475439209109249856644278745081047029879999022462230957427158692886317487753201883260626152112524674984510719269715422340038620826684431748131325669940064404757120601727362881317222699393408097596981355810257955915922792648825991943804005848347665699744316223963851263851853483335699321871483966176480839293125413057603561724598227617736944260269994111610286827287926594015501020767105358832476708899657514473423153377514660641699383445065369199724043380072146246537039577390659243640710339329506620575034175016766639538091937167987100329247642670588246573895990251211721839517713790413170646177246216366029853604031421932123167115444834908424556992662935981166395451031277981021820123445253"
 
   # remove and recreate the prefix dir
   shutil.rmtree(prefix, True)
@@ -569,9 +647,9 @@ def _build_installer(username, dist_char):
   # prepare & write out the vesselinfo file 
   vesselinfo = "Percent 80\n"
   vesselinfo += "Owner " + user_pubkey + "\n"
-  vesselinfo += "User " + acceptdonation_pubkey + "\n"
+  vesselinfo += "User " + ACCEPTDONATIONS_STATE_PUBKEY + "\n"
   vesselinfo += "Percent 20\n"
-  vesselinfo += "Owner " + seattle_pubkey + "\n"
+  vesselinfo += "Owner " + SEATTLE_OWNER_PUBKEY + "\n"
 
   f = open((temp_installinfo_dir + "/vesselinfo"), 'w')
   f.write(vesselinfo)
@@ -581,12 +659,17 @@ def _build_installer(username, dist_char):
   #os.system("python %s %s %s %s"%(customize_installer_script, "l", temp_installinfo_dir, prefix))
   subprocess.call([sys.executable, PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT, dist_char, temp_installinfo_dir, prefix])
   print "all done!"
-  redir_url = "http://blackbox.cs.washington.edu/dist/geni/%s_dist/"%(username)
+  redir_url = settings.INSTALLERS_URL + "/%s_dist/"%(username)
   return True, redir_url
+
+
+
 
 
 def donations_help(request, username):
   return direct_to_template(request,'download/help.html', {'username' : username})
+
+
 
 
 
