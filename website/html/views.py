@@ -42,6 +42,10 @@ from seattlegeni.website.control import interface
 
 from seattlegeni.website.html import forms
 
+# Paths for building the installers
+PATH_TO_DROP_USER_INSTALLER_FOLDERS = "/var/www/dist/geni/"
+PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT = "/home/geni/live/seattlegeni/website/html/customize_installers.py"
+
 
 @log_function_call_without_return
 @login_required()
@@ -263,8 +267,7 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
 @login_required()
 def getdonations(request):
   user = _validate_and_get_geniuser(request)
-  #TODO: Remove temporary flag (and get rid of check in template) for disabling installers
-  return direct_to_template(request,'control/getdonations.html', {'username' : user.username, 'installers_enabled' : False})
+  return direct_to_template(request,'control/getdonations.html', {'username' : user.username})
 
 
 
@@ -398,10 +401,8 @@ def download(request, username):
     user = interface.get_user_for_installers(username)
   except DoesNotExistError:
     validuser = False
-  #TODO: Remove temporary flag (and get rid of check in template) for disabling installers
   return direct_to_template(request,'download/installers.html', {'username' : username, 
-                                                                 'validuser' : validuser,
-                                                                 'installers_enabled' : False})
+                                                                 'validuser' : validuser})
 
 
 
@@ -430,10 +431,10 @@ def build_win_installer(request, username):
   """
   success,ret = _build_installer(username, 'w')
   if not success:
-      return ret
+      return HttpResponse("Installer build failed.")
   redir_url = ret + "seattle_win.zip"
-  return redirect_to(request, redir_url)
-
+  #return redirect_to(request, redir_url)
+  return HttpResponseRedirect(redir_url)
 
 
 def build_linux_installer(request, username):
@@ -461,10 +462,10 @@ def build_linux_installer(request, username):
   """
   success,ret = _build_installer(username, 'l')
   if not success:
-      return ret
+      return HttpResponse("Installer build failed.")
   redir_url = ret + "seattle_linux.tgz"
-  return redirect_to(request, redir_url)
-
+  #return redirect_to(request, redir_url)
+  return HttpResponseRedirect(redir_url)
 
 
 def build_mac_installer(request, username):
@@ -492,9 +493,9 @@ def build_mac_installer(request, username):
   """
   success,ret = _build_installer(username, 'm')
   if not success:
-      return ret
+      return HttpResponse("Installer build failed.")
   redir_url = ret + "seattle_mac.tgz"
-  return redirect_to(request, redir_url)
+  return HttpResponseRedirect(redir_url)
 
 
 
@@ -536,57 +537,49 @@ def _build_installer(username, dist_char):
     ret = HttpResponse("Couldn't get user.")
     return False, ret
    
-  prefix = "/var/www/dist/geni/%s_dist"%(username)
+  prefix = PATH_TO_DROP_USER_INSTALLER_FOLDERS + "%s_dist"%(username)
   temp_installinfo_dir = prefix + "/install_info"
-  customize_installer_script = "/home/jason/customize_installers.py"
-  #genilookuppubkey = "129774128041544992483840782113037451944879157105918667490875002217516699749307491907386666192386877354906201798442050236403095676275904600258748306841717805688118184641552438954898004036758248379889058675795451813045872492421308274734660011578944922609099087277851338277313994200761054957165602579454496913499 5009584846657937317736495348478482159442951678179796433038862287646668582746026338819112599540128338043099378054889507774906339128900995851308672478258731140180190140468013856238094738039659798409337089186188793214102866350638939419805677190812074478208301019935069545923355193838949699496492397781457581193908714041831854374243557949384786876738266983181127249134779897575097946022340850779201939355412918841366370355327173665360672716628991450762121558255087503128279166537142360507802367604402756069070736597174937086480718583392482692614171062272186494071564184129689431325498982800811856338274118203718702345272278560446589165471494375651361750852019147810160148921625729542290638336334809398971313397822221564079037502214439643276240764600598988028102968157487817931720659847520822457976835172247118797446828110946660365132205322939204586763411439281848784213195825380220677820416073940040666481776343542973130000147584659760068373009458649543362607042577145752915876989793197702723812196638625607032478537457723974278728977851718860740932725872670723883052328375429048891803294991318092625440596678842926089139554432813900387338150959410412520854154851406242710420276841944243411402577440698771918699717808708127522759621651"
 
-  user_key_filename = username + ".pubkey"
-  seattle_key_filename = "seattle.pubkey"
-  #genilookupkey_filename = username + ".genilookupkey"
+  user_pubkey = user.donor_pubkey
+  acceptdonation_pubkey = "129774128041544992483840782113037451944879157105918667490875002217516699749307491907386666192386877354906201798442050236403095676275904600258748306841717805688118184641552438954898004036758248379889058675795451813045872492421308274734660011578944922609099087277851338277313994200761054957165602579454496913499 5009584846657937317736495348478482159442951678179796433038862287646668582746026338819112599540128338043099378054889507774906339128900995851308672478258731140180190140468013856238094738039659798409337089186188793214102866350638939419805677190812074478208301019935069545923355193838949699496492397781457581193908714041831854374243557949384786876738266983181127249134779897575097946022340850779201939355412918841366370355327173665360672716628991450762121558255087503128279166537142360507802367604402756069070736597174937086480718583392482692614171062272186494071564184129689431325498982800811856338274118203718702345272278560446589165471494375651361750852019147810160148921625729542290638336334809398971313397822221564079037502214439643276240764600598988028102968157487817931720659847520822457976835172247118797446828110946660365132205322939204586763411439281848784213195825380220677820416073940040666481776343542973130000147584659760068373009458649543362607042577145752915876989793197702723812196638625607032478537457723974278728977851718860740932725872670723883052328375429048891803294991318092625440596678842926089139554432813900387338150959410412520854154851406242710420276841944243411402577440698771918699717808708127522759621651"
+  seattle_pubkey = "22599311712094481841033180665237806588790054310631222126405381271924089573908627143292516781530652411806621379822579071415593657088637116149593337977245852950266439908269276789889378874571884748852746045643368058107460021117918657542413076791486130091963112612854591789518690856746757312472362332259277422867 12178066700672820207562107598028055819349361776558374610887354870455226150556699526375464863913750313427968362621410763996856543211502978012978982095721782038963923296750730921093699612004441897097001474531375768746287550135361393961995082362503104883364653410631228896653666456463100850609343988203007196015297634940347643303507210312220744678194150286966282701307645064974676316167089003178325518359863344277814551559197474590483044733574329925947570794508677779986459413166439000241765225023677767754555282196241915500996842713511830954353475439209109249856644278745081047029879999022462230957427158692886317487753201883260626152112524674984510719269715422340038620826684431748131325669940064404757120601727362881317222699393408097596981355810257955915922792648825991943804005848347665699744316223963851263851853483335699321871483966176480839293125413057603561724598227617736944260269994111610286827287926594015501020767105358832476708899657514473423153377514660641699383445065369199724043380072146246537039577390659243640710339329506620575034175016766639538091937167987100329247642670588246573895990251211721839517713790413170646177246216366029853604031421932123167115444834908424556992662935981166395451031277981021820123445253"
 
   # remove and recreate the prefix dir
-  os.system("rm -Rf %s/"%(prefix))
-  os.system("mkdir %s/"%(prefix))
+  #os.system("rm -Rf %s/"%(prefix))
+  #os.system("mkdir %s/"%(prefix))
+  try:
+    shutil.rmtree(prefix)
+  except OSError, err:
+    # directory didn't previously exist
+    pass
 
-  # create the install_info dir, a temporary directory where the pubkeys & vesselinfo
-  # will reside right before they get added into the install package by customize_installer
-  os.system("mkdir %s/install_info"%(prefix))
+  try:
+    os.mkdir(prefix)
+  except OSError, err:
+    print "!!! Failed to create directory. Do you have the correct permissions?"
+    return False
 
-  # write out to file the user's donor key
-  #f = open('%s/install_info/%s'%(prefix, user_key_filename),'w');
-  f = open('%s/%s'%(temp_installinfo_dir, user_key_filename), 'w')
-  f.write(user.donor_pubkey)
-  f.close()
+  # create the install_info dir, a temporary directory where the vesselinfo
+  # will reside right before it gets added into the install package by customize_installer
+  os.mkdir(temp_installinfo_dir)
 
-  # write seattle's pubkey?
-  #f = open('%s/install_info/%s'%(prefix, seattle_key_filename), 'w');
-  f = open('%s/%s'%(temp_installinfo_dir, seattle_key_filename), 'w')
-  f.write("Seattle's key!")
-  f.close()
-
-  # write out to file the geni lookup key
-  #f = open('%s/install_info/%s'%(prefix, genilookupkey_filename),'w');
-  #f.write("%s"%(genilookuppubkey))
-  #f.close()
-
-  # write out the vesselinfo file 
+  # prepare & write out the vesselinfo file 
   vesselinfo = "Percent 80\n"
-  vesselinfo += "Owner " + user_key_filename + "\n"
-  vesselinfo += "User " + user_key_filename + "\n\n"
+  vesselinfo += "Owner " + user_pubkey + "\n"
+  vesselinfo += "User " + acceptdonation_pubkey + "\n"
   vesselinfo += "Percent 20\n"
-  vesselinfo += "Owner " + seattle_key_filename
+  vesselinfo += "Owner " + seattle_pubkey + "\n"
 
-  #vesselinfo = '''Percent 80\nOwner %s/%s\nUser %s/%s_geni\n'''%(prefix,username,prefix,username);
-  #f = open('%s/install_info/vesselinfo'%(prefix),'w');
-  f = open('%s/%s'%(temp_installinfo_dir, "vesselinfo"), 'w')
+  f = open((temp_installinfo_dir + "/vesselinfo"), 'w')
   f.write(vesselinfo)
   f.close()
 
   print "file preparation done. calling customize installer."
-  os.system("python %s %s %s %s"%(customize_installer_script, dist_char, temp_installinfo_dir, prefix))
+  #os.system("python %s %s %s %s"%(customize_installer_script, "l", temp_installinfo_dir, prefix))
+  subprocess.Popen([sys.executable, PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT, dist_char, temp_installinfo_dir, prefix])
   print "all done!"
-  return True
+  redir_url = "http://blackbox.cs.washington.edu/dist/geni/%s_dist/"%(username)
+  return True, redir_url
 
 
 def donations_help(request, username):
