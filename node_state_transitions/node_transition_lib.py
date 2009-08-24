@@ -140,9 +140,8 @@ def process_nodes_and_change_state(change_nodestate_function_tuplelist, transiti
   # Continuously run the script and keep checking for nodes whose state needs to be changed.
   while True:
     do_one_processnode_run(change_nodestate_function_tuplelist, transition_script_name, parallel_instances)
-    log("Finished running do_one_processnode_run(), going to sleep for "+sleeptime+" seconds")  
+    log("Finished running do_one_processnode_run(), going to sleep for "+str(sleeptime)+" seconds")  
     time.sleep(sleeptime)
-    print "------------------------------------------------------------------------\n"
     log("Waking up from sleep.....")
 
 
@@ -848,7 +847,7 @@ def find_advertised_nodes(startstate_name, startstate_publickey):
         log("advertise_lookup failed 10 times...moving on to the next state transition function")
         return False, []
 
-      print "Sleeping for 10 second before retrying advertise_lookup..."
+      log("Sleeping for 10 second before retrying advertise_lookup...")
       time.sleep(1)
 
 
