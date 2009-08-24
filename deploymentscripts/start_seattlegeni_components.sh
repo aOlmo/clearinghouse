@@ -57,7 +57,19 @@ apache2ctl graceful
 echo "Starting check_active_db_nodes.py."
 $SUDO_CMD python $SEATTLEGENI_DIR/polling/check_active_db_nodes.py >>$LOG_DIR/check_active_db_nodes.log 2>&1 &
 
-echo "TODO: start node state transition scripts"
+# Note: Don't put a ".py" on the end of the TRANSITION_NAME values.
+
+TRANSITION_NAME=transition_donation_to_canonical
+echo "Starting transition script $TRANSITION_NAME"
+$SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
+
+TRANSITION_NAME=transition_canonical_to_onepercentmanyevents
+echo "Starting transition script $TRANSITION_NAME"
+$SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
+
+TRANSITION_NAME=transition_onepercentmanyevents_to_onepercentmanyevents
+echo "Starting transition script $TRANSITION_NAME"
+$SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
 
 echo "All components started. Kill this process (CTRL-C or 'kill $$') to stop all started components (except apache)."
 
