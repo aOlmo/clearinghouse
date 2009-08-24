@@ -88,7 +88,7 @@ def _get_node_handle_from_nodeid(nodeid, owner_pubkey=None):
   # Raises DoesNotExistError if no such key exists.
   owner_privkey = keydb.get_private_key(owner_pubkey)
   
-  return nodemanager.get_node_handle(nodeid, node.last_known_ip, node.last_known_port, node.owner_pubkey, owner_privkey)
+  return nodemanager.get_node_handle(nodeid, node.last_known_ip, node.last_known_port, owner_pubkey, owner_privkey)
 
     
 
@@ -263,7 +263,7 @@ class BackendPublicFunctions(object):
     #       will raise an exception if it is not.
     
     # Raises a DoesNotExistError if there is no node with this nodeid.
-    nodehandle = _get_node_handle_from_nodeid(nodeid, ownerkey_pubkey=old_ownerkey)
+    nodehandle = _get_node_handle_from_nodeid(nodeid, owner_pubkey=old_ownerkey)
     
     # Raises NodemanagerCommunicationError if it fails.
     nodemanager.change_owner(nodehandle, vesselname, new_ownerkey)
