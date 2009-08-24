@@ -35,7 +35,7 @@ APPEND_SLASH = False
 WEBSITE_ROOT = os.path.dirname(__file__)
 
 # The directory where we keep the public keys of the node state keys.
-STATE_KEYS_DIR = os.path.join(os.path.dirname(__file__), '..', 'node_state_transitions')
+STATE_KEYS_DIR = os.path.join(WEBSITE_ROOT, '..', 'node_state_transitions', 'statekeys')
 
 # Need to specify the LOGIN_URL, as our login page isn't at the default login
 # location (the default is /accounts/login).

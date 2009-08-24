@@ -23,6 +23,7 @@
 """
 
 
+import os
 import random
 import traceback
 
@@ -35,6 +36,15 @@ from seattlegeni.common.util.decorators import log_function_call
 from seattlegeni.common.exceptions import *
 
 from seattlegeni.node_state_transitions import node_transition_lib
+
+
+
+
+
+
+# The full path to the onepercentmanyevents.resources file, including the filename.
+RESOURCES_TEMPLATE_FILE_PATH = os.path.join(os.path.dirname(__file__), "onepercentmanyevents.resources")
+
 
 
 
@@ -184,7 +194,6 @@ def get_resource_data(onepercent_resourcetemplate, usable_ports_list):
 
 
 
-@log_function_call
 def main():
   """
   <Purpose>
@@ -202,7 +211,7 @@ def main():
   """
 
   #open and read the resource file that is necessary for onepercentmanyevents
-  onepercentmanyevents_resource_fd = file("onepercentmanyevents.resources")
+  onepercentmanyevents_resource_fd = file(RESOURCES_TEMPLATE_FILE_PATH)
   onepercentmanyevents_resourcetemplate = onepercentmanyevents_resource_fd.read()
   onepercentmanyevents_resource_fd.close()
   

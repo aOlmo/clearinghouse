@@ -90,7 +90,7 @@ def update_database(node_string, node_info, database_nodeobject, update_database
 
 
 
-@node_transition_lib.log_function_call
+@log_function_call
 def update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num):
   """
   <Purpose>
@@ -142,7 +142,6 @@ def update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_
   
 
 
-@node_transition_lib.log_function_call
 def main():
   """
   <Purpose>

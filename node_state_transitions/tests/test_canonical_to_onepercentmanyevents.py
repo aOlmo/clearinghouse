@@ -171,8 +171,7 @@ def run_moving2onepercent_to_onepercent_test():
   mockutil.mock_backend_set_vessel_user_keylist([mockutil._mock_pubkey_to_string(
                                                 node_transition_lib.onepercentmanyeventspublickey)])
 
-  file_path = os.path.join(settings.STATE_KEYS_DIR, "onepercentmanyevents.resources")
-  onepercentmanyevents_resource_fd = file(file_path)
+  onepercentmanyevents_resource_fd = file(transition_canonical_to_onepercentmanyevents.RESOURCES_TEMPLATE_FILE_PATH)
   onepercentmanyevents_resourcetemplate = onepercentmanyevents_resource_fd.read()
   onepercentmanyevents_resource_fd.close()
 

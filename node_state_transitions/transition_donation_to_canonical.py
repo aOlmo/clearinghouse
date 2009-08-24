@@ -31,7 +31,6 @@ from seattlegeni.node_state_transitions import node_transition_lib
 
 
 
-@node_transition_lib.log_function_call
 def main():
   """
   <Purpose>
