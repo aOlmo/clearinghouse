@@ -91,8 +91,6 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
   
   donated_vesselname = database_nodeobject.extra_vessel_name
 
-
- 
   # Retrieve the usable ports list for the node and then shuffle
   # the ports so each vessel gets a random subset of the ports
   usable_ports_list = nodemanager.get_vessel_resources(ip_or_nat_string, port_num, donated_vesselname)['usableports']
@@ -102,7 +100,6 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
   #the vessel that we start with
   current_vessel = donated_vesselname
   node_transition_lib.log("Name of starting vessel: "+current_vessel)
-
 
   # Keep splittiing the vessel until we run out of resources.  
   # Note that when split_vessel is called the left vessel 
@@ -120,7 +117,15 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
 
     # Split the current vessel. The exact vessel is the right vessel 
     # and the extra vessel is the left vessel. 
-    leftover_vessel, new_vessel = backend.split_vessel(database_nodeobject, current_vessel, desired_resourcedata)                    
+    try:
+      leftover_vessel, new_vessel = backend.split_vessel(database_nodeobject, current_vessel, desired_resourcedata)
+    except NodemanagerCommunicationError, e:
+      # The object 'e' will already include traceback info that has the actual node error.
+      # If the failure is due to inability to split further, that's ok.
+      if 'Insufficient quantity:' in str(e):
+        break
+      raise
+
     node_transition_lib.log("Successfully split vessel: "+current_vessel+" into vessels: "+leftover_vessel+" and "+new_vessel)
     current_vessel = leftover_vessel
 
