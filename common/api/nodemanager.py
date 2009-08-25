@@ -37,6 +37,7 @@
        as the first argument.
 """
 
+import random
 import traceback
 
 from seattlegeni.common.util.assertions import *
@@ -56,6 +57,17 @@ repyhelper.translate_and_import("time.repy")
 
 
 
+# The number of times to try to do a time update before init_nodemanager() will
+# raise an exception.
+MAX_TIME_UPDATE_ATTEMPTS = 5
+
+# Ports to use for UDP listening when doing a time update.
+TIME_UPDATE_POSSIBLE_PORTS = range(10000, 60001)
+
+
+
+
+
 def init_nodemanager():
   """
     <Purpose>
@@ -64,26 +76,28 @@ def init_nodemanager():
       None
     <Exceptions>
       TimeUpdateError
-        If unable to update time.
+        If unable to update time after MAX_TIME_UPDATE_ATTEMPTS tries.
     <Side Effects>
       This function contacts a NTP server and gets the current time.
       This is needed for the crypto operations that we do later.
-      This uses UDP port 23421.
+      This selects random ports to listen on from the range
+      TIME_UPDATE_POSSIBLE_PORTS.
     <Returns>
       None
   """
-  try:
-    time_updatetime(23421)
-  except TimeError:
-    # We don't want to ignore this, nor do we want to let an exception defined
-    # in a repy module trickle up outside of this module, nor do we want to call
-    # it an InternalError just in case it's considered non-fatal at some point
-    # (because we generally don't want people catching InternalError because
-    # they're bound to catch more then they intended if they do that). So, we
-    # use a seattlegeni exception just for this situation. 
-    raise TimeUpdateError("Failed to perform time_updatetime() in init_nodemanager(): " + 
-                          traceback.format_exc())
-
+  portlist = random.sample(TIME_UPDATE_POSSIBLE_PORTS, MAX_TIME_UPDATE_ATTEMPTS) 
+  
+  for localport in portlist:
+    try:
+      time_updatetime(localport)
+      return
+    except TimeError:
+      error_message = traceback.format_exc()
+  
+  # We raise a TimeUpdateError which is a seattlegeni error rather than a
+  # TimeError which is a repy error.
+  raise TimeUpdateError("Failed to perform time_updatetime(): " + error_message)
+    
 
 
 
