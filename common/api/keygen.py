@@ -39,7 +39,7 @@ KEYDAEMON_PORT = "8030"
 
 # If USE_KEYDAEMON is False and so we manually/directly generate keys, this
 # is the bit size of the keys we generate.
-MANUAL_GENERATION_BITSIZE = 768
+MANUAL_GENERATION_BITSIZE = 1024
 
 
 
