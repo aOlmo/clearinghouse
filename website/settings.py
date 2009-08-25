@@ -37,11 +37,16 @@ WEBSITE_ROOT = os.path.dirname(__file__)
 # The directory where we keep the public keys of the node state keys.
 STATE_KEYS_DIR = os.path.join(WEBSITE_ROOT, '..', 'node_state_transitions', 'statekeys')
 
-# The directory in which installers created by seattlegeni will be stored.
-INSTALLERS_DIR = "/var/www/dist/geni"
+# The directory where the base installers named seattle_linux.tgz, seattle_mac.tgz,
+# and seattle_win.zip are located.
+BASE_INSTALLERS_DIR = "/var/www/dist"
 
-# The url that corresponds to INSTALLERS_DIR
-INSTALLERS_URL = "https://blackbox.cs.washington.edu/dist/geni"
+# The directory in which customized installers created by seattlegeni will be
+# stored. A directory within this directory will be created for each user.
+USER_INSTALLERS_DIR = os.path.join(BASE_INSTALLERS_DIR, "geni")
+
+# The url that corresponds to USER_INSTALLERS_DIR
+USER_INSTALLERS_URL = "https://blackbox.cs.washington.edu/dist/geni"
 
 # Need to specify the LOGIN_URL, as our login page isn't at the default login
 # location (the default is /accounts/login).

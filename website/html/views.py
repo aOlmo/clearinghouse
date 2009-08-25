@@ -21,6 +21,7 @@ import os
 import sys
 import shutil
 import subprocess
+import traceback
 
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
@@ -39,6 +40,8 @@ from seattlegeni.common.util.decorators import log_function_call_without_return
 
 # For user registration input validation
 from seattlegeni.common.util import validations
+
+from seattlegeni.common.util import log
 
 from seattlegeni.website import settings
 
@@ -620,7 +623,7 @@ def _build_installer(username, dist_char):
     ret = HttpResponse("Couldn't get user.")
     return False, ret
    
-  prefix = os.path.join(settings.INSTALLERS_DIR, "%s_dist"%(username))
+  prefix = os.path.join(settings.USER_INSTALLERS_DIR, "%s_dist"%(username))
   temp_installinfo_dir = os.path.join(prefix, "install_info")
 
   user_pubkey = user.donor_pubkey
@@ -634,12 +637,8 @@ def _build_installer(username, dist_char):
 #    # directory didn't previously exist
 #    pass
 
-  try:
-    os.mkdir(prefix)
-  except OSError, err:
-    print "!!! Failed to create directory. Do you have the correct permissions?"
-    return False
-
+  os.mkdir(prefix)
+ 
   # create the install_info dir, a temporary directory where the vesselinfo
   # will reside right before it gets added into the install package by customize_installer
   os.mkdir(temp_installinfo_dir)
@@ -655,11 +654,15 @@ def _build_installer(username, dist_char):
   f.write(vesselinfo)
   f.close()
 
-  print "file preparation done. calling customize installer."
+  log.info("file preparation done. calling customize installer.")
   #os.system("python %s %s %s %s"%(customize_installer_script, "l", temp_installinfo_dir, prefix))
-  subprocess.call([sys.executable, PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT, dist_char, temp_installinfo_dir, prefix])
-  print "all done!"
-  redir_url = settings.INSTALLERS_URL + "/%s_dist/"%(username)
+  try:
+    subprocess.check_call([sys.executable, PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT, dist_char, 
+                           settings.BASE_INSTALLERS_DIR, temp_installinfo_dir, prefix])
+  except subprocess.CalledProcessError:
+    raise 
+    
+  redir_url = settings.USER_INSTALLERS_URL + "/%s_dist/"%(username)
   return True, redir_url
 
 

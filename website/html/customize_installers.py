@@ -20,9 +20,16 @@ import os
 import sys
 import shutil
 
+
+
+
+
 PROG_DIR = "seattle_repy"
-BASE_INST_PATH = "/var/www/dist"
 OUTPUT_NAME = "seattle"
+
+
+
+
 
 class ArgError(Exception):
     def __init__(self, value):
@@ -30,13 +37,21 @@ class ArgError(Exception):
     def __str__(self):
         return repr(self.parameter)
 
+
+
+
+
 def output(text):
     # Meant to be called internall, this
     # might be useful if we ever want to add
     # a "silent" option.
     print text
 
-def main(which_os, dir_to_add, output_path):
+
+
+
+
+def main(which_os, base_installers_dir, dir_to_add, output_path):
     """
     <Purpose>
       Given options indicating which USes the installers should be created
@@ -104,10 +119,10 @@ def main(which_os, dir_to_add, output_path):
                 output("Customizing Windows installer...")
                 try:
                     base_link = "seattle_win.zip"
-                    if not os.path.exists(BASE_INST_PATH + "/" + base_link):
+                    if not os.path.exists(base_installers_dir + "/" + base_link):
                         raise Exception("Base Windows installer not found.")
                     inst_path = output_path + "/" + OUTPUT_NAME + "_win.zip"
-                    shutil.copyfile(BASE_INST_PATH + "/" + base_link, inst_path)
+                    shutil.copyfile(base_installers_dir + "/" + base_link, inst_path)
                     os.system("zip -r " + inst_path + " " + dir_to_add)
                     created_installers.append(inst_path)
 
@@ -127,10 +142,10 @@ def main(which_os, dir_to_add, output_path):
                 
                 output("Customizing %s installer..."%(os_type))
                 try:
-                    if not os.path.exists(BASE_INST_PATH + "/" + base_link):
+                    if not os.path.exists(base_installers_dir + "/" + base_link):
                         raise Exception("Base %s installer not found."%(os_type))
                     inst_path = output_path + "/" + OUTPUT_NAME + "_%s.tgz"%(os_type)
-                    shutil.copyfile(BASE_INST_PATH + "/" + base_link, inst_path)
+                    shutil.copyfile(base_installers_dir + "/" + base_link, inst_path)
                     os.system("gzip -d " + inst_path)
                     unzipped_inst_path = output_path + "/" + OUTPUT_NAME + "_%s.tar"%(os_type)
                     
@@ -155,9 +170,13 @@ def main(which_os, dir_to_add, output_path):
         output("customize_installers finished. Created these installers:")
         output("/n".join(created_installers))
 
+
+
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        output("usage: python [m|l|w] <directory/to/add> <output/directory>")
+        output("usage: python [m|l|w] <base/installer/dir> <directory/to/add> <output/directory>")
     else:
-        main(sys.argv[1], sys.argv[2], sys.argv[3])
+        main(sys.argv[1], sys.argv[2], sys.argv[3], (sys.argv[4]))
         
