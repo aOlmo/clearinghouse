@@ -123,6 +123,8 @@ MIDDLEWARE_CLASSES = (
   # Our own middleware that logs when a request is initially received and
   # sets up the logger to log other messages with per-request unique ids.
   'seattlegeni.website.middleware.logrequest.LogRequestMiddleware',
+  # Our own middleware that logs when unhandled exceptions happen.
+  'seattlegeni.website.middleware.logexception.LogExceptionMiddleware',
 )
 
 ROOT_URLCONF = 'seattlegeni.website.urls'
