@@ -74,6 +74,14 @@ repyhelper.translate_and_import('random.repy')
 
 
 
+
+# Whether _init_node_transition_lib() has been called yet.
+is_initialized = False
+
+
+
+
+
 def _state_key_file_to_publickey(key_file_name):
   """ Retrieve pubkey from file and return the dictionary form of key"""
   return rsa_file_to_publickey(os.path.join(settings.STATE_KEYS_DIR, key_file_name))  
@@ -126,22 +134,14 @@ def process_nodes_and_change_state(change_nodestate_function_tuplelist, transiti
     None
   """
   
-  backend.set_backend_authcode(seattlegeni.backend.config.authcode)
-
-  init_log(transition_script_name)
+  _init_node_transition_lib()
+  
   log("Starting state transition script: "+transition_script_name+".....")
-
-  # Initialize the nodemanager. Does a time_update().
-  nodemanager.init_nodemanager()
 
   # Get a processlock so multiple versions of the same script aren't running.
   if runonce.getprocesslock("process_lock."+transition_script_name) != True:
     log("The lock for "+transition_script_name+" is being held.\nExiting...\n\n")
     return
-
-  # Initialize maindb for future use.
-  maindb.init_maindb()  
-
 
   # Continuously run the script and keep checking for nodes whose state needs to be changed.
   while True:
@@ -1115,39 +1115,39 @@ def log(message):
 
 
 
-def init_log(logname):
+
+def _init_node_transition_lib():
   """
   <Purpose>
-    Setup circular logger
-  
+    Perform one-time initialization actions on startup. This will be taken
+    care of automatically, scripts don't need to worry about calling this.
+  <Arguments>
+    None
   <Exceptions>
-    UnexpectedError - if the log system setup fails.
-
+    TimeUpdateError
+      If time update fails in init_nodemanager().
   <Side Effects>
-    Creates a log file.
-
-  <Argument>
-    logname - the name of the logfile (log.logname)
-  <Return>
+    All necessary initalization is done.
+  <Returns>
     None
   """
 
-#  log_fd = "log."+str(logname)
-  seattlegeni.common.util.log.set_log_level(seattlegeni.common.util.log.LOG_LEVEL_DEBUG)
+  global is_initialized
+  
+  if not is_initialized:
+    
+    is_initialized = True
+    
+    # Set the log level if we want to override the defaults.
+    #seattlegeni.common.util.log.set_log_level(seattlegeni.common.util.log.LOG_LEVEL_DEBUG)
 
-#For future if we want to use circular logger
-#
-#  try:
-#    #setup a circular logger with 50MB of buffer
-#    log_output = logging.circular_logger(log_fd, 50*1024*1024)
-#    
-#    #redirect stderr and stdout to the log
-#    sys.stdout = log_output
-#    sys.stderr = log_output
-#
-#  except:
-#    raise UnexpectedError, "Circular logger was not setup properly"
+    # We don't need to maindb.init_maindb() because that happens automatically
+    # when django creates a new database connection.
+    
+    nodemanager.init_nodemanager()
 
+    backend.set_backend_authcode(seattlegeni.backend.config.authcode)
+    
 
 
 
