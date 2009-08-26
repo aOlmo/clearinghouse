@@ -115,12 +115,14 @@ def profile(request, info=""):
   username = user.username
   affiliation = user.affiliation
   port = user.usable_vessel_port
+  has_privkey = user.user_privkey != None
   info = ""
   
   return direct_to_template(request, 'control/profile.html',
                             {'username' : username, 
                              'affiliation' : affiliation,
                              'port' : port, 
+                             'has_privkey' : has_privkey,
                              'info' : info})
 
 
