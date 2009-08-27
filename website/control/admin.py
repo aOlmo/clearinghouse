@@ -40,20 +40,26 @@ class GeniUserAdmin(admin.ModelAdmin):
   search_fields = ["username", "user_pubkey", "donor_pubkey", "email",
                    "affiliation"]
   ordering = ["-date_created"]
-
   
+
+
+
+
+def partial_node_identifier(node):
+  """Used by class NodeAdmin"""
+  return node.node_identifier[:16]
 
 
 
 class NodeAdmin(admin.ModelAdmin):
   """Customized admin view of the Node model."""
-  list_display = ["__unicode__", "last_known_ip", "last_known_port",
+  list_display = [partial_node_identifier, "last_known_ip", "last_known_port",
                   "last_known_version", "is_active", "is_broken",
                   "extra_vessel_name", "date_last_contacted", "date_created"]
-  # All fields we list excluding last_known_ip (also exclude the unicode
-  # representation which isn't a field).
-  list_filter = list_display[2:]
-  search_fields = ["last_known_ip", "owner_pubkey"]
+  list_filter = ["last_known_port", "last_known_version", "is_active",
+                 "is_broken", "extra_vessel_name", "date_last_contacted",
+                 "date_created"]
+  search_fields = ["node_identifier", "last_known_ip", "owner_pubkey"]
   ordering = ["-date_created"]
 
 
