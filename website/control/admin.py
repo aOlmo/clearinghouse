@@ -46,15 +46,29 @@ class GeniUserAdmin(admin.ModelAdmin):
 
 
 def partial_node_identifier(node):
-  """Used by class NodeAdmin"""
+  """Used by class NodeAdmin."""
   return node.node_identifier[:16]
 
+
+def is_ok(node):
+  """
+  Used by class NodeAdmin. We use this because otherwise the green checkmark
+  indicating broken is confusing. So, instead we have the field be the
+  "not broken" field where a green checkmark means it's not broken.
+  """
+  return not node.is_broken
+# Set a boolean attribute of the function itself which tells django to use the
+# boolean icons to represent this field.
+is_ok.boolean = True
+# Set an admin_order_field of the function which tells django that what is
+# represented by this column in the admin area is a field that can be ordered.
+is_ok.admin_order_field = 'is_broken'
 
 
 class NodeAdmin(admin.ModelAdmin):
   """Customized admin view of the Node model."""
   list_display = [partial_node_identifier, "last_known_ip", "last_known_port",
-                  "last_known_version", "is_active", "is_broken",
+                  "last_known_version", "is_active", is_ok,
                   "extra_vessel_name", "date_last_contacted", "date_created"]
   list_filter = ["last_known_port", "last_known_version", "is_active",
                  "is_broken", "extra_vessel_name", "date_last_contacted",
