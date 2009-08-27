@@ -10,9 +10,7 @@
 
 <Purpose>
   This module provides classes that tell django how to represent the models
-  in the admin area of the website. If a class has no properties, then
-  we're not customizing it and instead just using the django defaults for
-  representing the model.
+  in the admin area of the website.
 
   See http://docs.djangoproject.com/en/dev/ref/contrib/admin/
 """
@@ -28,33 +26,84 @@ from django.contrib import admin
 
 
 
+
+
 class GeniUserAdmin(admin.ModelAdmin):
   """Customized admin view of the GeniUser model."""
+  list_display = ["username", "affiliation", "email", "free_vessel_credits", 
+                  "usable_vessel_port", "date_created", "is_staff",
+                  "is_superuser"]
+  list_filter = ["free_vessel_credits", "date_created", "is_staff",
+                 "is_superuser", "usable_vessel_port"]
+  # Don't display the private key in the details form.
+  exclude = ['user_privkey']
+  search_fields = ["username", "user_pubkey", "donor_pubkey", "email",
+                   "affiliation"]
+  ordering = ["-date_created"]
+
+  
 
 
 
 class NodeAdmin(admin.ModelAdmin):
   """Customized admin view of the Node model."""
-  
+  list_display = ["__unicode__", "last_known_ip", "last_known_port",
+                  "last_known_version", "is_active", "is_broken",
+                  "extra_vessel_name", "date_last_contacted", "date_created"]
+  # All fields we list excluding last_known_ip (also exclude the unicode
+  # representation which isn't a field).
+  list_filter = list_display[2:]
+  search_fields = ["last_known_ip", "owner_pubkey"]
+  ordering = ["-date_created"]
+
+
+
 
 
 class DonationAdmin(admin.ModelAdmin):
   """Customized admin view of the Donation model."""
-    
+  list_display = ["node", "donor", "date_created"]
+  list_filter = ["date_created"]
+  search_fields = ["node__node_identifier", "donor__username"]
+  ordering = ["-date_created"]
+
+
+
 
 
 class VesselAdmin(admin.ModelAdmin):
   """Customized admin view of the Vessel model."""
+  list_display = ["node", "name", "acquired_by_user", "date_acquired",
+                  "date_expires", "is_dirty", "date_created"]
+  list_filter = ["date_acquired", "date_expires", "is_dirty", "date_created"]
+  search_fields = ["node__node_identifier", "node__last_known_ip", "name",
+                   "acquired_by_user__username"]
+  ordering = ["-date_acquired"]
+
+
 
 
 
 class VesselPortAdmin(admin.ModelAdmin):
   """Customized admin view of the VesselPort model."""
+  list_display = ["vessel", "port"]
+  list_filter = []
+  search_fields = ["vessel__node__node_identifier",
+                   "vessel__node__last_known_ip", "port"]
+
+
 
 
 
 class VesselUserAccessMapAdmin(admin.ModelAdmin):
   """Customized admin view of the VesselUserAccessMap model."""
+  list_display = ["vessel", "user", "date_created"]
+  list_filter = ["date_created"]
+  search_fields = ["vessel__node__node_identifier",
+                   "vessel__node__last_known_ip", "user__username"]
+  ordering = ["-date_created"]
+
+
 
 
 
