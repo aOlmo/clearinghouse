@@ -53,7 +53,7 @@ class GeniUserCreationForm(DjangoUserCreationForm):
     DjangoUserCreationForm.__init__(self, *args)
     self.fields['username'].error_messages['required'] = 'Enter a username'
     self.fields['password1'].error_messages['required'] = 'Enter a password'
-    self.fields['password2'].error_messages['required'] = 'Verify your password'     
+    self.fields['password2'].error_messages['required'] = 'Verify your password'
 
   def clean_username(self):
     value = self.cleaned_data['username']
@@ -90,78 +90,97 @@ class GeniUserCreationForm(DjangoUserCreationForm):
 
 
 def gen_get_form(geni_user, req_post=None):
+  """
+  <Purpose>
+      Dynamically generates a GetVesselsForm that has the right
+      number vessels (the allowed number of vessels a user may
+      acquire). Possibly generate a GetVesselsForm from an HTTP POST
+      request.
+
+  <Arguments>
+      geni_user:
+          geni_user object
+      req_post:
+          An HTTP POST request (django) object from which a
+          GetVesselsForm may be instantiated. If this argument is
+          not supplied, a blank form will be created
+
+  <Exceptions>
+      None.
+
+  <Side Effects>
+      None.
+
+  <Returns>
+      A GetVesselsForm object that is instantiated with a req_post
+      (if given). None is returned if the user cannot acquire any
+      more vessels.
+  """
+      
+  # the total number of vessels a user may acquire
+  #TODO: Interface call that gets remaining vessel credit.
+  #max_num = geni_user.vessel_credit_remaining()
+  total_vessel_credits = interface.get_total_vessel_credits(geni_user)
+  num_acquired_vessels = len(interface.get_acquired_vessels(geni_user))
+  avail_vessel_credits = total_vessel_credits - num_acquired_vessels
+  
+  # JTC: Dynamic generation of available vessel amounts based off of avail_vessel_credits
+  step = range(1, 10, 1)
+  if avail_vessel_credits < 20:
+    step = range(1, avail_vessel_credits+1, 1)
+  elif avail_vessel_credits >= 20 and avail_vessel_credits < 100:
+    step.extend(range(10, avail_vessel_credits+1, 10))
+  elif avail_vessel_credits >= 100:
+    step.extend(range(10, 100, 10))
+    step.extend(range(100, avail_vessel_credits+1, 100))
+  try:
+    existdup = step.index(avail_vessel_credits)
+  except ValueError:
+    step.extend([avail_vessel_credits])
+  
+  # don't return this form if user has no more available vessel credits
+  if avail_vessel_credits == 0:
+    return None
+
+  # dynamically generate the get vessels form
+  #get_vessel_choices = zip(range(1,max_num+1),range(1,max_num+1))
+  get_vessel_choices = zip(step, step)
+  
+  class GetVesselsForm(forms.Form):
     """
     <Purpose>
-        Dynamically generates a GetVesselsForm that has the right
-        number vessels (the allowed number of vessels a user may
-        acquire). Possibly generate a GetVesselsForm from an HTTP POST
-        request.
-
-    <Arguments>
-        geni_user:
-            geni_user object
-        req_post:
-            An HTTP POST request (django) object from which a
-            GetVesselsForm may be instantiated. If this argument is
-            not supplied, a blank form will be created
-
-    <Exceptions>
-        None?
-
+        Generates a form to acquire vessels by the user
     <Side Effects>
-        None.
-
-    <Returns>
-        A GetVesselsForm object that is instantiated with a req_post
-        (if given). None is returned if the user cannot acquire any
-        more vessels.
+        None
+    <Example Use>
+        GetVesselsForm()
+            to generate a blank form
+        GetVesselsForm(post_request)
+            to generate a form from an existing POST request
     """
-        
-    # the total number of vessels a user may acquire
-    #TODO: Interface call that gets remaining vessel credit.
-    #max_num = geni_user.vessel_credit_remaining()
-    max_num = 10
-    if max_num == 0:
-        return None
-
-    # dynamically generate the get vessels form
-    get_vessel_choices = zip(range(1,max_num+1),range(1,max_num+1))
+    # maximum number of vessels a user is allowed to acquire
+    #num = forms.ChoiceField(choices=get_vessel_choices, error_messages={'required' : 'Please enter the number of vessels to acquire'})
+    num = forms.ChoiceField(choices=get_vessel_choices)
     
-    class GetVesselsForm(forms.Form):
-      """
-      <Purpose>
-          Generates a form to acquire vessels by the user
-      <Side Effects>
-          None
-      <Example Use>
-          GetVesselsForm()
-              to generate a blank form
-          GetVesselsForm(post_request)
-              to generate a form from an existing POST request
-      """
-      # maximum number of vessels a user is allowed to acquire
-      #num = forms.ChoiceField(choices=get_vessel_choices, error_messages={'required' : 'Please enter the number of vessels to acquire'})
-      num = forms.ChoiceField(choices=get_vessel_choices)
-      
-      # the various environment types the user may select from
-      #env = forms.ChoiceField(choices=((1,'LAN'),(2,'WAN'),(3,'Random')), error_messages={'required' : 'Please enter the networking environment for vessels to acquire'})
-      env = forms.ChoiceField(choices=(('lan','LAN'),('wan','WAN'),('rand','Random')))
-      
-      def clean_num(self):
-        value = int(self.cleaned_data['num'])
-        if value < 1:
-          raise forms.ValidationError("Invalid vessel number selection.")
-        return value
-      
-      def clean_env(self):
-        value = str(self.cleaned_data['env'])
-        if not (value == 'lan' or value == 'wan' or value == 'rand'):
-          raise forms.ValidationError("Invalid vessel type selection.")
-        return value
-      
-      def get_errors_as_str(self):
-        return str(self.errors)
+    # the various environment types the user may select from
+    #env = forms.ChoiceField(choices=((1,'LAN'),(2,'WAN'),(3,'Random')), error_messages={'required' : 'Please enter the networking environment for vessels to acquire'})
+    env = forms.ChoiceField(choices=(('wan','WAN'),('lan','LAN'),('nat','NAT'),('rand','Random')))
     
-    if req_post is None:
-        return GetVesselsForm()
-    return GetVesselsForm(req_post)
+    def clean_num(self):
+      value = int(self.cleaned_data['num'])
+      if value < 1:
+        raise forms.ValidationError("Invalid vessel number selection.")
+      return value
+    
+    def clean_env(self):
+      value = str(self.cleaned_data['env'])
+      if not (value == 'wan' or value == 'lan' or value == 'nat' or value == 'rand'):
+        raise forms.ValidationError("Invalid vessel type selection.")
+      return value
+    
+    def get_errors_as_str(self):
+      return str(self.errors)
+  
+  if req_post is None:
+      return GetVesselsForm()
+  return GetVesselsForm(req_post)

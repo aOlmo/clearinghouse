@@ -168,12 +168,12 @@ def register(request):
         try:
           # we should never error here, since we've already finished validation at this point.
           # but, just to be safe...
-          geniuser = interface.register_user(username, password, email, affiliation, pubkey)
+          user = interface.register_user(username, password, email, affiliation, pubkey)
         except ValidationError, err:
           page_top_errors.append(str(err))
         else:
           return _show_login(request, 'accounts/login.html',
-                             {'msg' : "Username %s has been successfully registered." % (geniuser)})
+                             {'msg' : "Username %s has been successfully registered." % (user.username)})
   else:
     form = forms.GeniUserCreationForm()
   return direct_to_template(request, 'accounts/register.html', {'form' : form, 'page_top_errors' : page_top_errors })
@@ -621,7 +621,7 @@ def _build_installer(username, dist_char):
     user = interface.get_user_for_installers(username)
     username = user.username
   except DoesNotExistError:
-    #TODO: what happens if the username is invalid? render a "build failed, bad user" page?
+    # TODO: what happens if the username is invalid? render a "build failed, bad user" page?
     ret = HttpResponse("Couldn't get user.")
     return False, ret
    

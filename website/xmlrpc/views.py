@@ -167,12 +167,13 @@ class PublicXMLRPCFunctions(object):
     if not isinstance(resource_type, str) or not isinstance(num_vessels, int):
       raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec has invalid data types.")
     
-    if (resource_type != "lan" and resource_type != "wan" and resource_type != "random") or num_vessels < 1:
+    if (resource_type != "wan" and resource_type != "lan" and 
+        resource_type != "nat" and resource_type != "rand") or num_vessels < 1:
       raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec has invalid values.")
       
     # since acquire_vessels expects rand instead of random
-    if resource_type == 'random':
-      resource_type = 'rand'
+    #if resource_type == 'random':
+    #  resource_type = 'rand'
     
     try:
       acquired_vessels = interface.acquire_vessels(geni_user, num_vessels, resource_type)
@@ -339,13 +340,12 @@ class PublicXMLRPCFunctions(object):
     """
     username = auth['username']
     password = auth['password']
-    geni_user = interface.get_user_with_password(username, password)
-    if geni_user == None:
+    try:
+      geni_user = interface.get_user_with_password(username, password)
+    except DoesNotExistError:
       return -1
     else:
       return 0
-
-
 
 
 
