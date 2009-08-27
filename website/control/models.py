@@ -148,7 +148,7 @@ class Node(models.Model):
   last_known_ip = models.CharField("Last known nodemanager IP address or NAT string", max_length=100, db_index=True)
 
   # The port the nodemanager was last known to be accessible through. 
-  last_known_port = models.IntegerField("Last known nodemanager port")
+  last_known_port = models.IntegerField("Last known nodemanager port", db_index=True)
 
   # The version of seattle the node was last known to be running. 
   last_known_version = models.CharField("Last known version", max_length=64, blank=True, db_index=True)
@@ -183,7 +183,7 @@ class Node(models.Model):
   # The extra vessel will (at least in the near future) have the node's free
   # resources assigned to it, so the name needs to be known in order to do
   # things with those resources. 
-  extra_vessel_name = models.CharField("Extra-vessel name", max_length=8)
+  extra_vessel_name = models.CharField("Extra-vessel name", max_length=8, db_index=True)
   
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)
@@ -260,7 +260,7 @@ class Vessel(models.Model):
   node = models.ForeignKey(Node, db_index=True)
 
   # The name used to refer to the vessel when communicating with the nodemanager.
-  name = models.CharField("Vessel name", max_length=50)
+  name = models.CharField("Vessel name", max_length=50, db_index=True)
   
   # If this vessel has been acquired by a user, this is the user who acquired
   # it. This will be a null/None value if the vessel is not currently acquired
