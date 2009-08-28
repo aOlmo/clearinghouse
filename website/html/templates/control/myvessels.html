@@ -81,6 +81,13 @@ My Vessels - GENI
   			{% endif %}
 				
 			</table>
+			{% ifnotequal num_vessels 0 %}
+			<table class="vessels">
+			  <tr class="even">
+			    <td colspan="4">Total <i>{{ num_vessels }}</i> acquired vessel(s).</td>
+			  </tr>
+			</table>
+			{% endifnotequal %}
 		</div>
 	</div>
 

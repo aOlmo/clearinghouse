@@ -55,14 +55,25 @@ from seattle import repyportability
 
 repyhelper.translate_and_import('rsa.repy')
 
-
-
-
-
 # Path to the customize_installers.py. In this case, it's in the same directory
 # as this views.py file.
 PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT = os.path.join(os.path.dirname(__file__), 
                                                   "customize_installers.py")
+
+
+
+
+
+class LoggedInButFailedGetGeniUserError(Exception):
+  """
+  <Purpose>
+  Indicates that a function tried to get a GeniUser record, and failed;
+  while having passed the @login_required decorator. This means that a
+  DjangoUser is logged in, but there is no corresponding GeniUser record.
+  
+  This exception should only be thrown from _validate_and_get_geniuser,
+  and caught by methods with @login_required decorators.
+  """
 
 
 
@@ -110,7 +121,10 @@ def profile(request, info=""):
   <Returns>
     An HTTP response object that represents the profile page.
   """
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
   
   username = user.username
   affiliation = user.affiliation
@@ -268,7 +282,11 @@ def logout(request):
 
 @login_required
 def help(request):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+  
   return direct_to_template(request,'control/help.html', {'username': user.username})
 
 
@@ -277,7 +295,10 @@ def help(request):
 
 @login_required
 def mygeni(request):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
   
   total_vessel_credits = interface.get_total_vessel_credits(user)
   num_acquired_vessels = len(interface.get_acquired_vessels(user))
@@ -297,7 +318,10 @@ def mygeni(request):
 
 @login_required
 def myvessels(request, get_form=False, action_summary="", action_detail="", remove_summary=""):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
   
   if get_form is False:
     get_form = forms.gen_get_form(user)
@@ -326,7 +350,11 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
 
 @login_required
 def getdonations(request):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+  
   return direct_to_template(request,'control/getdonations.html', {'username' : user.username})
 
 
@@ -335,7 +363,10 @@ def getdonations(request):
 
 @login_required
 def get_resources(request):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
   
   # the request must be via POST. if not, bounce user back to My Vessels page
   if not request.method == 'POST':
@@ -362,8 +393,8 @@ def get_resources(request):
       action_summary = "You do not have enough vessel credits to fufill this request."
   
   # return a My Vessels page with the updated vessels/vessel acquire details/errors
-  return myvessels(request, get_form, action_summary=action_summary, action_detail=action_detail)
-  
+  #return myvessels(request, get_form, action_summary=action_summary, action_detail=action_detail)
+  return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
   
   
   
@@ -371,7 +402,10 @@ def get_resources(request):
 
 @login_required
 def del_resource(request):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
   
   # the request must be via POST. if not, bounce user back to My Vessels page
   if not request.method == 'POST':
@@ -407,7 +441,10 @@ def del_resource(request):
 
 @login_required
 def del_all_resources(request):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
   
   # the request must be via POST. if not, bounce user back to My Vessels page
   if not request.method == 'POST':
@@ -434,7 +471,11 @@ def gen_new_key(request):
 @log_function_call
 @login_required
 def del_priv(request):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+  
   if user.user_privkey == "":
     msg = "Private key has already been deleted."
   else:
@@ -451,7 +492,11 @@ def del_priv(request):
 @log_function_call
 @login_required
 def priv_key(request):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+  
   response = HttpResponse(user.user_privkey, mimetype='text/plain')
   response['Content-Disposition'] = 'attachment; filename=' + str(user.username) + '.privatekey'
   return response
@@ -463,7 +508,11 @@ def priv_key(request):
 @log_function_call
 @login_required
 def pub_key(request):
-  user = _validate_and_get_geniuser(request)
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+  
   response = HttpResponse(user.user_pubkey, mimetype='text/plain')
   response['Content-Disposition'] = 'attachment; filename=' + str(user.username) + '.publickey'
   return response
@@ -682,8 +731,13 @@ def _validate_and_get_geniuser(request):
   try:
     user = interface.get_logged_in_user(request)
   except DoesNotExistError:
-    # JTC: we shouldn't ever get here, since we're restricting view methods with
-    # @login_required, which should kick the user back to the login page if they
-    # aren't logged in. but.. just in case the user still can't be retrieved from the session.
-    return _show_login(request, 'accounts/login.html', {})
+    # Failed to get GeniUser record, but user is logged in
+    raise LoggedInButFailedGetGeniUserError
   return user
+
+
+def _show_failed_get_geniuser_page(request):
+  err = "Sorry, we can't display the page you requested. "
+  err += "If you are logged in as an administrator, you'll need to logout, and login with a SeattleGENI account. "
+  err += "If you aren't logged in as an administrator, then this is a bug. Please contact us!"
+  return _show_login(request, 'accounts/login.html', {'err' : err})
