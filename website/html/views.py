@@ -293,6 +293,11 @@ def help(request):
 
 
 
+def accounts_help(request):
+  return direct_to_template(request, 'accounts/help.html', {})
+
+
+
 @login_required
 def mygeni(request):
   try:

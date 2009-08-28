@@ -10,7 +10,7 @@ urlpatterns = patterns('seattlegeni.website.html.views',
                        (r'^register$', 'register',{},'register'),
                        (r'^login$', 'login',{},'login'), 
                        (r'^logout$', 'logout',{},'logout'),
-                       (r'^help$', 'help',{},'accounts_help'),
+                       (r'^accounts_help$', 'accounts_help',{},'accounts_help'),
                        #(r'^simplelogin$', 'simplelogin',{},'simplelogin'), 
                        
                        # Top level urls and functions:

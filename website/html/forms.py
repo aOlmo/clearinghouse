@@ -48,10 +48,11 @@ class GeniUserCreationForm(DjangoUserCreationForm):
   email = forms.CharField(label="E-mail Address", error_messages={'required': 'Enter an E-mail Address'})
   pubkey = PubKeyField(label="My Public Key", required=False)
   gen_upload_choice = forms.ChoiceField(label="", choices=((1, 'Generate key pairs for me'), (2, 'Let me upload my public key')))
-
+  username = forms.CharField(label="Username", error_messages={'required': 'Enter a username'}, max_length=validations.USERNAME_MAX_LENGTH)
+  
   def __init__(self, *args):
     DjangoUserCreationForm.__init__(self, *args)
-    self.fields['username'].error_messages['required'] = 'Enter a username'
+    #self.fields['username'].error_messages['required'] = 'Enter a username'
     self.fields['password1'].error_messages['required'] = 'Enter a password'
     self.fields['password2'].error_messages['required'] = 'Verify your password'
 
