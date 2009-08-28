@@ -147,7 +147,8 @@ INSERT INTO seattlegeni.control_donation
   SELECT 
     old_donation.id, /* The same as the node id because of a 1-to-1 mapping at the moment. */
     old_donation.id, /* Also the same as the node id (because this is the node_id field). */
-    old_donation.user_id, /* The user id from the django auth_user table, not the control_user table. */
+    /* The user id from the django auth_user table, not the control_user table. */
+    (SELECT www_user_id FROM geni.control_user WHERE id = old_donation.user_id),
     '', /* We're not sure we're actually going to keep the donation status field and there's nothing that corresponds to it. */
     '', /* We don't have the resource_description_text data for existing donations. */
     NOW(),
@@ -185,11 +186,13 @@ INSERT INTO seattlegeni.control_vessel
        so not an indicator of whether the vessel has been acquired. */
 
    /* User who acquired the vessel is linked through the old control_vesselport table. */
-   (SELECT vmap.user_id
+   (SELECT control_user.www_user_id
     FROM geni.control_vesselmap vmap,
-         geni.control_vesselport vport
+         geni.control_vesselport vport,
+         geni.control_user
     WHERE vmap.vessel_port_id = vport.id AND
-          vport.vessel_id = old_vessel.id),
+          vport.vessel_id = old_vessel.id AND
+          control_user.id = vmap.user_id),
 
     NULL, /* The old database didn't track the date acquired. */
 
