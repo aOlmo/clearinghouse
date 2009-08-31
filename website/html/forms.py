@@ -25,14 +25,15 @@ from seattlegeni.common.exceptions import *
 from seattlegeni.common.util import validations
 from seattlegeni.website.control import interface
 
+MAX_PUBKEY_UPLOAD_SIZE = 2048
 
 class PubKeyField(forms.FileField):
   def clean(self,value,initial):
     forms.FileField.clean(self,value,initial)
     if value is None:
       return None
-    if value.size > 2048:
-      raise forms.ValidationError, "Public key too large, file size limit is 2048 bytes"
+    if value.size > MAX_PUBKEY_UPLOAD_SIZE:
+      raise forms.ValidationError, "Public key too large, file size limit is " + str(MAX_PUBKEY_UPLOAD_SIZE) + " bytes"
     # get the pubkey out of the uploaded file
     pubkey = value.read()
     try:

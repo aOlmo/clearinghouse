@@ -243,6 +243,13 @@ def _show_login(request, ltemplate, template_dict, form=None):
   
 
 def login(request):
+  try:
+    # check to see if a user is already logged in. if so, redirect them to profile.
+    user = interface.get_logged_in_user(request)
+  except DoesNotExistError:
+    pass
+  else:
+    return HttpResponseRedirect(reverse("profile"))
   
   ltemplate = 'accounts/login.html'
   if request.method == 'POST':
@@ -274,6 +281,7 @@ def login(request):
 
 def logout(request):
   interface.logout_user(request)
+  # TODO: We should redirect straight to login page
   return HttpResponseRedirect(reverse("profile"))
 
 

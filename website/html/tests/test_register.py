@@ -23,10 +23,16 @@
 # We import the testlib FIRST, as the test db settings 
 # need to be set before we import anything else.
 from seattlegeni.tests import testlib
-from seattlegeni.website.control import interface
+
+import StringIO
+import os
+
 from seattlegeni.common.exceptions import *
 from seattlegeni.common.util import validations
+from seattlegeni.website.control import interface
 from seattlegeni.website.control import models
+from seattlegeni.website.html import forms
+
 from django.contrib.auth.models import User as DjangoUser
 
 # The django test client emulates a webclient, and returns what django
@@ -49,9 +55,7 @@ def mock_register_user_throws_ValidationError(username, password, email, affilia
 def mock_get_logged_in_user(request):
   raise DoesNotExistError
 
-interface.register_user = mock_register_user
-interface.get_logged_in_user = mock_get_logged_in_user
-
+# set up test data
 c = Client()
 good_data = {'username': 'tester', 
              'password1': '12345678',
@@ -61,141 +65,279 @@ good_data = {'username': 'tester',
              'gen_upload_choice':'1'}
 
 test_data = {}
+
+def main():
+  # mock out interface calls
+  interface.register_user = mock_register_user
+  interface.get_logged_in_user = mock_get_logged_in_user
+  
+  # run tests
+  test_post_blank_form()
+  test_short_username()
+  test_long_username()
+  test_invalid_username()
+  test_short_password()
+  test_nonmatching_password()
+  test_matching_username_password()
+  test_short_affil()
+  test_long_affil()
+  test_invalid_email()
+  test_key_upload_with_no_file()
+  test_key_upload_with_oversized_file()
+  test_key_upload_with_bad_format_key()
+  test_key_upload_with_valid_key()
+  test_normal()
+  
+  print "All tests passed."
+  
 ###########################################################################
 # Test for posting blank form
 ###########################################################################
-response = c.post('/html/register', {'username': '', 
-                                     'password1':'', 
-                                     'password2':'', 
-                                     'email':'', 
-                                     'affiliation':'', 
-                                     'gen_upload_choice':'1'}, follow=True)
+def test_post_blank_form():
+  response = c.post('/html/register', {'username': '', 
+                                       'password1':'', 
+                                       'password2':'', 
+                                       'email':'', 
+                                       'affiliation':'', 
+                                       'gen_upload_choice':'1'}, follow=True)
+  
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-assert("Enter a username" in response.content and
-       "Enter a password" in response.content and
-       "Verify your password" in response.content and
-       "Enter an Affiliation" in response.content and
-       "Enter an E-mail Address" in response.content)
 
 ###########################################################################
 # Test for username too short
 ###########################################################################
-shortuser = ""
-for n in range(0, validations.USERNAME_MIN_LENGTH - 1):
-  shortuser += "a"
+def test_short_username():
+  shortuser = ""
+  for n in range(0, validations.USERNAME_MIN_LENGTH - 1):
+    shortuser += "a"
+  
+  test_data = good_data.copy()
+  test_data['username'] = shortuser
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-test_data = good_data.copy()
-test_data['username'] = shortuser
-
-response = c.post('/html/register', test_data, follow=True)
-assert("errorlist" in response.content)
 
 ###########################################################################
 # Test for username too long
 ###########################################################################
-longuser = ""
-for n in range(0, validations.USERNAME_MAX_LENGTH + 1):
-  longuser += "a"
+def test_long_username():
+  longuser = ""
+  for n in range(0, validations.USERNAME_MAX_LENGTH + 1):
+    longuser += "a"
+  
+  test_data = good_data.copy()
+  test_data['username'] = longuser
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-test_data = good_data.copy()
-test_data['username'] = longuser
-
-response = c.post('/html/register', test_data, follow=True)
-assert("errorlist" in response.content)
 
 ###########################################################################
 # Test for invalid username
 ###########################################################################
-test_data = good_data.copy()
-test_data['username'] = 'tester!!!'
+def test_invalid_username():
+  test_data = good_data.copy()
+  test_data['username'] = 'tester!!!'
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-response = c.post('/html/register', test_data, follow=True)
-assert("errorlist" in response.content)
 
 ###########################################################################
 # Test for password too short
 ###########################################################################
-test_data = good_data.copy()
-test_data['password1'] = '12345'
+def test_short_password():
+  test_data = good_data.copy()
+  test_data['password1'] = '12345'
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-response = c.post('/html/register', test_data, follow=True)
-assert("errorlist" in response.content)
 
 ###########################################################################
 # Test for non-matching passwords
 ###########################################################################
-test_data = good_data.copy()
-test_data['password2'] = '87654321'
+def test_nonmatching_password():
+  test_data = good_data.copy()
+  test_data['password2'] = '87654321'
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-response = c.post('/html/register', test_data, follow=True)
-assert("errorlist" in response.content)
 
 ###########################################################################
 # Test for same username and password
 ###########################################################################
-test_data = good_data.copy()
-test_data['username'] = 'tester'
-test_data['password1'] = 'tester'
-test_data['password2'] = 'tester'
+def test_matching_username_password():
+  test_data = good_data.copy()
+  test_data['username'] = 'tester'
+  test_data['password1'] = 'tester'
+  test_data['password2'] = 'tester'
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-response = c.post('/html/register', test_data, follow=True)
-assert("p class=\"warning\"" in response.content)
 
 ###########################################################################
 # Test for affiliation too short
 ###########################################################################
-shortaffil = ""
-for n in range(0, validations.AFFILIATION_MIN_LENGTH - 1):
-  shortaffil += "a"
+def test_short_affil():
+  shortaffil = ""
+  for n in range(0, validations.AFFILIATION_MIN_LENGTH - 1):
+    shortaffil += "a"
+  
+  test_data = good_data.copy()
+  test_data['affiliation'] = shortaffil
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-test_data = good_data.copy()
-test_data['affiliation'] = shortaffil
-
-response = c.post('/html/register', test_data, follow=True)
-assert("errorlist" in response.content)
 
 ###########################################################################
 # Test for affiliation too long
 ###########################################################################
-longaffil = ""
-for n in range(0, validations.AFFILIATION_MAX_LENGTH + 1):
-  longaffil += "a"
+def test_long_affil():
+  longaffil = ""
+  for n in range(0, validations.AFFILIATION_MAX_LENGTH + 1):
+    longaffil += "a"
+  
+  test_data = good_data.copy()
+  test_data['affiliation'] = longaffil
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-test_data = good_data.copy()
-test_data['affiliation'] = longaffil
-
-response = c.post('/html/register', test_data, follow=True)
-assert("errorlist" in response.content)
 
 ###########################################################################
 # Test for invalid e-mail
 ###########################################################################
-test_data = good_data.copy()
-test_data['email'] = 'invalid@email'
+def test_invalid_email():
+  test_data = good_data.copy()
+  test_data['email'] = 'invalid@email'
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
-response = c.post('/html/register', test_data, follow=True)
-assert("errorlist" in response.content)
 
-# TODO: Test upload keys
+###########################################################################
+# Test key upload with no file
+###########################################################################
+def test_key_upload_with_no_file():
+  test_data = good_data.copy()
+  test_data['gen_upload_choice'] = '2'
+  
+  response = c.post('/html/register', test_data, follow=True)
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
+
+
+###########################################################################
+# Test key upload with over-sized file
+###########################################################################
+def test_key_upload_with_oversized_file():
+  test_data = good_data.copy()
+  test_data['gen_upload_choice'] = '2'
+  
+  # set up a temporary 'key' file object
+  data = ''
+  for n in range(0, forms.MAX_PUBKEY_UPLOAD_SIZE + 1):
+    data += '0'
+  
+  fh = open(os.path.join(os.getcwd(), 'bigkey'), 'w')
+  fh.write(data)
+  fh.close()
+  fh = open('bigkey')
+  test_data['pubkey'] = fh
+  
+  response = c.post('/html/register', test_data, follow=True)
+  fh.close()
+  os.remove(os.path.join(os.getcwd(), 'bigkey'))
+  
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
+
+
+###########################################################################
+# Test key upload with badly formatted key
+###########################################################################
+def test_key_upload_with_bad_format_key():
+  test_data = good_data.copy()
+  test_data['gen_upload_choice'] = '2'
+  
+  data = 'this is a fake key'
+  fh = open(os.path.join(os.getcwd(), 'fakekey'), 'w')
+  fh.write(data)
+  fh.close()
+  fh = open('fakekey')
+  test_data['pubkey'] = fh
+  
+  response = c.post('/html/register', test_data, follow=True)
+  fh.close()
+  os.remove(os.path.join(os.getcwd(), 'fakekey'))
+  
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
+
+
+###########################################################################
+# Test key upload with valid key
+###########################################################################
+def test_key_upload_with_valid_key():
+  test_data = good_data.copy()
+  test_data['gen_upload_choice'] = '2'
+  
+  data = '65537 1255529510320394315881981094520474315188224118590997402913761676258431241305254181126132200564438402053537493727356349330161335739149834523475129922460441305694528141374947142391183883986671526830986555904385942930184161960677388507'
+  fh = open(os.path.join(os.getcwd(), 'goodkey'), 'w')
+  fh.write(data)
+  fh.close()
+  fh = open('goodkey')
+  test_data['pubkey'] = fh
+  
+  response = c.post('/html/register', test_data, follow=True)
+  fh.close()
+  os.remove(os.path.join(os.getcwd(), 'goodkey'))
+  
+  assert(response.status_code == 200)
+  assert("successfully registered" in response.content)
+
 
 ###########################################################################
 # If interface throws a ValidationError, even after passing all validation
 ###########################################################################
-interface.register_user = mock_register_user_throws_ValidationError
-response = c.post('/html/register', good_data, follow=True)
-# TODO: Right now, this just puts up a blank "warning" box
-assert("p class=\"warning\"" in response.content)
+def test_interface_throws_ValidationError():
+  interface.register_user = mock_register_user_throws_ValidationError
+  response = c.post('/html/register', good_data, follow=True)
+  
+  assert(response.status_code == 200)
+  assert("p class=\"warning\"" in response.content)
 
 
 ###########################################################################
 # Test normal registration functionality
 ###########################################################################
-interface.register_user = mock_register_user
-response = c.post('/html/register', good_data, follow=True)
-
-# check that the view thinks the user has been registered
-assert("has been successfully registered" in response.content)
-
-# check that the current page is now the login page
-assert(response.template[0].name == "accounts/login.html")
+def test_normal():
+  interface.register_user = mock_register_user
+  response = c.post('/html/register', good_data, follow=True)
   
+  # check that the view thinks the user has been registered
+  assert(response.status_code == 200)
+  assert("successfully registered" in response.content)
+  
+  # check that the current page is now the login page
+  assert(response.template[0].name == "accounts/login.html")
+
+
+if __name__=="__main__":
+  main()
