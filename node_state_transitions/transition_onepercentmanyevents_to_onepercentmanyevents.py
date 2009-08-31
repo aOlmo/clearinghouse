@@ -23,8 +23,6 @@
 """
 
 
-from django.db import transaction
-
 import traceback
 
 from seattlegeni.common.util.decorators import log_function_call
@@ -77,12 +75,6 @@ def update_database(node_string, node_info, database_nodeobject, update_database
     node_transition_lib.log("updated node database record with version: "+str(database_nodeobject.last_known_version))
   except:
     raise node_transition_lib.DatabaseError("Unable to update the database." + traceback.format_exc())
-
-  try:
-    node_transition_lib.log("Commiting transaction...")
-    transaction.commit()
-  except transaction.TransactionManagementError:
-    pass
 
   return
 
