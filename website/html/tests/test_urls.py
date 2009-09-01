@@ -38,9 +38,11 @@ from django.contrib.auth.models import User as DjangoUser
 # functions. 
 from django.test.client import Client
 
+# Setup test environment
 testlib.setup_test_environment()
 testlib.setup_test_db()
 
+# Declare our mock functions
 def mock_get_logged_in_user_throws_DoesNotExistError(request):
   raise DoesNotExistError
 
@@ -50,7 +52,6 @@ def mock_get_logged_in_user(request):
                              user_privkey='user_privkey', donor_pubkey='donor_pubkey',
                              usable_vessel_port='12345', free_vessel_credits=10)
   return geniuser
-
 
 def mock_get_total_vessel_credits(geniuser):
   return 10
@@ -64,7 +65,8 @@ def mock_get_vessel_infodict_list(vessel_list):
 def mock_delete_private_key(user):
   pass
 
-interface.get_logged_in_user = mock_get_logged_in_user
+# Mock out interface calls
+#interface.get_logged_in_user = mock_get_logged_in_user
 interface.get_total_vessel_credits = mock_get_total_vessel_credits
 interface.get_acquired_vessels = mock_get_acquired_vessels
 interface.get_vessel_infodict_list = mock_get_vessel_infodict_list
@@ -75,6 +77,7 @@ c = Client()
 
 
 def main():
+  # Run tests
   get_pages_without_user_logged_in()
   get_pages_with_user_logged_in()
   print "All tests passed."
@@ -154,14 +157,7 @@ def get_pages_without_user_logged_in():
 
 
 def get_pages_with_user_logged_in():
-  # uses the mock get_logged_in_user function that represents a logged in user
-  interface.get_logged_in_user = mock_get_logged_in_user
-  
-  # creates a test user in the test db, and uses the test client to 'login',
-  # so all views that expect @login_required will now pass the login check. 
-  user = DjangoUser.objects.create_user('tester', 'test@test.com', 'testpassword')
-  user.save()
-  c.login(username='tester', password='testpassword')
+  _login_test_user()
   
   response = c.get('/html/register', follow=True)
   assert(response.status_code == 200)
@@ -230,6 +226,22 @@ def get_pages_with_user_logged_in():
   response = c.get('/html/logout', follow=True)
   assert(response.status_code == 302)
   assert("/html/login" in response['Location'])
+
+
+
+def _login_test_user():
+  """
+  <Purpose>
+    Creates a test user in the test db, and uses the test client to 'login',
+    so all views that expect @login_required will now pass the login check. 
+  """
+  # uses the mock get_logged_in_user function that represents a logged in user
+  interface.get_logged_in_user = mock_get_logged_in_user
+  
+  user = DjangoUser.objects.create_user('tester', 'test@test.com', 'testpassword')
+  user.save()
+  c.login(username='tester', password='testpassword')
+  
 
 if __name__=="__main__":
   main()

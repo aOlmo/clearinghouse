@@ -120,8 +120,6 @@ def gen_get_form(geni_user, req_post=None):
   """
       
   # the total number of vessels a user may acquire
-  #TODO: Interface call that gets remaining vessel credit.
-  #max_num = geni_user.vessel_credit_remaining()
   total_vessel_credits = interface.get_total_vessel_credits(geni_user)
   num_acquired_vessels = len(interface.get_acquired_vessels(geni_user))
   avail_vessel_credits = total_vessel_credits - num_acquired_vessels

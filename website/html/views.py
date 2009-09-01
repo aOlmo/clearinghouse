@@ -27,6 +27,7 @@ from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.views.generic.simple import direct_to_template
 from django.views.generic.simple import redirect_to
@@ -60,7 +61,7 @@ repyhelper.translate_and_import('rsa.repy')
 PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT = os.path.join(os.path.dirname(__file__), 
                                                   "customize_installers.py")
 
-
+SITE_DOMAIN = "http://" + Site.objects.get_current().domain
 
 
 
@@ -368,7 +369,9 @@ def getdonations(request):
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
   
-  return direct_to_template(request,'control/getdonations.html', {'username' : user.username})
+  return direct_to_template(request,'control/getdonations.html', 
+                            {'username' : user.username,
+                             'domain' : SITE_DOMAIN})
 
 
 
@@ -387,11 +390,12 @@ def get_resources(request):
   
   # try and grab form from POST. if it can't, bounce user back to My Vessels page
   get_form = forms.gen_get_form(user, request.POST)
-  if get_form is None:
-    return myvessels(request)
+  #if get_form is None:
+  #  return myvessels(request)
   
   action_summary = ""
   action_detail = ""
+  keep_get_form = False
   
   if get_form.is_valid():
     vessel_num = get_form.cleaned_data['num']
@@ -402,12 +406,19 @@ def get_resources(request):
     except UnableToAcquireResourcesError, err:
       action_summary = "Couldn't acquire resources at this time."
       action_detail += str(err)
+      keep_get_form = True
     except InsufficientUserResourcesError:
       action_summary = "You do not have enough vessel credits to fufill this request."
+      keep_get_form = True
+  else:
+    keep_get_form = True
   
-  # return a My Vessels page with the updated vessels/vessel acquire details/errors
-  #return myvessels(request, get_form, action_summary=action_summary, action_detail=action_detail)
-  return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
+  if keep_get_form == True:
+    # return the original get_form, since the form wasn't valid (or there were errors)
+    return myvessels(request, get_form, action_summary=action_summary, action_detail=action_detail)
+  else:
+    # return a My Vessels page with the updated vessels/vessel acquire details/errors
+    return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
   
   
   

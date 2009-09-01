@@ -40,11 +40,12 @@ from django.contrib.auth.models import User as DjangoUser
 # functions. 
 from django.test.client import Client
 
+# Setup test environment
 testlib.setup_test_environment()
 testlib.setup_test_db()
 
+# Declare our mock functions
 def mock_register_user(username, password, email, affiliation, pubkey=None):
-  
   testuser = DjangoUser()
   testuser.username = "test_user"
   return testuser
@@ -90,10 +91,19 @@ def main():
   
   print "All tests passed."
   
-###########################################################################
-# Test for posting blank form
-###########################################################################
+
 def test_post_blank_form():
+  """
+  <Purpose>
+    Test for posting blank form
+  
+  <Note>
+    Checking for the existance of (p class=\"warning\") in response.content is
+    sufficient in detecting whether the view caught an error; since the page
+    will only ever show that html element in the event of an error. And, this 
+    is all we care about: that the page recognized that bad data was passed in, 
+    and an error was raised.
+  """
   response = c.post('/html/register', {'username': '', 
                                        'password1':'', 
                                        'password2':'', 
@@ -105,10 +115,12 @@ def test_post_blank_form():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test for username too short
-###########################################################################
+
 def test_short_username():
+  """
+  <Purpose>
+    Test for username too short
+  """  
   shortuser = ""
   for n in range(0, validations.USERNAME_MIN_LENGTH - 1):
     shortuser += "a"
@@ -121,10 +133,12 @@ def test_short_username():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test for username too long
-###########################################################################
+
 def test_long_username():
+  """
+  <Purpose>
+    Test for username too long
+  """  
   longuser = ""
   for n in range(0, validations.USERNAME_MAX_LENGTH + 1):
     longuser += "a"
@@ -137,10 +151,12 @@ def test_long_username():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test for invalid username
-###########################################################################
+
 def test_invalid_username():
+  """
+  <Purpose>
+    Test for invalid username
+  """  
   test_data = good_data.copy()
   test_data['username'] = 'tester!!!'
   
@@ -149,10 +165,12 @@ def test_invalid_username():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test for password too short
-###########################################################################
+
 def test_short_password():
+  """
+  <Purpose>
+    Test for password too short
+  """  
   test_data = good_data.copy()
   test_data['password1'] = '12345'
   
@@ -161,10 +179,12 @@ def test_short_password():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test for non-matching passwords
-###########################################################################
+
 def test_nonmatching_password():
+  """
+  <Purpose>
+    Test for non-matching passwords
+  """  
   test_data = good_data.copy()
   test_data['password2'] = '87654321'
   
@@ -173,10 +193,12 @@ def test_nonmatching_password():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test for same username and password
-###########################################################################
+
 def test_matching_username_password():
+  """
+  <Purpose>
+    Test for same username and password
+  """  
   test_data = good_data.copy()
   test_data['username'] = 'tester'
   test_data['password1'] = 'tester'
@@ -187,10 +209,12 @@ def test_matching_username_password():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test for affiliation too short
-###########################################################################
+
 def test_short_affil():
+  """
+  <Purpose>
+    Test for affiliation too short
+  """  
   shortaffil = ""
   for n in range(0, validations.AFFILIATION_MIN_LENGTH - 1):
     shortaffil += "a"
@@ -203,10 +227,12 @@ def test_short_affil():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test for affiliation too long
-###########################################################################
+
 def test_long_affil():
+  """
+  <Purpose>
+    Test for affiliation too long
+  """  
   longaffil = ""
   for n in range(0, validations.AFFILIATION_MAX_LENGTH + 1):
     longaffil += "a"
@@ -219,10 +245,12 @@ def test_long_affil():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test for invalid e-mail
-###########################################################################
+
 def test_invalid_email():
+  """
+  <Purpose>
+    Test for invalid e-mail
+  """  
   test_data = good_data.copy()
   test_data['email'] = 'invalid@email'
   
@@ -231,10 +259,12 @@ def test_invalid_email():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test key upload with no file
-###########################################################################
+
 def test_key_upload_with_no_file():
+  """
+  <Purpose>
+    Test key upload with no file
+  """  
   test_data = good_data.copy()
   test_data['gen_upload_choice'] = '2'
   
@@ -243,10 +273,12 @@ def test_key_upload_with_no_file():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test key upload with over-sized file
-###########################################################################
+
 def test_key_upload_with_oversized_file():
+  """
+  <Purpose>
+    Test key upload with oversized file
+  """  
   test_data = good_data.copy()
   test_data['gen_upload_choice'] = '2'
   
@@ -269,10 +301,12 @@ def test_key_upload_with_oversized_file():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test key upload with badly formatted key
-###########################################################################
+
 def test_key_upload_with_bad_format_key():
+  """
+  <Purpose>
+    Test key upload with badly formatted key
+  """  
   test_data = good_data.copy()
   test_data['gen_upload_choice'] = '2'
   
@@ -291,10 +325,12 @@ def test_key_upload_with_bad_format_key():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test key upload with valid key
-###########################################################################
+
 def test_key_upload_with_valid_key():
+  """
+  <Purpose>
+    Test key upload with valid key
+  """  
   test_data = good_data.copy()
   test_data['gen_upload_choice'] = '2'
   
@@ -313,10 +349,13 @@ def test_key_upload_with_valid_key():
   assert("successfully registered" in response.content)
 
 
-###########################################################################
-# If interface throws a ValidationError, even after passing all validation
-###########################################################################
+
 def test_interface_throws_ValidationError():
+  """
+  <Purpose>
+    Test behavior if interface throws a ValidationError, 
+    even after passing all validation
+  """  
   interface.register_user = mock_register_user_throws_ValidationError
   response = c.post('/html/register', good_data, follow=True)
   
@@ -324,10 +363,12 @@ def test_interface_throws_ValidationError():
   assert("p class=\"warning\"" in response.content)
 
 
-###########################################################################
-# Test normal registration functionality
-###########################################################################
+
 def test_normal():
+  """
+  <Purpose>
+    Test normal behavior
+  """  
   interface.register_user = mock_register_user
   response = c.post('/html/register', good_data, follow=True)
   
