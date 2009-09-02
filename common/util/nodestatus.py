@@ -210,11 +210,14 @@ def _mark_node_broken(readonly, node):
   if node not in actionstaken["node_marked_broken"]:
     actionstaken["node_marked_broken"].append(node)
   
-  if readonly:
-    log.info(str(node) + " Not marking node as broken because called in readonly mode.")
+  if node.is_broken:
+    log.info(str(node) + " Not marking node as broken because it is already broken.")
   else:
-    log.info(str(node) + " Marking node as broken.")
-    maindb.mark_node_as_broken(node)
+    if readonly:
+      log.info(str(node) + " Not marking node as broken because called in readonly mode.")
+    else:
+      log.info(str(node) + " Marking node as broken.")
+      maindb.mark_node_as_broken(node)
 
 
 

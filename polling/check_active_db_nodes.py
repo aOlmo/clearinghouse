@@ -80,7 +80,15 @@ def main():
         if settings.DEBUG:
           django.db.reset_queries()
         
-        active_nodes = maindb.get_active_nodes()
+        # Note: although we include broken but active nodes, we don't change
+        # the status of broken nodes to be not broken yet if we don't detect
+        # any problems. For now, most of the reason we include broken nodes
+        # is so that we can tell which broken nodes are still online. This is
+        # because it's not as big of a concern to have a broken node that is
+        # quickly offline (e.g. broken nodes in development), but having one be
+        # online for an extended period of time is a stronger signal of
+        # potentially unknown bugs in the seattlegeni or seattle code.
+        active_nodes = maindb.get_active_nodes_include_broken()
         log.info("Starting check of " + str(len(active_nodes)) + " active nodes.")
       
         checked_node_count = 0

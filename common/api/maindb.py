@@ -1803,7 +1803,26 @@ def delete_all_vessels_of_node(node):
 def get_active_nodes():
   """
   <Purpose>
-    Get a list of all active nodes.
+    Get a list of all active nodes that are not broken.
+  <Arguments>
+    None
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of Node objects of active nodes that aren't broken.
+  """
+  return list(Node.objects.filter(is_active=True, is_broken=False))
+
+
+
+
+
+def get_active_nodes_include_broken():
+  """
+  <Purpose>
+    Get a list of all active nodes including those that are broken.
   <Arguments>
     None
   <Exceptions>
@@ -1813,7 +1832,7 @@ def get_active_nodes():
   <Returns>
     A list of Node objects of active nodes.
   """
-  return list(Node.objects.filter(is_active=True, is_broken=False))
+  return list(Node.objects.filter(is_active=True))
 
 
 
