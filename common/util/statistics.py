@@ -78,7 +78,7 @@ def get_available_vessel_counts_by_port():
   for port in maindb.ALLOWED_USER_PORTS:
     available_vessels_dict[port] = {}
     available_vessels_dict[port]["all"] = maindb._get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(port).count()
-    available_vessels_dict[port]["no_nat"] = maindb._get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(port).count()
+    available_vessels_dict[port]["no_nat"] = maindb._get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(port).count()
     available_vessels_dict[port]["only_nat"] = maindb._get_queryset_of_all_available_vessels_for_a_port_only_nat_nodes(port).count()
   
   # Restore the original log level.
