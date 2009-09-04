@@ -34,10 +34,13 @@ def index(request):
   html = '<html><head><style>body { font-family : sans-serif; }</style></head><body>'
   html += '<h2>Available reports</h2>'
   html += 'Note: some of these reports are not generated efficiently. The ones '
-  html += 'that take a long time to load are probably hammering the database.<br /><br />'    
-  html += '<a href="%s">%s</a><br />' % ("donations", "Donations")
-  html += '<a href="%s">%s</a><br />' % ("acquired_vessels", "Acquired vessels")
-  html += '<a href="%s">%s</a><br />' % ("vessels_by_port", "Available vessels by port")
+  html += 'that take a long time to load are probably hammering the database.<br /><br />'
+  html += '<ul>'
+  html += '<li><a href="%s">%s</a></li>' % ("all", "All reports on one page") 
+  html += '<li><a href="%s">%s</a></li>' % ("donations", "Donations")
+  html += '<li><a href="%s">%s</a></li>' % ("acquired_vessels", "Acquired vessels")
+  html += '<li><a href="%s">%s</a></li>' % ("vessels_by_port", "Available vessels by port")
+  html += '</ul>'
   html += '</body></html>'
   return HttpResponse(html)
 
