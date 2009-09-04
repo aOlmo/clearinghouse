@@ -15,6 +15,8 @@
   See http://docs.djangoproject.com/en/dev/ref/contrib/admin/
 """
 
+from seattlegeni.common.api import maindb
+
 from seattlegeni.website.control.models import Donation
 from seattlegeni.website.control.models import GeniUser
 from seattlegeni.website.control.models import Node
@@ -65,10 +67,22 @@ is_ok.boolean = True
 is_ok.admin_order_field = 'is_broken'
 
 
+def donor(node):
+  """
+  Display a list of users who made donations from the node (which will always
+  be one at the moment).
+  """
+  donation_list = maindb.get_donations_from_node(node)
+  donor_names_list = []
+  for donation in donation_list:
+    donor_names_list.append(donation.donor.username)
+  return ",".join(donor_names_list)
+  
+
 class NodeAdmin(admin.ModelAdmin):
   """Customized admin view of the Node model."""
-  list_display = [partial_node_identifier, "last_known_ip", "last_known_port",
-                  "last_known_version", "is_active", is_ok,
+  list_display = [partial_node_identifier, donor, "last_known_ip",
+                  "last_known_port", "last_known_version", "is_active", is_ok,
                   "extra_vessel_name", "date_last_contacted", "date_created"]
   list_filter = ["last_known_port", "last_known_version", "is_active",
                  "is_broken", "extra_vessel_name", "date_last_contacted",
