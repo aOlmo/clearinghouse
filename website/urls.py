@@ -14,6 +14,7 @@ urlpatterns = patterns('',
     
     (r'^html/', include('seattlegeni.website.html.urls')),
     (r'^xmlrpc', include('seattlegeni.website.xmlrpc.urls')),
+    (r'^reports/', include('seattlegeni.website.reports.urls')),
 
     # Uncomment the admin/doc line below and add 'django.contrib.admindocs' 
     # to INSTALLED_APPS to enable admin documentation:
