@@ -367,7 +367,7 @@ def getdonations(request):
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
   
-  domain = "http://" + request.get_host()
+  domain = "https://" + request.get_host()
   
   return direct_to_template(request,'control/getdonations.html', 
                             {'username' : user.username,
