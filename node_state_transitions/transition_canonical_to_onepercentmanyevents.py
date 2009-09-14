@@ -123,7 +123,8 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
       # The object 'e' will already include traceback info that has the actual node error.
       # If the failure is due to inability to split further, that's ok.
       if 'Insufficient quantity:' in str(e):
-        break
+        node_transition_lib.log("Could not split " + current_vessel + 
+                                " any further due to insufficient resource/quantity. " + str(e))
       raise
 
     node_transition_lib.log("Successfully split vessel: "+current_vessel+" into vessels: "+leftover_vessel+" and "+new_vessel)
