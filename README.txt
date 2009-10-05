@@ -2,7 +2,7 @@
 
   * Do initial preparation:
 
-    * Install django. http://docs.djangoproject.com/en/dev/topics/install/
+    * Install django 1.1+. http://docs.djangoproject.com/en/dev/topics/install/
 
     * Checkout the seattle trunk from svn.
   
@@ -18,6 +18,15 @@
         cd /tmp/deploy/seattlegeni
     
       Note: all future steps/instructions will assume you are in this directory.
+
+      
+  * NOTE: starting all of the processes is simplified by using the script
+    deploymentscripts/start_seattlegeni_components.sh. See the section on
+    "Notes for Production" for more information. For reference, we'll explain
+    here how to start the individual components as well as include first-time
+    configuration information. Note that when starting these manually, you need
+    to start them in the order shown. Most importantly, first the lockserver,
+    then the backend, then everything else.
 
 
   * Start the website:
@@ -38,6 +47,20 @@
       # production.
       DEBUG = False
       TEMPLATE_DEBUG = DEBUG
+      
+      # The directory where we keep the public keys of the node state keys.
+      STATE_KEYS_DIR = "path/to/statekeys"
+      
+      # The directory where the base installers named seattle_linux.tgz, seattle_mac.tgz,
+      # and seattle_win.zip are located.
+      BASE_INSTALLERS_DIR = ""
+      
+      # The directory in which customized installers created by seattlegeni will be
+      # stored. A directory within this directory will be created for each user.
+      USER_INSTALLERS_DIR = os.path.join(BASE_INSTALLERS_DIR, "geni")
+
+      # The url that corresponds to USER_INSTALLERS_DIR
+      USER_INSTALLERS_URL = "https://hostname/dist/geni"
       
       # Email addresses of people that should be emailed when a 500 error occurs on
       # the site when DEBUG = False (that is, in production). Leave this to be empty
@@ -86,7 +109,7 @@
     * For production, setup to run through apache:
     
       TODO: add information on setting up to run through apache
-      
+
       
   * Start the lockserver:
       
@@ -142,9 +165,131 @@
         export PYTHONPATH=$PYTHONPATH:/tmp/deploy:/tmp/deploy/seattle
         export DJANGO_SETTINGS_MODULE='seattlegeni.website.settings'
   
-    * TODO: add information on running the polling daemons
-      
+    * There's only one of these currently. To start it:
+    
+        python polling/check_active_db_nodes.py
 
+
+  * Start the node state transition scripts:
+  
+    * Set your environment variables:
+  
+        export PYTHONPATH=$PYTHONPATH:/tmp/deploy:/tmp/deploy/seattle
+        export DJANGO_SETTINGS_MODULE='seattlegeni.website.settings'
+  
+    * Start each transition script you intend to run:
+    
+        python node_state_transitions/TRANSITION_SCRIPT_NAME.py
+
+------------------------------------------------------------------------------  
+
+= Notes for Production =
+
+There are two scripts provided to make updating from svn and restarting all
+services easier in production. These are found in the deploymentscripts/
+directory. Here is what these do:
+
+  * update_seattlegeni_from_trunk.sh
+    * This will update the trunk/ directory and redeploy seattlegeni
+      to the live/ directory, backing up the old live/ directory to
+      the bak/ directory.
+      
+  * start_seattlegeni_components.sh
+    * This will start all components of seattlegeni in the correct order,
+      including doing a graceful restart of apache. This script will
+      remain running. You can kill this process (CTRL-C or 'kill $$')
+      to stop all started components (except apache).
+      
+So, for example, you could keep a screen session running with
+start_seattlegeni_components.sh having been run there. When it's time
+to update from svn, open that screen session, do a CTRL-C, the script
+will kill all of its children then exit. Once it has exited, run
+update_seattlegeni_from_trunk.sh, say "y" when asked about replacing
+a directory, then run start_seattlegeni_components.sh to start things
+up again.
+
+You should look at these scripts before using them on a new system, as you
+might need to update paths that are used in the scripts. In general, they
+assume you have a directory /home/geni and that the following directories
+exist in /home/geni:
+
+  * trunk/
+    * This is the trunk directory checked out from svn.
+    
+  * live/
+    * This is a directory that will contain the deployed seattle/ and
+      seattlegeni/ directories.
+      
+  * bak/
+    * This will contain backups of each live/ directory that is replaced
+      through the use of the update_seattlegeni_from_trunk.sh script.
+      
+  * logs/
+    * This will contain the output from each of the scripts that are part
+      of seattlegeni and which get started by the
+      start_seattlegeni_components.sh script.
+      
+It will also likely be the case that you need to start the lockserver and
+backend at least once before the trying to use the website through mod_python
+because the repy files will need to be translated, and the website probably
+doesn't have/need permission to create files in the live/seattle/ directory.
+      
+If your OS distribution doesn't have django 1.1 packaged, you'll need to
+install it and make sure that it is in your path (and that it is in your
+path before any other installed version of django). For example, download
+the django 1.1 tarball from the django website, extract it, and run the
+following:
+
+  python setup.py install --prefix=/usr/local
+  
+Then make sure that the following is in your path (this is for python2.5):
+
+  /usr/local/lib/python2.5/site-packages
+
+  
+== Apache Configuration ==
+
+Here is an example apache vhost configuration.
+
+Lines added to an insecure http vhost:
+
+    # Redirect requests for the server index page or that are geni-related
+    # to the https site.
+    RedirectMatch ^/$ https://blackbox.cs.washington.edu/geni/html/register
+    RedirectMatch ^/geni https://blackbox.cs.washington.edu/geni/html/register
+
+Lines added to a secure https vhost that users are redirected to:
+
+    Alias /site_media "/home/geni/live/seattlegeni/website/html/media"
+    <Location "/site_media">
+        SetHandler None
+    </Location>
+
+    Alias /admin_media "/usr/local/lib/python2.5/site-packages/django/contrib/admin/media"
+    <Location "/admin_media">
+        SetHandler None
+    </Location>
+
+    <Location /geni/>
+        SetHandler python-program
+        PythonHandler django.core.handlers.modpython
+        SetEnv DJANGO_SETTINGS_MODULE seattlegeni.website.settings
+        PythonOption django.root /geni
+        PythonDebug Off
+        # We add /usr/local/lib/python2.5/site-packages to ensure that our
+        # manual installation of django 1.1 to /usr/local is in the path
+        # before any copy of django installed through the distro's repositories.
+        PythonPath "['/home/geni/live/', '/home/geni/live/seattle', '/usr/local/lib/python2.5/site-packages'] + sys.path"
+    </Location>
+
+    # Make sure various locations people might request redirect somewhere that works.
+    RedirectMatch ^/$ https://blackbox.cs.washington.edu/geni/html/register
+    RedirectMatch ^/geni/?$ https://blackbox.cs.washington.edu/geni/html/register
+    RedirectMatch ^/geni/html/?$ https://blackbox.cs.washington.edu/geni/html/register
+
+    # Don't require a slash on the end of the admin url.
+    RedirectMatch ^/geni/admin$ https://blackbox.cs.washington.edu/geni/admin/
+      
 ------------------------------------------------------------------------------
 
 = SeattleGeni Directory Structure =
@@ -198,6 +343,9 @@ lockserver/
     This directory contains lockserver_daemon.py which is the single instance
     of the lockserver that will be running at any given time.
     
+node_state_transitions/
+
+    This directory contains the node state transition scripts.
     
 polling/
   
@@ -206,6 +354,9 @@ polling/
     supporting modules, and any other scripts or daemons that monitor the
     state of seattlegeni and the nodes it controls.
   
+tests/
+
+    This directory contains tests (e.g. unit tests) for seattelgeni.
     
 website/
 
