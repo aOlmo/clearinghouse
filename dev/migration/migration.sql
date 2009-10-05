@@ -35,6 +35,10 @@ django_session django_site
 
 
 
+/* Disable checking of foreign key constraints. */
+SET foreign_key_checks = 0;
+
+
 
 /* Empty all of the tables we're going to populate. They should already be
    empty, though. */
@@ -277,7 +281,7 @@ INSERT INTO seattlegeni.control_geniuser
          old_geniuser.port,
          old_geniuser.affiliation,
          old_geniuser.pubkey,
-         old_geniuser.privkey,
+         IF(old_geniuser.privkey <> "", old_geniuser.privkey, NULL),
          '',
          old_geniuser.donor_pubkey,
          old_geniuser.vcount_base,
