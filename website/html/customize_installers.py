@@ -24,7 +24,7 @@ import shutil
 
 
 
-PROG_DIR = "seattle_repy"
+PROG_DIR = "seattle/seattle_repy"
 OUTPUT_NAME = "seattle"
 
 
