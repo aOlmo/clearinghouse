@@ -13,6 +13,7 @@ handler500 = 'seattlegeni.website.html.errorviews.internal_error'
 urlpatterns = patterns('',
     
     (r'^html/', include('seattlegeni.website.html.urls')),
+    (r'^download/', include('seattlegeni.website.html.downloadurls')),
     (r'^xmlrpc', include('seattlegeni.website.xmlrpc.urls')),
     (r'^reports/', include('seattlegeni.website.reports.urls')),
 
@@ -31,4 +32,3 @@ if settings.DEBUG:
       (r'^' + settings.MEDIA_URL[1:] + '(?P<path>.*)$', 'django.views.static.serve',
         {'document_root': settings.MEDIA_ROOT}),
   )
-
