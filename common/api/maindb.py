@@ -1728,6 +1728,9 @@ def get_vessels_needing_cleanup():
   queryset = Vessel.objects.filter(is_dirty=True)
   queryset = queryset.filter(node__is_active=True)
   queryset = queryset.filter(node__is_broken=False)
+  # Be certain not to clean up vessels acquired by users. This is here mostly
+  # in case an admin marked a vessel for cleanup that was acquired by a user.
+  queryset = queryset.filter(acquired_by_user=None)
   return list(queryset)
 
 
@@ -1770,6 +1773,9 @@ def does_vessel_need_cleanup(vessel):
   
   if not vessel.is_dirty:
     return (False, "The vessel is not dirty")
+  
+  if vessel.acquired_by_user is not None:
+    return (False, "The vessel is currently acquired")
   
   return (True, "")
   
