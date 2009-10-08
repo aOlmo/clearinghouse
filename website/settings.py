@@ -70,6 +70,9 @@ ADMINS = (
 # Email address that error notifications will be sent from.
 #SERVER_EMAIL = "error@seattlegeni.server.hostname"
 
+# We use this so we know which server the email came from by the subject line.
+#EMAIL_SUBJECT_PREFIX = "[localhost] "
+
 MANAGERS = ADMINS
 
 DATABASE_ENGINE = 'mysql'      # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
@@ -78,6 +81,9 @@ DATABASE_USER = 'FILL_THIS_IN' # Not used with sqlite3.
 DATABASE_PASSWORD = 'FILL_THIS_IN' # Not used with sqlite3.
 DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
 DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
+
+if DATABASE_ENGINE == 'mysql':
+  DATABASE_OPTIONS = {'init_command': 'SET storage_engine=INNODB'}
 
 # Make this unique, and don't share it with anybody.
 # Fill this in!
