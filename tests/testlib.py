@@ -20,7 +20,17 @@ else:
 # for tests.
 settings.DATABASE_ENGINE = 'sqlite3'
 settings.TEST_DATABASE_NAME = tempfile.NamedTemporaryFile(dir=sqlite_database_file_dir, suffix=".sqlite").name
-settings.DATABASE_OPTIONS = None
+# We set the DATABASE_OPTIONS for two reasons:
+#   1. We need to get rid of the init_command that we have for mysql in our
+#      default settings.py
+#   2. We need to have a high enough timeout for sqlite to obtain a lock.
+#      The default is normally 5 seconds but was 0 seconds in some earlier
+#      versions of pysqlite. I was getting the 'database is locked' error
+#      on testbed-opensuse and found the suggestion of increasing this value
+#      here: http://code.djangoproject.com/ticket/9409
+#      However, this still doesn't seem to completely solve the issue. It may
+#      be an issue with python 2.5's sqlite.
+settings.DATABASE_OPTIONS = {'timeout':30}
 
 import django.db
 

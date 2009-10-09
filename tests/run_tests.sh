@@ -21,6 +21,9 @@ tmpdir=`mktemp -d`
 python $trunkdir/seattlegeni/deploymentscripts/deploy_seattlegeni.py $trunkdir $tmpdir/deploy
 pushd $tmpdir/deploy/seattlegeni
 
+export PYTHONPATH=$tmpdir/deploy:$tmpdir/deploy/seattle:$PYTHONPATH
+export DJANGO_SETTINGS_MODULE=seattlegeni.website.settings
+
 ##############################################################################
 # Run the website core functionality tests.
 ##############################################################################
