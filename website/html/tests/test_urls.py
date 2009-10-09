@@ -104,7 +104,9 @@ def get_pages_without_user_logged_in():
   assert(response.status_code == 200)
   assert(response.template[0].name == "accounts/help.html")
   
-  response = c.get('/html/tester/', follow=True)
+  # The URLs we tell the user to distribute have "download" instead of "html"
+  # in them.
+  response = c.get('/download/tester/', follow=True)
   assert(response.status_code == 200)
   assert(response.template[0].name == "download/installers.html")
   
