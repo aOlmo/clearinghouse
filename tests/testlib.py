@@ -20,6 +20,7 @@ else:
 # for tests.
 settings.DATABASE_ENGINE = 'sqlite3'
 settings.TEST_DATABASE_NAME = tempfile.NamedTemporaryFile(dir=sqlite_database_file_dir, suffix=".sqlite").name
+settings.DATABASE_OPTIONS = None
 
 import django.db
 

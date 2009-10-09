@@ -14,19 +14,8 @@
   Aug 21, 2009
 """
 
-
-# Warning: settings must be imported and the database values modified before
-# anything else is imported. Failure to do this first will result in django
-# trying to create a test mysql database.
-from seattlegeni.website import settings
-
-# Do not change the DATABASE_ENGINE. We want to be sure that sqlite3 is used
-# for tests.
-settings.DATABASE_ENGINE = 'sqlite3'
-settings.TEST_DATABASE_NAME = 'test_seattlegeni'
-
-import django.db
-import django.test.utils
+# The seattlegeni testlib must be imported first.
+from seattlegeni.tests import testlib
 
 from seattlegeni.node_state_transitions import node_transition_lib
 
@@ -66,10 +55,7 @@ def setup_test():
     None
   """
 
-  django.test.utils.setup_test_environment()
-
-  # Creates a new test database and runs syncdb against it.
-  django.db.connection.creation.create_test_db()
+  testlib.setup_test_db()
 
   # Create a user who has the donation key.
   maindb.create_user(mockutil.testusername, "password", "example@example.com", "affiliation", 
@@ -323,12 +309,8 @@ def assert_database_info():
 
 def teardown_test():
 
-  # We aren't going to use any database again in this script, so we give django
-  # an empty database name to restore as the value of settings.DATABASE_NAME.
-  old_database_name = ''
-  django.db.connection.creation.destroy_test_db(old_database_name)
-
-  django.test.utils.teardown_test_environment()
+  # Cleanup the test database.
+  testlib.teardown_test_db()
 
 
 
