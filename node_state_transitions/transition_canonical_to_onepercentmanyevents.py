@@ -125,6 +125,7 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
       if 'Insufficient quantity:' in str(e):
         node_transition_lib.log("Could not split " + current_vessel + 
                                 " any further due to insufficient resource/quantity. " + str(e))
+        break
       raise
 
     node_transition_lib.log("Successfully split vessel: "+current_vessel+" into vessels: "+leftover_vessel+" and "+new_vessel)
