@@ -998,6 +998,35 @@ def set_node_extra_vessel_name(node, extra_vessel_name):
 
 
 @log_function_call
+def mark_node_as_active(node):
+  """
+  <Purpose>
+    Let the database know that the node is active. This should only be used
+    when a node moves from the canonical state to onepercent state. The
+    onepercent-to-onepercent transition script will use the other method
+    called record_node_communication_success(), instead.
+  <Arguments>
+    node
+      The Node object of the node that is active.
+  <Exceptions>
+    None
+  <Side Effects>
+    The node's is_active value is changed to True in the database if it
+    wasn't already. The node object passed to the function is correspondingly
+    updated.
+  <Returns>
+    None
+  """
+  assert_node(node)
+  
+  node.is_active = True
+  node.save()
+
+
+
+
+
+@log_function_call
 def mark_node_as_inactive(node):
   """
   <Purpose>
@@ -1021,6 +1050,7 @@ def mark_node_as_inactive(node):
   
   node.is_active = False
   node.save()
+
 
 
 

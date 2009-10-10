@@ -146,7 +146,9 @@ def mock_backend_set_vessel_owner_key():
 
     print "[_mock_set_vessel_owner_key] called: ", node, vesselname, old_ownerkey, new_ownerkey
 
-    assert(node == maindb.get_active_nodes()[0])
+    # We changed things so that the node will now be inactive until the node
+    # is changed to the onepercentmanyevents state.
+    #assert(node == maindb.get_active_nodes()[0])
     assert(vesselname == extra_vessel_name)
     assert(old_ownerkey == donor_key_str)
     assert(new_ownerkey == per_node_key_str)
@@ -173,7 +175,9 @@ def mock_backend_set_vessel_user_keylist(expected_key_list):
 
     print "[_mock_set_vessel_user_keylist] called: ", node, vesselname, userkeylist
 
-    assert(node == maindb.get_active_nodes()[0])
+    # We changed things so that the node will now be inactive until the node
+    # is changed to the onepercentmanyevents state.
+    #assert(node == maindb.get_active_nodes()[0])
 
     # Make sure that the name of the vessel is correct, if we are setting
     # the keylist for the extra vessel.
@@ -206,7 +210,9 @@ def mock_backend_split_vessel():
 
     print "[_mock_split_vessel] called: ", node, vesselname, resource_data
 
-    assert(node == maindb.get_active_nodes()[0])
+    # We changed things so that the node will now be inactive until the node
+    # is changed to the onepercentmanyevents state.
+    #assert(node == maindb.get_active_nodes()[0])
     assert(vesselname == extra_vessel_name)
 
     split_vessel_call_count += 1
@@ -235,7 +241,9 @@ def mock_backend_join_vessels():
 
     print "[_mock_join_vessels] called: ", node, extra_vesselname, other_vesselname
 
-    assert(node == maindb.get_active_nodes()[0])
+    # We changed things so that the node will now be inactive until the node
+    # is changed to the onepercentmanyevents state.
+    #assert(node == maindb.get_active_nodes()[0])
     assert(extra_vesselname == extra_vessel_name)
 
     join_vessels_call_count += 1

@@ -429,7 +429,16 @@ def processnode(node_string, startstate_info, endstate_info, nodeprocess_func, n
     if startstate_pubkey != endstate_pubkey:
       log("Trying to set new state for node: " + node_string)
       set_node_state(database_nodeobject, endstate_pubkey)
+      
+      # We have this special case here only for the transition from canonical
+      # to onepercentmany events, so the donor doesn't have to wait for the
+      # node to be seen once by the 1pct-to-1pct script before they are
+      # credited for the donation.
+      if endstate_info[1] == onepercentmanyeventspublickey:
+        maindb.mark_node_as_active(database_nodeobject)
+        
       log("Finished setting new state " + endstate_info[0] + " on node " + node_string) 
+
     else:
       log("Not setting node state: start state and end state are the same.")
 
@@ -712,7 +721,7 @@ def create_new_node_object(node_string, node_info, donated_vesselname):
   try:
     # Attempt to add new node to db.
     database_nodeobject = maindb.create_node(nodeID, ip_or_nat_string, port_num, 
-                                                 node_info['version'], True, 
+                                                 node_info['version'], False, 
                                                  new_node_owner_pubkey, 
                                                  donated_vesselname) 
      

@@ -157,6 +157,14 @@ def onepercentmanyevents_divide (node_string, node_info, database_nodeobject, on
       raise node_transition_lib.DatabaseError("Failed to create vessel entry or change vessel entry for vessel: "+
                                                new_vessel+". "+traceback.format_exc())
 
+  # Note: there is one last thing we need to do: set the node as active. We
+  # don't want to do this here just in case setting the state key on the node
+  # fails. So, rather than add a post-state-key-setting-action for each state,
+  # the logic has been put right in processnode() with an if statement to look
+  # for the 'onepercentmanyevents_state' as the end state. We could alternately
+  # just leave it for the node to be marked as active by the 1pct-to-1pct
+  # transition script, but that could introduce a delay of many minutes before
+  # the node/donation becomes active.
   node_transition_lib.log("Finished splitting vessels up for the node: "+node_string)
 
 

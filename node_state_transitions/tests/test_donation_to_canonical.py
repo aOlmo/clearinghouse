@@ -97,8 +97,8 @@ def run_success_test():
 
   transitionlist = []
 
-  transitionlist.append((("startstatename", node_transition_lib.acceptdonationpublickey),
-                        ("endstatename", node_transition_lib.canonicalpublickey),
+  transitionlist.append((("donation_state", node_transition_lib.acceptdonationpublickey),
+                        ("canonical_state", node_transition_lib.canonicalpublickey),
                          node_transition_lib.noop,
                          node_transition_lib.noop))
 
@@ -138,12 +138,12 @@ def run_database_stituation_two_test():
 
   # Create a database entry for the node
   node_object = maindb.create_node(mockutil.nodeid_key_str, mockutil.node_ip, mockutil.node_port, "10.0test",
-                                  True, mockutil.per_node_key_str, mockutil.extra_vessel_name)  
+                                  False, mockutil.per_node_key_str, mockutil.extra_vessel_name)  
 
   transitionlist = []
 
-  transitionlist.append((("startstatename", node_transition_lib.acceptdonationpublickey),
-                        ("endstatename", node_transition_lib.canonicalpublickey),
+  transitionlist.append((("donation_state", node_transition_lib.acceptdonationpublickey),
+                        ("canonical_state", node_transition_lib.canonicalpublickey),
                          node_transition_lib.noop,
                          node_transition_lib.noop))
 
@@ -185,7 +185,7 @@ def run_database_stituation_three_test():
 
   # Create a database entry for the node
   node_object = maindb.create_node(mockutil.nodeid_key_str, mockutil.node_ip, mockutil.node_port, "10.0test",
-                                  True, mockutil.per_node_key_str, mockutil.extra_vessel_name)
+                                  False, mockutil.per_node_key_str, mockutil.extra_vessel_name)
 
   user_object = maindb.get_user(mockutil.testusername)
 
@@ -194,8 +194,8 @@ def run_database_stituation_three_test():
 
   transitionlist = []
 
-  transitionlist.append((("startstatename", node_transition_lib.acceptdonationpublickey),
-                        ("endstatename", node_transition_lib.canonicalpublickey),
+  transitionlist.append((("donation_state", node_transition_lib.acceptdonationpublickey),
+                        ("canonical_state", node_transition_lib.canonicalpublickey),
                          node_transition_lib.noop,
                          node_transition_lib.noop))
 
@@ -252,7 +252,7 @@ def run_multiple_donation_test():
 
   # Create a database entry for the node
   node_object = maindb.create_node(mockutil.nodeid_key_str, mockutil.node_ip, mockutil.node_port, "10.0test",
-                                  True, mockutil.per_node_key_str, mockutil.extra_vessel_name)
+                                  False, mockutil.per_node_key_str, mockutil.extra_vessel_name)
   user_object = maindb.get_user(mockutil.testusername)
   # Create a donation for user
   maindb.create_donation(node_object, user_object, "Making a donation")
@@ -265,8 +265,8 @@ def run_multiple_donation_test():
 
   transitionlist = []
 
-  transitionlist.append((("startstatename", node_transition_lib.acceptdonationpublickey),
-                        ("endstatename", node_transition_lib.canonicalpublickey),
+  transitionlist.append((("donation_state", node_transition_lib.acceptdonationpublickey),
+                        ("canonical_state", node_transition_lib.canonicalpublickey),
                          node_transition_lib.noop,
                          node_transition_lib.noop))
 
@@ -289,19 +289,23 @@ def run_multiple_donation_test():
 def assert_database_info():
 
   active_nodes_list = maindb.get_active_nodes()
-
-  assert(len(active_nodes_list) == 1)
-  assert(active_nodes_list[0].node_identifier == mockutil.nodeid_key_str)
-  assert(active_nodes_list[0].last_known_ip == mockutil.node_ip)
-  assert(active_nodes_list[0].last_known_port == mockutil.node_port)
-  assert(active_nodes_list[0].extra_vessel_name == mockutil.extra_vessel_name)
-  assert(active_nodes_list[0].owner_pubkey == mockutil.per_node_key_str)
-
+  assert(len(active_nodes_list) == 0)
+  
   testuser = maindb.get_user(mockutil.testusername)
-  donations_list = maindb.get_donations_by_user(testuser)
-
-  assert(len(donations_list) == 1)
-  assert(donations_list[0].node == active_nodes_list[0])
+    
+  active_donations = maindb.get_donations_by_user(testuser)
+  assert(len(active_donations) == 0)
+  
+  all_donations = maindb.get_donations_by_user(testuser, include_inactive_and_broken=True)
+  assert(len(all_donations) == 1)
+  
+  node = all_donations[0].node
+  
+  assert(node.node_identifier == mockutil.nodeid_key_str)
+  assert(node.last_known_ip == mockutil.node_ip)
+  assert(node.last_known_port == mockutil.node_port)
+  assert(node.extra_vessel_name == mockutil.extra_vessel_name)
+  assert(node.owner_pubkey == mockutil.per_node_key_str)
 
 
 

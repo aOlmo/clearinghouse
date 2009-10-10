@@ -88,7 +88,7 @@ def setup_test():
 
   # Create a database entry for the node
   node_object = maindb.create_node(mockutil.nodeid_key_str, mockutil.node_ip, mockutil.node_port, "10.0test",
-                                  True, mockutil.per_node_key_str, mockutil.extra_vessel_name)
+                                  False, mockutil.per_node_key_str, mockutil.extra_vessel_name)
 
   # Create a donation for user
   maindb.create_donation(node_object, user_object, "Making a donation")
@@ -130,8 +130,8 @@ def run_can_to_moving1percent_test():
   print "Starting canonical to movingtoonepercentmanyevents test....."
   transitionlist = []
 
-  transitionlist.append((("startstatename", node_transition_lib.canonicalpublickey),
-                        ("endstatename", node_transition_lib.movingtoonepercentmanyeventspublickey),
+  transitionlist.append((("canonical_state", node_transition_lib.canonicalpublickey),
+                        ("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey),
                          node_transition_lib.noop,
                          node_transition_lib.noop))
   
@@ -142,7 +142,7 @@ def run_can_to_moving1percent_test():
   assert(success_count == 1)
   assert(failure_count == 0)
 
-  assert_database_info()
+  assert_database_info_before_completed()
 
   assert(mockutil.set_vessel_owner_key_call_count == 0)
   assert(mockutil.set_vessel_user_keylist_call_count == 1)  
@@ -171,8 +171,8 @@ def run_moving2onepercent_to_onepercent_test():
   
 
 
-  transitionlist.append((("startstatename", node_transition_lib.movingtoonepercentmanyeventspublickey),
-                        ("endstatename", node_transition_lib.onepercentmanyeventspublickey),
+  transitionlist.append((("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey),
+                        ("onepercentmanyevents_state", node_transition_lib.onepercentmanyeventspublickey),
                          transition_canonical_to_onepercentmanyevents.onepercentmanyevents_divide,
                          node_transition_lib.noop,
                          onepercentmanyevents_resourcetemplate))
@@ -184,7 +184,7 @@ def run_moving2onepercent_to_onepercent_test():
   assert(success_count == 1)
   assert(failure_count == 0)
 
-  assert_database_info()
+  assert_database_info_after_completed()
 
   assert(mockutil.set_vessel_owner_key_call_count == 0)
   
@@ -193,8 +193,12 @@ def run_moving2onepercent_to_onepercent_test():
   # and one time for setting the actual state of the node.
   assert(mockutil.set_vessel_user_keylist_call_count == 10)
 
-  active_nodes_list = maindb.get_active_nodes()
-  vessel_list_per_node = maindb.get_vessels_on_node(active_nodes_list[0])
+  testuser = maindb.get_user(mockutil.testusername)
+
+  all_donations = maindb.get_donations_by_user(testuser, include_inactive_and_broken=True)
+  node = all_donations[0].node
+
+  vessel_list_per_node = maindb.get_vessels_on_node(node)
 
   #testing to see if the vessels exist after splitting
   assert(mockutil.split_vessel_call_count == 9)
@@ -202,10 +206,10 @@ def run_moving2onepercent_to_onepercent_test():
 
   for i in range(len(vessel_list_per_node)):
     # Note that the vessel names go from 1-9 rather then 0-8
-    assert(vessel_list_per_node[i].node == active_nodes_list[0])
+    assert(vessel_list_per_node[i].node == node)
     assert(vessel_list_per_node[i].name == "new_vessel"+str(1+i))
 
-  assert(active_nodes_list[0].extra_vessel_name == "extra_vessel_split9")
+  assert(node.extra_vessel_name == "extra_vessel_split9")
 
 
 
@@ -216,23 +220,26 @@ def run_moving2onepercent_to_canonical_test():
 
 
   # Change the vessel_dict and reset all the mock functions in order to have the appropriate info
-  active_nodes_list = maindb.get_active_nodes()
+  testuser = maindb.get_user(mockutil.testusername)
+
+  all_donations = maindb.get_donations_by_user(testuser, include_inactive_and_broken=True)
+  node = all_donations[0].node
 
   # Create 9 vessels for this node
   for i in range(9):
     vessels_dict["vessel"+str(i)]={}
     vessels_dict["vessel"+str(i)]["userkeys"] = []
-    vessels_dict["vessel"+str(i)]["ownerkey"] = rsa_string_to_publickey(active_nodes_list[0].owner_pubkey)
+    vessels_dict["vessel"+str(i)]["ownerkey"] = rsa_string_to_publickey(node.owner_pubkey)
     vessels_dict["vessel"+str(i)]["ownerinfo"] = ""
     vessels_dict["vessel"+str(i)]["status"] = ""
     vessels_dict["vessel"+str(i)]["advertise"] = True
 
-    maindb.create_vessel(active_nodes_list[0], "vessel"+str(i))
+    maindb.create_vessel(node, "vessel"+str(i))
 
 
 
   vessels_dict[mockutil.extra_vessel_name]["userkeys"] = [node_transition_lib.movingtoonepercentmanyeventspublickey]
-  vessels_dict[mockutil.extra_vessel_name]["ownerkey"] = rsa_string_to_publickey(active_nodes_list[0].owner_pubkey)
+  vessels_dict[mockutil.extra_vessel_name]["ownerkey"] = rsa_string_to_publickey(node.owner_pubkey)
 
   mockutil.mock_nodemanager_get_node_info(mockutil.nodeid_key, "10.0test", vessels_dict)
   mockutil.mock_backend_set_vessel_owner_key()
@@ -241,8 +248,8 @@ def run_moving2onepercent_to_canonical_test():
                                                 node_transition_lib.canonicalpublickey)])
 
 
-  transitionlist.append((("startstatename", node_transition_lib.movingtoonepercentmanyeventspublickey),
-                        ("endstatename", node_transition_lib.canonicalpublickey),
+  transitionlist.append((("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey),
+                        ("canonical_state", node_transition_lib.canonicalpublickey),
                          node_transition_lib.combine_vessels,
                          node_transition_lib.noop))
 
@@ -253,23 +260,52 @@ def run_moving2onepercent_to_canonical_test():
   assert(success_count == 1)
   assert(failure_count == 0)
 
-  assert_database_info()
+  assert_database_info_before_completed()
 
   assert(mockutil.set_vessel_owner_key_call_count == 0)
 
   assert(mockutil.set_vessel_user_keylist_call_count == 1)
 
-  active_nodes_list = maindb.get_active_nodes()
-  vessel_list_per_node = maindb.get_vessels_on_node(active_nodes_list[0])
+  all_donations = maindb.get_donations_by_user(testuser, include_inactive_and_broken=True)
+  node = all_donations[0].node
+  
+  vessel_list_per_node = maindb.get_vessels_on_node(node)
 
   #testing to see if the vessels were deleted after join_vessels was called
   assert(mockutil.join_vessels_call_count == 9)
   assert(len(vessel_list_per_node) == 0)
-  assert(active_nodes_list[0].extra_vessel_name == "extra_vessel_join9")
+  assert(node.extra_vessel_name == "extra_vessel_join9")
 
 
 
-def assert_database_info():
+
+
+def assert_database_info_before_completed():
+
+  active_nodes_list = maindb.get_active_nodes()
+  assert(len(active_nodes_list) == 0)
+  
+  testuser = maindb.get_user(mockutil.testusername)
+    
+  active_donations = maindb.get_donations_by_user(testuser)
+  assert(len(active_donations) == 0)
+  
+  all_donations = maindb.get_donations_by_user(testuser, include_inactive_and_broken=True)
+  assert(len(all_donations) == 1)
+  
+  node = all_donations[0].node
+  
+  assert(node.node_identifier == mockutil.nodeid_key_str)
+  assert(node.last_known_ip == mockutil.node_ip)
+  assert(node.last_known_port == mockutil.node_port)
+  assert(node.extra_vessel_name == mockutil.extra_vessel_name)
+  assert(node.owner_pubkey == mockutil.per_node_key_str)
+
+
+
+
+
+def assert_database_info_after_completed():
 
   active_nodes_list = maindb.get_active_nodes()
 
