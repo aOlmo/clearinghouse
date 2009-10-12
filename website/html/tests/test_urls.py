@@ -144,9 +144,9 @@ def get_pages_without_user_logged_in():
   assert(response.status_code == 200)
   assert(response.template[0].name == "accounts/login.html")
   
+  # POST is required for deleting private key.
   response = c.get('/html/del_priv', follow=True)
-  assert(response.status_code == 200)
-  assert(response.template[0].name == "accounts/login.html")
+  assert(response.status_code == 405)
   
   response = c.get('/html/priv_key', follow=True)
   assert(response.status_code == 200)
@@ -207,7 +207,11 @@ def get_pages_with_user_logged_in():
   
   ##########################################################################
   
+  # POST is required for deleting private key.
   response = c.get('/html/del_priv', follow=True)
+  assert(response.status_code == 405)
+  
+  response = c.post('/html/del_priv', follow=True)
   assert(response.status_code == 200)
   assert(response.template[0].name == "control/profile.html")
   assert("Private key has been deleted" in response.content)

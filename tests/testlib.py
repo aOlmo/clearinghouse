@@ -36,6 +36,14 @@ settings.TEST_DATABASE_NAME = tempfile.NamedTemporaryFile(dir=sqlite_database_fi
 #      be an issue with python 2.5's sqlite.
 settings.DATABASE_OPTIONS = {'timeout':30}
 
+# Remove the CSRF middleware as our tests don't try to send csrf tokens. We're
+# not the only ones who ignore this for testing:
+# http://code.djangoproject.com/ticket/11692
+new_middleware_classes = list(settings.MIDDLEWARE_CLASSES)
+new_middleware_classes.remove('django.contrib.csrf.middleware.CsrfViewMiddleware')
+new_middleware_classes.remove('django.contrib.csrf.middleware.CsrfResponseMiddleware')
+settings.MIDDLEWARE_CLASSES = tuple(new_middleware_classes)
+
 import django.db
 
 import django.test.utils
