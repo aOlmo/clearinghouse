@@ -15,7 +15,7 @@ import tempfile
 # The use of Python 2.5 with /dev/shm as the location of the sqlite db may also
 # may be the cause of some tests failing on testbed-opensuse due to locks not
 # being released, most likely, so we'll only use /dev/shm for 2.6+.
-if os.path.exists("/dev/shm") and sys.version_info < (2, 6):
+if os.path.exists("/dev/shm") and sys.version_info >= (2, 6):
   sqlite_database_file_dir = "/dev/shm"
 else:
   sqlite_database_file_dir = None
