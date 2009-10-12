@@ -20,8 +20,26 @@
     margin: 0 15px 0 0;
 }
 
+#getresources form {
+    display : inline;
+}
+
 #getresources form input, #getresources form select {
     margin-right: 10px;
+}
+
+#getresources form input, #getresources form select {
+    margin-right: 10px;
+}
+
+#loading_indicator {
+    display : inline;
+    visibility : hidden;
+}
+
+#loading_indicator img {
+    width : 16px;
+    height : 16px;	
 }
 
 #action_summary {

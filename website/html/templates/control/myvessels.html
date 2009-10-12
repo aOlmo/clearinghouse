@@ -33,6 +33,9 @@ My Vessels - SeattleGENI
 					{{ get_form.env }}
 					<input type="submit" value="Get" />
 				</form>
+				<div id="loading_indicator">
+				  <img src="{{ MEDIA_URL }}images/loading_indicator.gif"/>
+				</div>
 			  {% else %}
 			  <div id="action_other"> Donate more nodes to acquire more resources. </div>
 			  {% endifnotequal %}
