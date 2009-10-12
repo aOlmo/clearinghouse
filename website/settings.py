@@ -129,6 +129,8 @@ TEMPLATE_LOADERS = (
 
 MIDDLEWARE_CLASSES = (
   'django.middleware.common.CommonMiddleware',
+  'django.contrib.csrf.middleware.CsrfViewMiddleware',
+  'django.contrib.csrf.middleware.CsrfResponseMiddleware',
   'django.contrib.sessions.middleware.SessionMiddleware',
   'django.contrib.auth.middleware.AuthenticationMiddleware',
   # Our own middleware that logs when a request is initially received and
@@ -151,6 +153,7 @@ INSTALLED_APPS = (
   'django.contrib.admin',
   'django.contrib.auth',
   'django.contrib.contenttypes',
+  'django.contrib.csrf',
   'django.contrib.sessions',
   'django.contrib.sites',
   

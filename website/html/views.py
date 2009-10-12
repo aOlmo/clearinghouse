@@ -21,14 +21,20 @@ import os
 import sys
 import shutil
 import subprocess
-import traceback
 
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
-from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
+
+# Any requests that change state on the server side (e.g. result in database
+# modifications) need to be POST requests. This is for protecting against
+# CSRF attacks (part, but not all, of that is our use of the CSRF middleware
+# which only checks POST requests). Sometimes we use this decorator, sometimes
+# we check the request type inside the view function.
+from django.views.decorators.http import require_POST
+
 from django.views.generic.simple import direct_to_template
 from django.views.generic.simple import redirect_to
 
@@ -484,6 +490,7 @@ def del_all_resources(request):
 
 
 # TODO: This is just temporary to get the existing templates working.
+@require_POST
 @login_required
 def gen_new_key(request):
   pass
@@ -493,6 +500,7 @@ def gen_new_key(request):
 
 
 @log_function_call
+@require_POST
 @login_required
 def del_priv(request):
   try:
