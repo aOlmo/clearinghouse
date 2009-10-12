@@ -33,15 +33,13 @@ pushd website/tests
 # We assume each of these tests is a python script that returns a non-zero
 # exit code on failure.
 
-echo "Disabled due to failures on testbed-opensuse."
-
-#for i in *.py; do
-#  echo "------------ $i ------------"
-#  python $i
-#  if [ "$?" != "0" ]; then
-#    failure=1
-#  fi
-#done
+for i in *.py; do
+  echo "------------ $i ------------"
+  python $i
+  if [ "$?" != "0" ]; then
+    failure=1
+  fi
+done
 
 popd
 

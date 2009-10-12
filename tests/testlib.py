@@ -4,6 +4,7 @@
 from seattlegeni.website import settings
 
 import os
+import sys
 import tempfile
 
 # Use a database file that actually resides in memory, if possible.
@@ -11,7 +12,10 @@ import tempfile
 # there seems to be a problem with additional threads accessing the test
 # database in memory when using an in-memory sqlite database (":memory:")
 # rather than a file-backed one.
-if os.path.exists("/dev/shm"):
+# The use of Python 2.5 with /dev/shm as the location of the sqlite db may also
+# may be the cause of some tests failing on testbed-opensuse due to locks not
+# being released, most likely, so we'll only use /dev/shm for 2.6+.
+if os.path.exists("/dev/shm") and sys.version_info < (2, 6):
   sqlite_database_file_dir = "/dev/shm"
 else:
   sqlite_database_file_dir = None
