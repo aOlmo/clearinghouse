@@ -43,6 +43,18 @@ if [ "$ALREADY_RUNNING_COUNT" != "0" ]; then
   exit 1
 fi
 
+function shutdown() {
+  echo "Shutting down seattlegeni components."
+  # Tell kill to kill the process group (so, kill children) by giving a negative process id.
+  # Note: "--" means the end of options
+  kill -- -$$
+  wait
+  exit
+}
+
+# Catch the signals from a CTRL-C or "kill this_pid".
+trap "shutdown" SIGINT SIGTERM
+
 echo "Starting lockserver."
 $SUDO_CMD python $SEATTLEGENI_DIR/lockserver/lockserver_daemon.py >>$LOG_DIR/lockserver.log 2>&1 &
 sleep 1 # Wait a moment to make sure it has started (lockserver is used by other components).
@@ -73,17 +85,5 @@ $SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$
 
 echo "All components started. Kill this process (CTRL-C or 'kill $$') to stop all started components (except apache)."
 
-
-function shutdown() {
-  echo "Shutting down seattlegeni components."
-  # Tell kill to kill the process group (so, kill children) by giving a negative process id.
-  # Note: "--" means the end of options
-  kill -- -$$
-}
-
-# Wait for the user to CTRL-C or "kill this_pid".
-trap "shutdown" SIGINT SIGTERM
-
 # Wait for all background processes to terminate.
 wait
-
