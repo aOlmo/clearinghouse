@@ -1,4 +1,8 @@
 
+# The seattlegeni testlib must be imported first. We do this in case this
+# module gets executed as a test to prevent it from "failing".
+from seattlegeni.tests import testlib
+
 import random
 
 from seattlegeni.common.api import backend
