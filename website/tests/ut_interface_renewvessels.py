@@ -90,6 +90,11 @@ class SeattleGeniTestCase(unittest.TestCase):
     userport = user.usable_vessel_port
     
     vesselcount = 4
+    
+    # Have every vessel acquisition to the backend request succeed.
+    calls_results = [True] * vesselcount
+    mocklib.mock_backend_acquire_vessel(calls_results)
+    
     create_nodes_on_different_subnets(vesselcount, [userport])
     
     # Acquire all of the vessels the user can acquire.
@@ -117,6 +122,11 @@ class SeattleGeniTestCase(unittest.TestCase):
     userport = user.usable_vessel_port
     
     vesselcount = 4
+    
+    # Have every vessel acquisition to the backend request succeed.
+    calls_results = [True] * vesselcount
+    mocklib.mock_backend_acquire_vessel(calls_results)
+    
     create_nodes_on_different_subnets(vesselcount, [userport])
     
     # Acquire all of the vessels the user can acquire.
@@ -145,6 +155,11 @@ class SeattleGeniTestCase(unittest.TestCase):
     userport = user.usable_vessel_port
     
     vesselcount = 4
+    
+    # Have every vessel acquisition to the backend request succeed.
+    calls_results = [True] * vesselcount
+    mocklib.mock_backend_acquire_vessel(calls_results)
+    
     create_nodes_on_different_subnets(vesselcount, [userport])
     
     # Acquire all of the vessels the user can acquire.
