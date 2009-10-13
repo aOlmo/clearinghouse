@@ -22,6 +22,8 @@
   See test_register.py for an explanation of our usage of the Django test client.
 """
 
+import datetime
+
 # We import the testlib FIRST, as the test db settings 
 # need to be set before we import anything else.
 from seattlegeni.tests import testlib
@@ -60,7 +62,10 @@ def mock_get_acquired_vessels(geniuser):
   return ['test', 'test2']
 
 def mock_get_vessel_infodict_list(vessel_list):
-  return [{'test':0}, {'test2':0}]
+  # At a minimum, the expires_in_seconds key must exist because it is used by
+  # the myvessels view.
+  return [{'expires_in_seconds':1}, 
+          {'expires_in_seconds':2}]
 
 def mock_delete_private_key(user):
   pass
@@ -140,7 +145,15 @@ def get_pages_without_user_logged_in():
   assert(response.status_code == 200)
   assert(response.template[0].name == "accounts/login.html")
   
-  response = c.get('/html/del_all_resource', follow=True)
+  response = c.get('/html/del_all_resources', follow=True)
+  assert(response.status_code == 200)
+  assert(response.template[0].name == "accounts/login.html")
+  
+  response = c.get('/html/renew_resource', follow=True)
+  assert(response.status_code == 200)
+  assert(response.template[0].name == "accounts/login.html")
+  
+  response = c.get('/html/renew_all_resources', follow=True)
   assert(response.status_code == 200)
   assert(response.template[0].name == "accounts/login.html")
   
@@ -201,7 +214,15 @@ def get_pages_with_user_logged_in():
   assert(response.status_code == 200)
   assert(response.template[0].name == "control/myvessels.html")
   
-  response = c.get('/html/del_all_resource', follow=True)
+  response = c.get('/html/del_all_resources', follow=True)
+  assert(response.status_code == 200)
+  assert(response.template[0].name == "control/myvessels.html")
+  
+  response = c.get('/html/renew_resource', follow=True)
+  assert(response.status_code == 200)
+  assert(response.template[0].name == "control/myvessels.html")
+  
+  response = c.get('/html/renew_all_resources', follow=True)
   assert(response.status_code == 200)
   assert(response.template[0].name == "control/myvessels.html")
   

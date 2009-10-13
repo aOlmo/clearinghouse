@@ -24,15 +24,21 @@ urlpatterns = patterns('seattlegeni.website.html.views',
                        (r'^help$', 'help', {}, 'help'),
                        # getdonations page (to download installers)
                        (r'^getdonations$', 'getdonations', {}, 'getdonations'),
-#                       
-#                      # 'My GENI' page functions:
+
+                       # 'My GENI' page functions:
                        # get new resources (from form)
                        (r'^get_resources$', 'get_resources', {}, 'get_resources'),
+
                        # delete some specific resource for this user (from form)
                        (r'^del_resource$', 'del_resource', {}, 'del_resource'),
                        # delete all resources for this user (from form)
-                       (r'^del_all_resource$', 'del_all_resources', {}, 'del_all_resources'),
-#                       
+                       (r'^del_all_resources$', 'del_all_resources', {}, 'del_all_resources'),
+
+                       # renew some specific resource for this user (from form)
+                       (r'^renew_resource$', 'renew_resource', {}, 'renew_resource'),
+                       # renew all resource for this user (from form)
+                       (r'^renew_all_resources$', 'renew_all_resources', {}, 'renew_all_resources'),
+
                        # Profile page functions:
                        # generate a new public/private key pair for the user (from form)
                        (r'^gen_new_key$', 'gen_new_key', {}, 'gen_new_key'),

@@ -1,16 +1,16 @@
 """
 <Program>
-  test_del_resources.py
+  test_renew_resources.py
 
 <Started>
-  8/30/2009
+  Oct 13, 2009
 
 <Author>
-  Jason Chen
-  jchen@cs.washington.edu
+  Jason Chen <jchen@cs.washington.edu>
+  Justin Samuel
 
 <Purpose>
-  Tests that the del_resource view function 
+  Tests that the renew_resource view function 
   handles normal operation and exceptions correctly.
   
 <Notes>
@@ -53,10 +53,10 @@ def mock_get_vessel_list_throws_DoesNotExistError(vesselhandle_list):
 def mock_get_vessel_list_throws_InvalidRequestError(vesselhandle_list):
   raise InvalidRequestError
 
-def mock_release_vessels(geniuser, vessel_list):
+def mock_renew_vessels(geniuser, vessel_list):
   pass
 
-def mock_release_vessels_throws_InvalidRequestError(geniuser, vessel_list):
+def mock_renew_vessels_throws_InvalidRequestError(geniuser, vessel_list):
   raise InvalidRequestError
 
 c = Client()
@@ -69,7 +69,7 @@ def main():
   test_normal()
   test_get_vessel_list_throws_DoesNotExistError()
   test_get_vessel_list_throws_InvalidRequestError()
-  test_release_vessels_throws_InvalidRequestError()
+  test_renew_vessels_throws_InvalidRequestError()
   
   print "All tests passed."
 
@@ -81,8 +81,8 @@ def test_normal():
     Tests normal behavior.
   """
   interface.get_vessel_list = mock_get_vessel_list
-  interface.release_vessels = mock_release_vessels
-  response = c.post('/html/del_resource', good_data, follow=True)
+  interface.renew_vessels = mock_renew_vessels
+  response = c.post('/html/renew_resource', good_data, follow=True)
   
   assert(response.status_code == 200)
   assert(response.template[0].name == 'control/myvessels.html')
@@ -95,11 +95,11 @@ def test_get_vessel_list_throws_DoesNotExistError():
     Tests behavior if interface.get_vessel_list throws a DoesNotExistError
   """
   interface.get_vessel_list = mock_get_vessel_list_throws_DoesNotExistError
-  interface.release_vessels = mock_release_vessels
-  response = c.post('/html/del_resource', good_data, follow=True)
+  interface.renew_vessels = mock_renew_vessels
+  response = c.post('/html/renew_resource', good_data, follow=True)
   
   assert(response.status_code == 200)
-  assert("Unable to remove" in response.content)
+  assert("Unable to renew" in response.content)
   assert(response.template[0].name == 'control/myvessels.html')
 
 
@@ -110,26 +110,26 @@ def test_get_vessel_list_throws_InvalidRequestError():
     Tests behavior if interface.get_vessel_list throws an InvalidRequestError 
   """
   interface.get_vessel_list = mock_get_vessel_list_throws_InvalidRequestError
-  interface.release_vessels = mock_release_vessels
-  response = c.post('/html/del_resource', good_data, follow=True)
+  interface.renew_vessels = mock_renew_vessels
+  response = c.post('/html/renew_resource', good_data, follow=True)
   
   assert(response.status_code == 200)
-  assert("Unable to remove" in response.content)
+  assert("Unable to renew" in response.content)
   assert(response.template[0].name == 'control/myvessels.html')
 
 
 
-def test_release_vessels_throws_InvalidRequestError():
+def test_renew_vessels_throws_InvalidRequestError():
   """
   <Purpose>
-    Tests behavior if interface.release_vessels throws an InvalidRequestError
+    Tests behavior if interface.renew_vessels throws an InvalidRequestError
   """
   interface.get_vessel_list = mock_get_vessel_list
-  interface.release_vessels = mock_release_vessels_throws_InvalidRequestError
-  response = c.post('/html/del_resource', good_data, follow=True)
+  interface.renew_vessels = mock_renew_vessels_throws_InvalidRequestError
+  response = c.post('/html/renew_resource', good_data, follow=True)
   
   assert(response.status_code == 200)
-  assert("Unable to remove" in response.content)
+  assert("Unable to renew" in response.content)
   assert(response.template[0].name == 'control/myvessels.html')
   
   

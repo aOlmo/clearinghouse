@@ -99,8 +99,7 @@ def test_interface_throws_UnableToAcquireResourcesError():
   
   assert(response.status_code == 200)
   assert(response.template[0].name == 'control/myvessels.html')
-  assert("action_summary" in response.content)
-  
+  assert("Unable to acquire vessels at this time" in response.content)
 
 
 
@@ -114,7 +113,8 @@ def test_interface_throws_InsufficientUserResourcesError():
   
   assert(response.status_code == 200)
   assert(response.template[0].name == 'control/myvessels.html')
-  assert("action_summary" in response.content)
+  assert("Unable to acquire" in response.content)
+  assert("vessel credit" in response.content)
 
 
 

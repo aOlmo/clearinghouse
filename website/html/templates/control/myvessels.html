@@ -54,33 +54,46 @@ My Vessels - SeattleGENI
 			</div>
 			<table class="vessels">
 				<tr class="odd">
-					  {% ifnotequal num_vessels 0 %}
+					{% ifnotequal num_vessels 0 %}
 					  <th>
 					  <form method="POST" action="{% url del_all_resources %}">
 						<input type="submit" value="remove all"> </input>
 					  </form>
 					  </th>
-					  {% endifnotequal %}
+					{% endifnotequal %}
 					<th>Vessel Location</th>
 					<th>Vessel Name</th>
-					<th>Expires in</th>
+					<th>Expires In</th>
+					{% ifnotequal num_vessels 0 %}
+					  <th>
+					  <form method="POST" action="{% url renew_all_resources %}">
+						<input type="submit" value="renew all"> </input>
+					  </form>
+					  </th>
+					{% endifnotequal %}
 				</tr>
 			{% if my_vessels %}
 				{% for vessel in my_vessels %}
   				<tr class="{% cycle 'odd' 'even' %}">
   					<td>
   					  <form method="POST" action="{% url del_resource %}">
-  					<input type="submit" value="remove"> </input>
-  					<input type="hidden" name="handle" value="{{ vessel.handle }}"></input>
+  					<input type="submit" value="remove" />
+  					<input type="hidden" name="handle" value="{{ vessel.handle }}" />
   					  </form>
   					</td>
   					<td><b> {{ vessel.node_ip }} </b></td>
   					<td> {{ vessel.vessel_id }} </td>
   					<td> {{ vessel.expires_in }} </td>
+  					<td>
+  					  <form method="POST" action="{% url renew_resource %}">
+  					<input type="submit" value="renew" />
+  					<input type="hidden" name="handle" value="{{ vessel.handle }}" />
+  					  </form>
+  					</td>
   				</tr>
   				{% endfor %}
   			{% else %}
-				<tr class="even"><td colspan="4">You have no acquired resources<td></tr>
+				<tr class="even"><td colspan="3">You have no acquired resources<td></tr>
   			{% endif %}
 				
 			</table>

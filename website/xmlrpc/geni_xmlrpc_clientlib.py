@@ -102,6 +102,22 @@ class client:
         raise GENIInvalidUserInput(fault_text)
       else:
         raise GENIOpError(fault_text)
+      
+  def renew_resources(self, handlelist):
+    if not isinstance(handlelist, list):
+      raise TypeError("Invalid data type for handle list.")
+    
+    if not handlelist:
+      raise ValueError("Given handlelist is empty.")
+    
+    try:
+      self.proxy.renew_resources(self.auth, handlelist)
+    except xmlrpclib.Fault, fault:
+      if fault.faultCode == FAULTCODE_INVALIDUSERINPUT:
+        print fault.faultString
+        raise GENIInvalidUserInput(fault.faultString)
+      else:
+        raise GENIOpError(fault.faultString)
 
   def get_resource_info(self):
     return self.proxy.get_resource_info(self.auth)

@@ -14,6 +14,8 @@
   vessels.
 """
 
+import traceback
+
 from seattlegeni.common.exceptions import *
 
 from seattlegeni.common.api import backend
@@ -394,3 +396,65 @@ def _do_release_vessel(lockserver_handle, vessel):
     # Unlock the user.
     lockserver.unlock_node(lockserver_handle, node_id)
 
+
+
+
+
+@log_function_call
+def renew_vessels(lockserver_handle, geniuser, vessel_list):
+  """
+  <Purpose>
+    Renew vessels.
+  <Arguments>
+    lockserver_handle
+      The lockserver handle to use for acquiring node locks.
+    geniuser
+      The user who has acquired the vessels.
+    vessel_list
+      A list of vessels to be renewed.
+  <Exceptions>
+    InvalidRequestError
+      If any vessels in vessel_list are not already acquired by geniuser.
+  <Side Effects>
+    The vessels in the vessel_list have expirations dates which are the maximum
+    length of time from now that we allow renewal for.
+  <Returns>
+    None.
+  """
+  
+  node_id_list = []
+  for vessel in vessel_list:
+    node_id = maindb.get_node_identifier_from_vessel(vessel)
+    # Lock names must be unique, and there could be multiple vessels from the
+    # same node in the vessel_list.
+    if node_id not in node_id_list:
+      node_id_list.append(node_id)
+
+  # Lock the nodes that these vessels are on.
+  lockserver.lock_multiple_nodes(lockserver_handle, node_id_list)
+  try:
+    # Query new vessels objects from the database to be sure we are working
+    # with the current data in the database.
+    fresh_vessel_list = []
+    for vessel in vessel_list:
+      try:
+        node_id = maindb.get_node_identifier_from_vessel(vessel)
+        fresh_vessel = maindb.get_vessel(node_id, vessel.name)
+        fresh_vessel_list.append(fresh_vessel)
+      except DoesNotExistError:
+        raise InternalError(traceback.format_exc())
+    
+    # Make sure each vessel actually belongs to the user.
+    for vessel in fresh_vessel_list:
+      if vessel.acquired_by_user != geniuser:
+        raise InvalidRequestError("Only vessels acquired by this user can be renewed [offending vessel: " + str(vessel) + "]")
+    
+    for vessel in fresh_vessel_list:
+      maindb.set_maximum_vessel_expiration(vessel)
+      
+    # Replace the vessels in the original list with the updated vessel objects.
+    vessel_list[:] = fresh_vessel_list[:]
+    
+  finally:
+    # Unlock the nodes.
+    lockserver.unlock_multiple_nodes(lockserver_handle, node_id_list)

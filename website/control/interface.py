@@ -637,6 +637,119 @@ def release_all_vessels(geniuser):
 
 
 
+@log_function_call
+def renew_vessels(geniuser, vessel_list):
+  """
+  <Purpose>
+    Extend the expiration dates of vessels acquired by a user.
+  <Arguments>
+    geniuser
+      The GeniUser whose vessels are to be renewed.
+    vessel_list
+      A list of vessels to be renewed.
+  <Exceptions>
+    InvalidRequestError
+      If any of the vessels in the vessel_list are not currently acquired by
+      geniuser.
+    InsufficientUserResourcesError
+      If the user is currently over their limit of acquired resources.
+  <Side Effects>
+    The vessels are renewed to the maximum time vessels can be acquired for,
+    regardless of their previous individual expiration times.
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+  assert_list(vessel_list)
+  for vessel in vessel_list:
+    assert_vessel(vessel)
+
+  # Lock the user.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  lockserver.lock_user(lockserver_handle, geniuser.username)
+  
+  try:
+    # Make sure the user still exists now that we hold the lock. Also makes
+    # sure that we see any changes made to the user before we obtained the lock.
+    try:
+      geniuser = maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
+    
+    # Ensure the user is not over their limit of acquired vessels due to
+    # donations of theirs having gone offline. This call will raise an
+    # InsufficientUserResourcesError if the user is currently over their
+    # limit.
+    vesselcount = 0
+    maindb.require_user_can_acquire_resources(geniuser, vesselcount)
+    
+    # The vessels.renew_vessels function is responsible for ensuring that the
+    # vessels belong to this user. We let the other function do the check
+    # because we want to hold locks on the vessels' nodes before checking.
+    vessels.renew_vessels(lockserver_handle, geniuser, vessel_list)
+
+  finally:
+    # Unlock the user.
+    lockserver.unlock_user(lockserver_handle, geniuser.username)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+
+
+
+
+
+@log_function_call
+def renew_all_vessels(geniuser):
+  """
+  <Purpose>
+    Extend the expiration dates of vessels acquired by a user.
+  <Arguments>
+    geniuser
+      The GeniUser whose vessels are to be renewed.
+  <Exceptions>
+    InsufficientUserResourcesError
+      If the user is currently over their limit of acquired resources.
+  <Side Effects>
+    All vessels acquired by the user are renewed to the maximum time vessels
+    can be acquired for, regardless of their previous individual expiration
+    times.
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+
+  # Lock the user.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  lockserver.lock_user(lockserver_handle, geniuser.username)
+  
+  try:
+    # Make sure the user still exists now that we hold the lock. Also makes
+    # sure that we see any changes made to the user before we obtained the lock.
+    try:
+      geniuser = maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
+    
+    # Ensure the user is not over their limit of acquired vessels due to
+    # donations of theirs having gone offline. This call will raise an
+    # InsufficientUserResourcesError if the user is currently over their
+    # limit.
+    vesselcount = 0
+    maindb.require_user_can_acquire_resources(geniuser, vesselcount)
+    
+    # Get a list of all vessels acquired by the user.
+    vessel_list = maindb.get_acquired_vessels(geniuser)
+    
+    vessels.renew_vessels(lockserver_handle, geniuser, vessel_list)
+
+  finally:
+    # Unlock the user.
+    lockserver.unlock_user(lockserver_handle, geniuser.username)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+
+
+
+
+
 # Not logging the function call for now.
 def get_vessel_list(vesselhandle_list):
   """
@@ -682,6 +795,11 @@ def get_vessel_infodict_list(vessel_list):
     Convert a list of Vessel objects into a list of vessel infodicts.
     An "infodict" is a dictionary of vessel information that contains data
     which is safe for public display.
+    
+    This function needs to return lists of dictionaries with a minimum of the
+    following, according to https://seattle.cs.washington.edu/wiki/SeattleGeniAPI:
+      {'node_ip':node_ip, 'node_port':node_port, 'vessel_id':vessel_id, 
+      'node_id':node_id, 'handle':handle}
   <Arguments>
     vessel_list
       A list of Vessel objects.
@@ -706,31 +824,9 @@ def get_vessel_infodict_list(vessel_list):
     
     vessel_info["handle"] = vessel_info["node_id"] + ":" + vessel.name
     
-    date_expires = vessel.date_expires
-    if date_expires is None:
-      # something has gone wrong in the DB, date_expires should never be NULL for an active vessel.
-      vessel_info["expires_in"] = "Unknown"
-    else:
-      expires_in_timedelta = (vessel.date_expires - datetime.datetime.now()).seconds
-      expires_in_hours = expires_in_timedelta / (60 * 60)
-      expires_in_minutes = (expires_in_timedelta / (60)) - (expires_in_hours * 60)
-      #expires_in_seconds = expires_in_timedelta - (expires_in_minutes * 60) - (expires_in_hours * 60 * 60)
-      
-      print "*" * 60
-      print "date_expires: ", date_expires
-      print "expires_in_timedelta: ", expires_in_timedelta
-      print "expires_in_hours: ", expires_in_hours
-      print "expires_in_minutes: ", expires_in_minutes
-      print "formatted string: " + str(expires_in_hours) + "h " + str(expires_in_minutes) + "m"
-      
-      if expires_in_hours < 0 or expires_in_minutes < 0:
-        # we shouldn't ever print this message, as no expired 
-        # vessels should be returned from the interface 
-        vessel_info["expires_in"] = "Expired"
-      elif expires_in_hours == 0:
-        vessel_info["expires_in"] = str(expires_in_minutes) + "m "
-      else:
-        vessel_info["expires_in"] = str(expires_in_hours) + "h " + str(expires_in_minutes) + "m"
+    expires_in_timedelta = vessel.date_expires - datetime.datetime.now()
+    # The timedelta object stores information in two parts: days and seconds.
+    vessel_info["expires_in_seconds"] = (expires_in_timedelta.days * 3600 * 24) + expires_in_timedelta.seconds
       
     infodict_list.append(vessel_info)
     

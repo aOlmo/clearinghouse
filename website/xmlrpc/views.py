@@ -228,7 +228,62 @@ class PublicXMLRPCFunctions(object):
       raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
     
     return 0
+
+
+
+  @staticmethod
+  @log_function_call
+  def renew_resources(auth, vesselhandle_list):
+    """
+    <Purpose>
+      Renew resources for a user over XMLRPC. Renewal changes the expiration
+      time to the maximum allowed.
+    <Arguments>
+      auth
+        An authorization dict of the form {'username':username, 'password':password}
+      vesselhandle_list
+        A list of vessel handles
+    <Exceptions>
+      Raises xmlrpclib Fault objects with fault codes:
+        FAULTCODE_INVALIDUSERINPUT if a user provides invalid vessel handles.
+        FAULTCODE_NOTENOUGHCREDITS if user has insufficient vessel credits to complete request.
+    <Returns>
+      0 on success. Raises a fault otherwise.
+    """
+    geni_user = _auth(auth)
   
+    if not isinstance(vesselhandle_list, list):
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "Invalid data type for handle list.")
+    
+    for handle in vesselhandle_list:
+      if not isinstance(handle, str):
+        raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, 
+                              "Invalid data type for handle. Expected str, received " + str(type(handle)))
+    
+    # since we're given a list of vessel 'handles', we need to convert them to a 
+    # list of actual Vessel objects.
+    try:
+      list_of_vessel_objs = interface.get_vessel_list(vesselhandle_list)
+    except DoesNotExistError, err:
+      # The handle refers to a non-existent vessel.
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
+    except InvalidRequestError, err:
+      # The handle is of an invalid format.
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
+    
+    try:
+      interface.renew_vessels(geni_user, list_of_vessel_objs)
+    except InvalidRequestError, err:
+      # The vessel exists but isn't valid for this user to use.
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
+    except InsufficientUserResourcesError, err:
+      message = "Vessels cannot be renewed because you are currently"
+      message += " over your vessel credit limit: "
+      message += str(err)
+      raise xmlrpclib.Fault(FAULTCODE_NOTENOUGHCREDITS, message)
+    
+    return 0
+
   
   
   @staticmethod
@@ -274,8 +329,8 @@ class PublicXMLRPCFunctions(object):
       private_key_exists = False
     max_vessel = interface.get_total_vessel_credits(geni_user)
     user_affiliation = geni_user.affiliation
-    infodict = {'user_port':user_port, 'user_name':user_name, 
-                'urlinstaller':urlinstaller, 'private_key_exists':private_key_exists, 
+    infodict = {'user_port':user_port, 'user_name':user_name,
+                'urlinstaller':urlinstaller, 'private_key_exists':private_key_exists,
                 'max_vessel':max_vessel, 'user_affiliation':user_affiliation}
     return infodict
   
@@ -338,12 +393,13 @@ class PublicXMLRPCFunctions(object):
     <Returns>
       Returns 0 on valid auth credentials, -1 otherwise.
     """
-    username = auth['username']
-    password = auth['password']
     try:
-      geni_user = interface.get_user_with_password(username, password)
-    except DoesNotExistError:
-      return -1
+      _auth(auth)
+    except xmlrpclib.Fault, e:
+      if e.faultCode == FAULTCODE_AUTHERROR:
+        return -1
+      else:
+        raise
     else:
       return 0
 
@@ -359,14 +415,25 @@ def _auth(auth):
       An authorization dict of the form {'username':username, 'password':password}
   <Exceptions>
     Raises xmlrpclib Fault Objects:
+      FAULTCODE_INVALIDUSERINPUT if the auth dict is invalid.
       FAULTCODE_AUTHERROR if user auth fails.
   <Returns>
     On successful authentication, returns a geniuser object. Raises a fault otherwise.
   """
-  username = auth['username']
-  password = auth['password']
+  if not isinstance(auth, dict):
+    raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT,
+                          "Auth dict must be a dictionary, not a " + str(type(auth)))
+  
+  try:
+    username = auth['username']
+    password = auth['password']
+  except KeyError:
+    raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT,
+                          "Auth dict must contain both a 'username' and a 'password' key.")
+    
   try:
     geni_user = interface.get_user_with_password(username, password)
   except DoesNotExistError:
     raise xmlrpclib.Fault(FAULTCODE_AUTHERROR, "User auth failed.")
+  
   return geni_user

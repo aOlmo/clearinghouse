@@ -64,7 +64,7 @@ repyhelper.translate_and_import('rsa.repy')
 
 # Path to the customize_installers.py. In this case, it's in the same directory
 # as this views.py file.
-PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT = os.path.join(os.path.dirname(__file__), 
+PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT = os.path.join(os.path.dirname(__file__),
                                                   "customize_installers.py")
 
 
@@ -138,9 +138,9 @@ def profile(request, info=""):
   info = ""
   
   return direct_to_template(request, 'control/profile.html',
-                            {'username' : username, 
+                            {'username' : username,
                              'affiliation' : affiliation,
-                             'port' : port, 
+                             'port' : port,
                              'has_privkey' : has_privkey,
                              'info' : info})
 
@@ -300,7 +300,7 @@ def help(request):
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
   
-  return direct_to_template(request,'control/help.html', {'username': user.username})
+  return direct_to_template(request, 'control/help.html', {'username': user.username})
 
 
 
@@ -324,7 +324,7 @@ def mygeni(request):
   percent_total_used = int((num_acquired_vessels * 1.0 / total_vessel_credits * 1.0) * 100.0)
   
   # total_vessel_credits, percent_total_used, avail_vessel_credits
-  return direct_to_template(request,'control/mygeni.html', 
+  return direct_to_template(request, 'control/mygeni.html',
                             {'username' : user.username,
                              'total_vessel_credits' : total_vessel_credits,
                              'percent_total_used' : percent_total_used,
@@ -350,9 +350,19 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
   # this user's used vessels
   my_vessels_raw = interface.get_acquired_vessels(user)
   my_vessels = interface.get_vessel_infodict_list(my_vessels_raw)
+  
+  for vessel in my_vessels:
+    if vessel["expires_in_seconds"] <= 0:
+      # We shouldn't ever get here, but just in case, let's handle it.
+      vessel["expires_in"] = "Expired"
+    else:
+      days = vessel["expires_in_seconds"] / (3600 * 24)
+      hours = vessel["expires_in_seconds"] / 3600 % 24
+      minutes = vessel["expires_in_seconds"] / 60 % 60
+      vessel["expires_in"] = "%dd %dh %dm" % (days, hours, minutes)
 
   # return the used resources page constructed from a template
-  return direct_to_template(request,'control/myvessels.html',
+  return direct_to_template(request, 'control/myvessels.html',
                             {'username' : user.username,
                              'num_vessels' : len(my_vessels),
                              'my_vessels' : my_vessels,
@@ -375,7 +385,7 @@ def getdonations(request):
   
   domain = "https://" + request.get_host()
   
-  return direct_to_template(request,'control/getdonations.html', 
+  return direct_to_template(request, 'control/getdonations.html',
                             {'username' : user.username,
                              'domain' : domain})
 
@@ -410,11 +420,11 @@ def get_resources(request):
     try:
       acquired_vessels = interface.acquire_vessels(user, vessel_num, vessel_type)
     except UnableToAcquireResourcesError, err:
-      action_summary = "Couldn't acquire resources at this time."
+      action_summary = "Unable to acquire vessels at this time."
       action_detail += str(err)
       keep_get_form = True
     except InsufficientUserResourcesError:
-      action_summary = "You do not have enough vessel credits to fufill this request."
+      action_summary = "Unable to acquire vessels: you do not have enough vessel credits to fulfill this request."
       keep_get_form = True
   else:
     keep_get_form = True
@@ -454,14 +464,15 @@ def del_resource(request):
     # convert handle to vessel
     vessel_to_release = interface.get_vessel_list(vessel_handle)
   except DoesNotExistError:
-    remove_summary = "Internal GENI Error. The vessel you are trying to delete does not exist."
+    remove_summary = "Unable to remove vessel. The vessel you are trying to remove does not exist."
   except InvalidRequestError, err:
-    remove_summary = "Internal GENI Error. Please contact us! Details: " + str(err)
+    remove_summary = "Unable to remove vessel. " + str(err)
   else:
     try:
       interface.release_vessels(user, vessel_to_release)
     except InvalidRequestError, err:
-      remove_summary = "Internal GENI Error. Please contact us! Details: " + str(err)
+      remove_summary = "Unable to remove vessel. The vessel does not belong"
+      remove_summary += " to you any more (maybe it expired?). " + str(err)
   
   return myvessels(request, remove_summary=remove_summary)
 
@@ -484,6 +495,79 @@ def del_all_resources(request):
   interface.release_all_vessels(user)
   
   return myvessels(request, remove_summary=remove_summary)
+
+
+
+
+
+@login_required
+def renew_resource(request):
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+  
+  # The request must be via POST. If not, bounce user back to My Vessels page.
+  if not request.method == 'POST':
+    return myvessels(request)
+  
+  if not request.POST.get('handle', ''):
+    return myvessels(request)
+  
+  action_summary = ""
+  action_detail = ""
+  
+  try:
+    # Convert handle to vessel object.
+    # Raises a DoesNotExistError if the vessel does not exist. This is more
+    # likely to be an error than an expected case, so we let it bubble up.
+    vessel_handle_list = [request.POST['handle']]
+    vessel_to_renew = interface.get_vessel_list(vessel_handle_list)
+  except DoesNotExistError:
+    action_summary = "Unable to renew vessel: The vessel you are trying to delete does not exist."
+  except InvalidRequestError, err:
+    action_summary = "Unable to renew vessel."
+    action_detail += str(err)
+  else:
+    try:
+      interface.renew_vessels(user, vessel_to_renew)
+    except InvalidRequestError, err:
+      action_summary = "Unable to renew vessel: " + str(err)
+    except InsufficientUserResourcesError, err:
+      action_summary = "Unable to renew vessel: you are currently over your"
+      action_summary += " vessel credit limit."
+      action_detail += str(err)
+  
+  return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
+
+
+
+
+
+@login_required
+def renew_all_resources(request):
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+  
+  # The request must be via POST. If not, bounce user back to My Vessels page.
+  if not request.method == 'POST':
+    return myvessels(request)
+  
+  action_summary = ""
+  action_detail = ""
+  
+  try:
+    interface.renew_all_vessels(user)
+  except InvalidRequestError, err:
+    action_summary = "Unable to renew vessels: " + str(err)
+  except InsufficientUserResourcesError, err:
+    action_summary = "Unable to renew vessels: you are currently over your"
+    action_summary += " vessel credit limit."
+    action_detail += str(err)
+  
+  return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
 
 
 
@@ -560,7 +644,7 @@ def download(request, username):
     user = interface.get_user_for_installers(username)
   except DoesNotExistError:
     validuser = False
-  return direct_to_template(request,'download/installers.html', {'username' : username, 
+  return direct_to_template(request, 'download/installers.html', {'username' : username,
                                                                  'validuser' : validuser})
 
 
@@ -590,7 +674,7 @@ def build_win_installer(request, username):
     description of the error. On success, returns the seattle windows
     distribution file for the user to donate to as username.
   """
-  success,ret = _build_installer(username, 'w')
+  success, ret = _build_installer(username, 'w')
   if not success:
       return HttpResponse("Installer build failed.")
   redir_url = ret + "seattle_win.zip"
@@ -624,7 +708,7 @@ def build_linux_installer(request, username):
     description of the error. On success, returns the seattle linux
     distribution file for the user to donate to as username.
   """
-  success,ret = _build_installer(username, 'l')
+  success, ret = _build_installer(username, 'l')
   if not success:
       return HttpResponse("Installer build failed.")
   redir_url = ret + "seattle_linux.tgz"
@@ -658,7 +742,7 @@ def build_mac_installer(request, username):
     description of the error. On success, returns the seattle mac
     distribution file for the user to donate to as username.
   """
-  success,ret = _build_installer(username, 'm')
+  success, ret = _build_installer(username, 'm')
   if not success:
       return HttpResponse("Installer build failed.")
   redir_url = ret + "seattle_mac.tgz"
@@ -706,7 +790,7 @@ def _build_installer(username, dist_char):
     ret = HttpResponse("Couldn't get user.")
     return False, ret
    
-  prefix = os.path.join(settings.USER_INSTALLERS_DIR, "%s_dist"%(username))
+  prefix = os.path.join(settings.USER_INSTALLERS_DIR, "%s_dist" % (username))
   temp_installinfo_dir = os.path.join(prefix, "install_info")
 
   user_pubkey = user.donor_pubkey
@@ -740,12 +824,12 @@ def _build_installer(username, dist_char):
   log.info("file preparation done. calling customize installer.")
   #os.system("python %s %s %s %s"%(customize_installer_script, "l", temp_installinfo_dir, prefix))
   try:
-    subprocess.check_call([sys.executable, PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT, dist_char, 
+    subprocess.check_call([sys.executable, PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT, dist_char,
                            settings.BASE_INSTALLERS_DIR, temp_installinfo_dir, prefix])
   except subprocess.CalledProcessError:
     raise 
     
-  redir_url = settings.USER_INSTALLERS_URL + "/%s_dist/"%(username)
+  redir_url = settings.USER_INSTALLERS_URL + "/%s_dist/" % (username)
   return True, redir_url
 
 
@@ -753,7 +837,7 @@ def _build_installer(username, dist_char):
 
 
 def donations_help(request, username):
-  return direct_to_template(request,'download/help.html', {'username' : username})
+  return direct_to_template(request, 'download/help.html', {'username' : username})
 
 
 

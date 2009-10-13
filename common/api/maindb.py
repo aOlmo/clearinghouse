@@ -78,8 +78,14 @@ ALLOWED_USER_PORTS = range(63100, 63180)
 # Number of ascii characters in generated API keys.
 API_KEY_LENGTH = 32
 
+# When initially acquired, this is the amount of time from now until a vessel
+# will expire.
 # This must be a datetime.timedelta object.
 DEFAULT_VESSEL_EXPIRATION_TIMEDELTA = timedelta(hours=4)
+
+# When a vessel is renewed, this is the amount of time from now until a vessel
+# will expire.
+MAXIMUM_VESSEL_EXPIRATION_TIMEDELTA = timedelta(days=7)
 
 # When calls to get_available_*_vessels() are made, we try to return more
 # vessels than were requested so that there will be extras in case some
@@ -1671,6 +1677,30 @@ def record_released_vessel(vessel):
   vessel.is_dirty = True
   vessel.date_acquired = None
   vessel.date_expires = None
+  vessel.save()
+
+
+
+
+
+def set_maximum_vessel_expiration(vessel):
+  """
+  <Purpose>
+    Sets an acquired vessel's expiration date to the maximum allowed.
+  <Arguments>
+    vessel
+      The Vessel object whose acquisition is to be extended.
+  <Exceptions>
+    None
+  <Side Effects>
+    The vessel's expiration date has been extended.
+  <Returns>
+    None
+  """
+  assert_vessel(vessel)
+  
+  vessel.date_acquired = datetime.now()
+  vessel.date_expires = vessel.date_acquired + MAXIMUM_VESSEL_EXPIRATION_TIMEDELTA
   vessel.save()
 
 
