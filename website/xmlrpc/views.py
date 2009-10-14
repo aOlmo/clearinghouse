@@ -159,8 +159,16 @@ class PublicXMLRPCFunctions(object):
     if not isinstance(rspec, dict):
       raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec is an invalid data type.")
     
-    resource_type = rspec['rspec_type']
-    num_vessels = rspec['number_of_nodes']
+    try:
+      resource_type = rspec['rspec_type']
+    except KeyError:
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec is missing rspec_type")
+    
+    try:
+      num_vessels = rspec['number_of_nodes']
+    except KeyError:
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec is missing number_of_nodes")
+    
     acquired_vessels = []
     
     # validate rspec data

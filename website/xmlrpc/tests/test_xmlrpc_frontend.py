@@ -9,7 +9,6 @@
   Justin Samuel
 
 <Purpose>
-  Tests xmlrpc functions.
   
 <Notes>
   Uses a Django test client, not our xmlrpc client. This is intentional.
@@ -271,8 +270,59 @@ class SeattleGeniTestCase(unittest.TestCase):
     else:
       self.fail("Expected an exception.")
     
-
-
+  def test_acquire_resources_rspecs(self):
+    
+    auth = {'username':'tester', 'password':'password'}
+    
+    # invalid rspecs
+    rspec_negativenodes = {'rspec_type':'random', 'number_of_nodes':-10}
+    rspec_invalid_rtype = {'rspec_type':'wtf', 'number_of_nodes':10}
+    rspec_badtype = {'rspec_type':42, 'number_of_nodes':'a string'}
+    rspec_empty = {'rspec_type':'', 'number_of_nodes':0}
+    rspec_missingkey = {'number_of_nodes':10}
+    rspec_badkeys = {'bad':'', 'keys':''}
+    
+    try:
+      proxy.acquire_resources(auth, rspec_negativenodes)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+    else:
+      self.fail("Expected an exception.")
+      
+    try:
+      proxy.acquire_resources(auth, rspec_invalid_rtype)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+    else:
+      self.fail("Expected an exception.")
+    
+    try:
+      proxy.acquire_resources(auth, rspec_badtype)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+    else:
+      self.fail("Expected an exception.")
+      
+    try:
+      proxy.acquire_resources(auth, rspec_empty)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+    else:
+      self.fail("Expected an exception.")
+    
+    try:
+      proxy.acquire_resources(auth, rspec_missingkey)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+    else:
+      self.fail("Expected an exception.")
+    
+    try:
+      proxy.acquire_resources(auth, rspec_badkeys)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+    else:
+      self.fail("Expected an exception.")
 
 
 def main():
