@@ -39,9 +39,10 @@ urlpatterns = patterns('seattlegeni.website.html.views',
                        # renew all resource for this user (from form)
                        (r'^renew_all_resources$', 'renew_all_resources', {}, 'renew_all_resources'),
 
+                       # Form to generate or upload a new key.
+                       (r'^change_key$', 'change_key', {}, 'change_key'),
+                       
                        # Profile page functions:
-                       # generate a new public/private key pair for the user (from form)
-                       (r'^gen_new_key$', 'gen_new_key', {}, 'gen_new_key'),
                        # delete the user's private key from the server (from form)
                        (r'^del_priv$', 'del_priv', {}, 'del_priv'),
                        # download the user's private key (from form)

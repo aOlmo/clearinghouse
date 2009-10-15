@@ -32,6 +32,46 @@ from seattlegeni.common.util.decorators import log_function_call
 
 
 @log_function_call
+def _parallel_process_vessels_from_list(vessel_list, process_func, lockserver_handle, *args):
+  """
+  Obtain locks on all of the nodes of vessels in vessel_list, get fresh vessel
+  objects from the databae, and then parallelize a call to process_func to
+  process each vessel in vessel_list (passing the additional *args to
+  process_func).
+  """
+  
+  node_id_list = []
+  for vessel in vessel_list:
+    node_id = maindb.get_node_identifier_from_vessel(vessel)
+    # Lock names must be unique, and there could be multiple vessels from the
+    # same node in the vessel_list.
+    if node_id not in node_id_list:
+      node_id_list.append(node_id)
+
+  # Lock the nodes that these vessels are on.
+  lockserver.lock_multiple_nodes(lockserver_handle, node_id_list)
+  try:
+    # Get new vessel objects from the db now that we have node locks.
+    new_vessel_list = []
+    for vessel in vessel_list:
+      node_id = maindb.get_node_identifier_from_vessel(vessel)
+      new_vessel_list.append(maindb.get_vessel(node_id, vessel.name))
+    # Have the list object the caller may still be using contain the actual
+    # vessel objects we have processed. That is, we've just replaced the
+    # caller's list's contents with new vessel objects for the same vessels.
+    vessel_list[:] = new_vessel_list[:]
+  
+    return parallel.run_parallelized(vessel_list, process_func, *args)
+    
+  finally:
+    # Unlock the nodes.
+    lockserver.unlock_multiple_nodes(lockserver_handle, node_id_list)
+
+
+
+
+
+@log_function_call
 def acquire_wan_vessels(lockserver_handle, geniuser, vesselcount):
   """
   <Purpose>
@@ -215,7 +255,8 @@ def _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_
     # sort itself out with a few unnecessary vessel acquisition before they
     # ultimately get released after this loop.
   
-    parallel_results = _parallel_acquire_vessels_from_list(lockserver_handle, geniuser, next_vessels_to_acquire)
+    parallel_results = _parallel_process_vessels_from_list(next_vessels_to_acquire, _do_acquire_vessel,
+                                                           lockserver_handle, geniuser)
   
     # The "exception" key contains a list of tuples where the first item of
     # the tuple is the vessel object and the second item is the str(e) of
@@ -232,7 +273,7 @@ def _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_
         
       elif "UnableToAcquireResourcesError" not in exception_message:
         # Something serious happened, maybe the backend is down.
-        raise InternalError("Unexpected exception occurred during parallelized " +
+        raise InternalError("Unexpected exception occurred during parallelized " + 
                             "acquisition of vessels: " + exception_message)
     
     # The "returned" key contains a list of tuples where the first item of
@@ -254,35 +295,9 @@ def _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_
   # If we got here, then we didn't acquire the vessels the user wanted. We
   # release these vessels rather than leave the user with a partial set of
   # what they requested.
-  release_vessels(lockserver_handle, acquired_vessels)
+  release_vessels(lockserver_handle, geniuser, acquired_vessels)
 
   raise UnableToAcquireResourcesError("Failed to acquire enough vessels to fulfill the request")
-
-
-
-
-
-@log_function_call
-def _parallel_acquire_vessels_from_list(lockserver_handle, geniuser, vessel_list):
-  
-  node_id_list = []
-  for vessel in vessel_list:
-    node_id = maindb.get_node_identifier_from_vessel(vessel)
-    # Lock names must be unique, and there could be multiple vessels from the
-    # same node in the vessel_list. Whether we want to allow acquiring multiple
-    # vessels on the same node is a separate issue from the correctness of this
-    # part of the code.
-    if node_id not in node_id_list:
-      node_id_list.append(node_id)
-
-  # Lock the nodes that these vessels are on.
-  lockserver.lock_multiple_nodes(lockserver_handle, node_id_list)
-  try:
-    return parallel.run_parallelized(vessel_list, _do_acquire_vessel, geniuser)
-    
-  finally:
-    # Unlock the nodes.
-    lockserver.unlock_multiple_nodes(lockserver_handle, node_id_list)
 
 
 
@@ -294,6 +309,9 @@ def _do_acquire_vessel(vessel, geniuser):
   Perform that actual acquisition of the vessel by the user (through the
   backend) and update the database accordingly if the vessel is successfully
   acquired.
+  
+  This gets called parallelized after a node lock is already obtained for the
+  vessel.
 
   When an UnableToAcquireResourcesError is raised, the exception message
   will contain the string "UnableToAcquireResourcesError" so that it can be
@@ -302,12 +320,6 @@ def _do_acquire_vessel(vessel, geniuser):
   
   node_id = maindb.get_node_identifier_from_vessel(vessel)
   
-  try:
-    vessel = maindb.get_vessel(node_id, vessel.name)
-  except DoesNotExistError:
-    message = "Vessel no longer exists once the node lock was obtained."
-    raise UnableToAcquireResourcesError("UnableToAcquireResourcesError: " + message)
-    
   if vessel.acquired_by_user is not None:
     message = "Vessel already acquired once the node lock was obtained."
     raise UnableToAcquireResourcesError("UnableToAcquireResourcesError: " + message)
@@ -336,13 +348,62 @@ def _do_acquire_vessel(vessel, geniuser):
 
 
 @log_function_call
-def release_vessels(lockserver_handle, vessel_list):
+def flag_vessels_for_user_keys_sync(lockserver_handle, vessel_list):
+  """
+  This function will mark (flag) the vessels in vessel_list as needing
+  their user keys synced. The backend will then notice the vessels flagged
+  in this way and will sync the user keys.
+  
+  We don't try to do the actual updating of user keys on vessels as that seems
+  like a bad user experience, especially down the road when we may allow the
+  users some form of giving others access to their vessels. Imagine a user wants
+  to add ten users to their 300 acquired vessels and every time they add one
+  of the users they have to wait minutes for keys to be update on vessels, and
+  then we still get stuck having to deal with the case of temporary failures
+  in communication and needing to go back and update some vessels later.
+  
+  <Returns>
+    None
+  """
+  
+  # This is going to be a potentially large list of vessels to obtain node
+  # locks on simultaneously. This is something to revisit if lock contention
+  # starts to become an issue.
+  parallel_results = _parallel_process_vessels_from_list(vessel_list, _do_flag_vessels_for_user_keys_sync,
+                                                         lockserver_handle)
+  
+  for (vessel, exception_message) in parallel_results["exception"]:
+    raise InternalError("Unexpected exception occurred during parallelized " + 
+                        "vessel user key out-of-sync flagging: " + exception_message)
+  
+
+
+
+
+@log_function_call
+def _do_flag_vessels_for_user_keys_sync(vessel):
+  """
+  Indicates in the database that the vessel needs its user keys sync'd. This
+  gets called parallelized after a node lock is already obtained for the
+  vessel.
+  """
+  
+  maindb.mark_vessel_as_needing_user_key_sync(vessel)
+
+
+
+
+
+@log_function_call
+def release_vessels(lockserver_handle, geniuser, vessel_list):
   """
   <Purpose>
     Release vessels (regardless of which user has acquired them)
   <Arguments>
     lockserver_handle
       The lockserver handle to use for acquiring node locks.
+    geniuser
+      The geniuser that has acquired the vessels to be released.
     vessel_list
       A list of vessels to be released.
   <Exceptions>
@@ -353,48 +414,43 @@ def release_vessels(lockserver_handle, vessel_list):
     None.
   """
     
-  for vessel in vessel_list:
-    _do_release_vessel(lockserver_handle, vessel)
+  # This is going to be a potentially large list of vessels to obtain node
+  # locks on simultaneously. This is something to revisit if lock contention
+  # starts to become an issue.
+  parallel_results = _parallel_process_vessels_from_list(vessel_list, _do_release_vessel,
+                                                         lockserver_handle, geniuser)
+  
+  for (vessel, exception_message) in parallel_results["exception"]:
+      raise InternalError("Unexpected exception occurred during parallelized " + 
+                          "release of vessels: " + exception_message)
 
-
+    
 
 
 
 @log_function_call
-def _do_release_vessel(lockserver_handle, vessel):
+def _do_release_vessel(vessel, geniuser):
   """
   Obtains a lock on the node the vessel is on and then makes a call to the
   backend to release the vessel.
   """
   
-  node_id = maindb.get_node_identifier_from_vessel(vessel)
-
-  # Lock the vessel.
-  lockserver.lock_node(lockserver_handle, node_id)
-  try:
-    try:
-      vessel = maindb.get_vessel(node_id, vessel.name)
-    except DoesNotExistError:
-      # The vessel record no longer exists, so the vessel must no longer exist.
-      return
-      
-    if vessel.acquired_by_user is None:
-      # The vessel must have already been released.
-      return
-    
-    # We don't check for node.is_active == True because we might as well have
-    # the backend try to clean up the vessel even if the database says it's
-    # inactive (maybe the node is back online?).
-    
-    # This will not raise an exception, even if the node the vessel is on is down.
-    backend.release_vessel(vessel)
-    
-    # Update the database to reflect the release of the vessel.
-    maindb.record_released_vessel(vessel)
-    
-  finally:
-    # Unlock the user.
-    lockserver.unlock_node(lockserver_handle, node_id)
+  if vessel.acquired_by_user != geniuser:
+    # The vessel was either already released, someone is trying to do things
+    # they shouldn't, or we have a bug.
+    log.info("Not releasing vessel " + str(vessel) + 
+             " because it is not acquired by user " + str(geniuser))
+    return
+  
+  # We don't check for node.is_active == True because we might as well have
+  # the backend try to clean up the vessel even if the database says it's
+  # inactive (maybe the node is back online?).
+  
+  # This will not raise an exception, even if the node the vessel is on is down.
+  backend.release_vessel(vessel)
+  
+  # Update the database to reflect the release of the vessel.
+  maindb.record_released_vessel(vessel)
 
 
 
@@ -422,39 +478,29 @@ def renew_vessels(lockserver_handle, geniuser, vessel_list):
     None.
   """
   
-  node_id_list = []
-  for vessel in vessel_list:
-    node_id = maindb.get_node_identifier_from_vessel(vessel)
-    # Lock names must be unique, and there could be multiple vessels from the
-    # same node in the vessel_list.
-    if node_id not in node_id_list:
-      node_id_list.append(node_id)
+  # This is going to be a potentially large list of vessels to obtain node
+  # locks on simultaneously. This is something to revisit if lock contention
+  # starts to become an issue.
+  parallel_results = _parallel_process_vessels_from_list(vessel_list, _do_renew_vessel,
+                                                         lockserver_handle, geniuser)
+  
+  for (vessel, exception_message) in parallel_results["exception"]:
+      raise InternalError("Unexpected exception occurred during parallelized " + 
+                          "renewal of vessels: " + exception_message)
+  
 
-  # Lock the nodes that these vessels are on.
-  lockserver.lock_multiple_nodes(lockserver_handle, node_id_list)
-  try:
-    # Query new vessels objects from the database to be sure we are working
-    # with the current data in the database.
-    fresh_vessel_list = []
-    for vessel in vessel_list:
-      try:
-        node_id = maindb.get_node_identifier_from_vessel(vessel)
-        fresh_vessel = maindb.get_vessel(node_id, vessel.name)
-        fresh_vessel_list.append(fresh_vessel)
-      except DoesNotExistError:
-        raise InternalError(traceback.format_exc())
+
+
+
+@log_function_call
+def _do_renew_vessel(vessel, geniuser):
+  
+  if vessel.acquired_by_user != geniuser:
+    # The vessel was either already released, someone is trying to do things
+    # they shouldn't, or we have a bug.
+    log.info("Not renewing vessel " + str(vessel) + 
+             " because it is not acquired by user " + str(geniuser))
+    return
     
-    # Make sure each vessel actually belongs to the user.
-    for vessel in fresh_vessel_list:
-      if vessel.acquired_by_user != geniuser:
-        raise InvalidRequestError("Only vessels acquired by this user can be renewed [offending vessel: " + str(vessel) + "]")
-    
-    for vessel in fresh_vessel_list:
-      maindb.set_maximum_vessel_expiration(vessel)
-      
-    # Replace the vessels in the original list with the updated vessel objects.
-    vessel_list[:] = fresh_vessel_list[:]
-    
-  finally:
-    # Unlock the nodes.
-    lockserver.unlock_multiple_nodes(lockserver_handle, node_id_list)
+  maindb.set_maximum_vessel_expiration(vessel)
+

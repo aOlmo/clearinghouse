@@ -24,9 +24,8 @@ Profile - SeattleGENI
 			<table class="profile">
 			  {% if info %}
 			  <tr class="even">
-			    <td class="key"> </td>
-			    <td class="value">
-			      {{ info }}<br><br>
+			    <td colspan="2">
+			      <div id="info">{{ info }}</div>
 			    </td>
 			  </tr>
 			  {% endif %}
@@ -62,7 +61,7 @@ Profile - SeattleGENI
 				<tr class="even">
 				  <td class="key">Delete your private key</td>
 				  <td class="value">
-				    <form class="inline" method="POST" action="{% url del_priv %}" target="#"> 
+				    <form class="inline" method="POST" action="{% url del_priv %}"> 
 				      <input type="hidden" name="keyToDelete" value={{ username }}> </input>
 				      <input id="delete" type="submit" value="Delete"> </input>
 				    </form>
@@ -80,6 +79,10 @@ Profile - SeattleGENI
 					</td>
 				</tr>
 				{% endif %}
+				<tr class="{% if has_privkey %}even{% else %}odd{% endif %}">
+					<td class="key"></td>
+					<td class="value"><a href="{% url change_key %}">Generate or upload a new key.</a></td>
+				</tr>
 			</table>
 		</div>
 	</div>

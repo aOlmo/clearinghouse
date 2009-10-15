@@ -284,6 +284,37 @@ def regenerate_api_key(geniuser):
 
 
 @log_function_call
+def set_user_keys(geniuser, pubkey, privkey):
+  """
+  <Purpose>
+    Sets the public/private user keys for the geniuser.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose keys are to be changed.
+    pubkey
+      The public key string of the public key to be set for the user.
+    privkey
+      The private key string of the private key to be set for the user. This
+      can be None if no private key should be stored in the database.
+  <Exceptions>
+    None
+  <Side Effects>
+    Updates the database as well as the geniuser object passed in with the
+    provided keys.
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+  
+  geniuser.user_pubkey = pubkey
+  geniuser.user_privkey = privkey
+  geniuser.save()
+
+
+
+
+
+@log_function_call
 def create_node(node_identifier, last_known_ip, last_known_port, last_known_version, is_active, owner_pubkey, extra_vessel_name):
   """
   <Purpose>
@@ -401,7 +432,8 @@ def create_vessel(node, vesselname):
   
   # Create the Vessel.
   vessel = Vessel(node=node, name=vesselname, acquired_by_user=None,
-                  date_acquired=None, date_expires=None, is_dirty=False)
+                  date_acquired=None, date_expires=None, is_dirty=False,
+                  user_keys_in_sync=True)
   vessel.save()
   
   return vessel
@@ -1675,6 +1707,7 @@ def record_released_vessel(vessel):
   # vessel as having not having been acquired by any user.
   vessel.acquired_by_user = None
   vessel.is_dirty = True
+  vessel.user_keys_in_sync = True
   vessel.date_acquired = None
   vessel.date_expires = None
   vessel.save()
@@ -1764,6 +1797,7 @@ def mark_vessel_as_clean(vessel):
   assert_vessel(vessel)
   
   vessel.is_dirty = False
+  vessel.user_keys_in_sync = True
   vessel.save()
 
 
@@ -1813,7 +1847,7 @@ def does_vessel_need_cleanup(vessel):
   <Returns>
     A tuple (needs_cleanup, reason) where needs_cleanup is a boolean indicating
     whether the vessel needs cleanup and reason is a string that indicates the
-    reason cleanup is needed if needs_cleanup is True.
+    reason cleanup is not needed if needs_cleanup is False.
   """
   assert_vessel(vessel)
   
@@ -1839,6 +1873,122 @@ def does_vessel_need_cleanup(vessel):
   
   return (True, "")
   
+
+
+
+
+def mark_vessel_as_needing_user_key_sync(vessel):
+  """
+  <Purpose>
+    Set a vessel's database record to indicate that the vessel's user keys need
+    to be sync'd.
+  <Arguments>
+    vessel
+      The Vessel object of the vessel whose user keys are out of sync.
+  <Exceptions>
+    None
+  <Side Effects>
+    The database record the vessel is updated.
+  <Returns>
+    None.
+  """
+  assert_vessel(vessel)
+  
+  vessel.user_keys_in_sync = False
+  vessel.save()
+
+
+
+
+
+def mark_vessel_as_not_needing_user_key_sync(vessel):
+  """
+  <Purpose>
+    Set a vessel's database record to indicate that the vessel's user keys do
+    not need to be sync'd.
+  <Arguments>
+    vessel
+      The Vessel object of the vessel whose user keys are in sync.
+  <Exceptions>
+    None
+  <Side Effects>
+    The database record the vessel is updated.
+  <Returns>
+    None.
+  """
+  assert_vessel(vessel)
+  
+  vessel.user_keys_in_sync = True
+  vessel.save()
+
+
+
+
+
+def get_vessels_needing_user_key_sync():
+  """
+  <Purpose>
+    Determine which vessels need to have user keys sync'd by the backend.
+  <Arguments>
+    None
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A list of Vessel objects which are the vessels needing to have their
+    user keys sync'd.
+  """
+  queryset = Vessel.objects.filter(user_keys_in_sync=False)
+  queryset = queryset.filter(is_dirty=False)
+  queryset = queryset.filter(node__is_active=True)
+  queryset = queryset.filter(node__is_broken=False)
+  
+  return list(queryset)
+
+
+
+
+
+def does_vessel_need_user_key_sync(vessel):
+  """
+  <Purpose>
+    Determine whether a given vessel needs to have its user keys sync'd the
+    backend.
+  <Arguments>
+    vessel
+      The Vessel object that we want to know if it needs to have user keys
+      sync'd.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    A tuple (needs_sync, reason) where needs_sync is a boolean indicating
+    whether the vessel needs user keys sync'd and reason is a string that
+    indicates the reason key sync is not needed if needs_sync is False.
+  """
+  assert_vessel(vessel)
+  
+  # Re-query the database in case this vessel has changed or been deleted.
+  try:
+    vessel = Vessel.objects.get(id=vessel.id)
+
+  except django.core.exceptions.ObjectDoesNotExist:
+    # The vessel was deleted.
+    return (False, "The vessel no longer exists")
+  
+  if not vessel.node.is_active:
+    return (False, "The node the vessel is on is not active")
+  
+  if vessel.node.is_broken:
+    return (False, "The node the vessel is on is broken")
+  
+  if vessel.is_dirty:
+    return (False, "The vessel is dirty")
+  
+  return (True, "")
+
 
 
 

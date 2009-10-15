@@ -13,6 +13,8 @@ from seattlegeni.common.exceptions import *
 
 from seattlegeni.website.control import interface
 
+from seattlegeni.website.tests import testutil
+
 import datetime
 import unittest
 
@@ -21,48 +23,6 @@ import unittest
 
 
 mocklib.mock_lockserver_calls()
-
-
-
-
-
-next_nodeid_number = 0
-
-def create_node_and_vessels_with_one_port_each(ip, portlist, is_active=True):
-  
-  global next_nodeid_number
-  next_nodeid_number += 1
-  
-  nodeid = "node" + str(next_nodeid_number)
-  port = 1234
-  version = "10.0test"
-  owner_pubkey = "1 2"
-  extra_vessel_name = "v1"
-  
-  node = maindb.create_node(nodeid, ip, port, version, is_active, owner_pubkey, extra_vessel_name)
-
-  single_vessel_number = 2
-
-  for vesselport in portlist:
-    single_vessel_name = "v" + str(single_vessel_number)
-    single_vessel_number += 1
-    vessel = maindb.create_vessel(node, single_vessel_name)
-    maindb.set_vessel_ports(vessel, [vesselport])
-  
-  return node
-
-
-
-
-
-def create_nodes_on_different_subnets(count, portlist_for_vessels_on_each_node):
-  # Create 'count' nodes on different subnets and on each node create a vessel
-  # with a single port for each port in 'portlist_for_vessels_on_each_node'.
-  ip_prefix = "127.1."
-  ip_suffix = ".0"
-  for i in range(count):
-    ip = ip_prefix + str(i) + ip_suffix
-    create_node_and_vessels_with_one_port_each(ip, portlist_for_vessels_on_each_node)
 
 
 
@@ -95,7 +55,7 @@ class SeattleGeniTestCase(unittest.TestCase):
     calls_results = [True] * vesselcount
     mocklib.mock_backend_acquire_vessel(calls_results)
     
-    create_nodes_on_different_subnets(vesselcount, [userport])
+    testutil.create_nodes_on_different_subnets(vesselcount, [userport])
     
     # Acquire all of the vessels the user can acquire.
     vessel_list = interface.acquire_vessels(user, vesselcount, 'rand')
@@ -127,7 +87,7 @@ class SeattleGeniTestCase(unittest.TestCase):
     calls_results = [True] * vesselcount
     mocklib.mock_backend_acquire_vessel(calls_results)
     
-    create_nodes_on_different_subnets(vesselcount, [userport])
+    testutil.create_nodes_on_different_subnets(vesselcount, [userport])
     
     # Acquire all of the vessels the user can acquire.
     vessel_list = interface.acquire_vessels(user, vesselcount, 'rand')
@@ -154,46 +114,50 @@ class SeattleGeniTestCase(unittest.TestCase):
     user = maindb.create_user("testuser", "password", "example@example.com", "affiliation", "1 2", "2 2 2", "3 4")
     userport = user.usable_vessel_port
     
+    # Create a second user.
+    user2 = maindb.create_user("user2", "password", "user2@example.com", "affiliation", "1 2", "2 2 2", "3 4")
+    
     vesselcount = 4
     
     # Have every vessel acquisition to the backend request succeed.
     calls_results = [True] * vesselcount
     mocklib.mock_backend_acquire_vessel(calls_results)
     
-    create_nodes_on_different_subnets(vesselcount, [userport])
+    testutil.create_nodes_on_different_subnets(vesselcount, [userport])
     
     # Acquire all of the vessels the user can acquire.
     vessel_list = interface.acquire_vessels(user, vesselcount, 'rand')
     
-    release_vessels_list = vessel_list[:1]
-    interface.release_vessels(user, release_vessels_list)
+    release_vessel = vessel_list[0]
+    interface.release_vessels(user, [release_vessel])
+    
+    # Manually fiddle with one of the vessels to make it owned by user2.
+    user2_vessel = vessel_list[1]
+    user2_vessel.acquired_by_user = user2
+    user2_vessel.save()
     
     # Try to renew all of the originally acquired vessels, including the ones
-    # that were released.
-    func = interface.renew_vessels
-    args = (user, vessel_list)
-    self.assertRaises(InvalidRequestError, func, *args)    
-    
-    # Try to renew only vessels that were released.
-    func = interface.renew_vessels
-    args = (user, release_vessels_list)
-    self.assertRaises(InvalidRequestError, func, *args)      
+    # that were released. We expect these to just be ignored.
+    interface.renew_vessels(user, vessel_list)
   
-    # Now renew all of the user's vessels and make sure the released vessels
-    # are not renewed.
-    interface.renew_all_vessels(user)
-    
     # Get fresh vessel objects that reflect the renewal.
     remaining_vessels = interface.get_acquired_vessels(user)
-  
+    release_vessel = maindb.get_vessel(release_vessel.node.node_identifier, release_vessel.name)
+    user2_vessel = maindb.get_vessel(user2_vessel.node.node_identifier, user2_vessel.name)
+   
     now = datetime.datetime.now()
     timedelta_oneday = datetime.timedelta(days=1)
   
+    # Ensure that the vessels the user still has were renewed but that the ones
+    # the user released were ignored (not renewed).
     for vessel in remaining_vessels:
       self.assertTrue(vessel.date_expires - now > timedelta_oneday)
 
-    for vessel in release_vessels_list:
-      self.assertTrue(vessel.date_expires - now < timedelta_oneday)
+    self.assertTrue(user2_vessel.date_expires - now < timedelta_oneday)
+    
+    self.assertEqual(release_vessel.date_expires, None)
+  
+
 
 
 

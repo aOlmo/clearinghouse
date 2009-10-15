@@ -329,10 +329,11 @@ class BackendPublicFunctions(object):
 
 
 def cleanup_vessels():
+  """
+  This function is started as separate thread. It continually checks whether
+  there are vessels needing to be cleaned up and initiates cleanup as needed.
+  """
   
-  # This thread will never end this lockserver session.
-  lockserver_handle = lockserver.create_lockserver_handle()
-
   log.info("[cleanup_vessels] cleanup thread started.")
 
   # Run forever.
@@ -354,7 +355,18 @@ def cleanup_vessels():
       if settings.DEBUG:
         django.db.reset_queries()
       
-      # First, make it so that expired vessels are seen as dirty.
+      # First, make it so that expired vessels are seen as dirty. We aren't
+      # holding a lock on the nodes when we do this. It's possible that we do
+      # this while someone else has a lock on the node. What would result?
+      # I believe the worst result is that a user has their vessel marked as
+      # dirty after they renewed in the case where they are renewing it just
+      # as it expires (with some exceptionally bad timing involved). And, 
+      # that's not really very bad as if the user is trying to renew at the
+      # exact moment it expires, their trying their luck with how fast their
+      # request gets processed, anyways. In short, I don't think it's important
+      # enough to either obtain locks to do this or to rewrite the code to
+      # avoid any need for separately marking expired vessels as dirty rather
+      # than just trying to process expired vessels directly in the code below.
       markedcount = maindb.mark_expired_vessels_as_dirty()
       if markedcount > 0:
         log.info("[cleanup_vessels] " + str(markedcount) + " expired vessels have been marked as dirty.")
@@ -368,29 +380,15 @@ def cleanup_vessels():
         
       log.info("[cleanup_vessels] " + str(len(cleanupvessellist)) + " vessels to clean up: " + str(cleanupvessellist))
       
-      # Get a list of nodes to lock.
-      node_id_list = []
-      for vessel in cleanupvessellist:
-        node_id = maindb.get_node_identifier_from_vessel(vessel)
-        # Lock names must be unique, and there could be multiple vessels from the
-        # same node in the vessel_list.
-        if node_id not in node_id_list:
-          node_id_list.append(node_id)
-            
-      # Lock the nodes that these vessels are on and always unlock them.
-      lockserver.lock_multiple_nodes(lockserver_handle, node_id_list)
-      try:
-        # Parallelize the cleanup of these vessels.
-        parallel_results = parallel.run_parallelized(cleanupvessellist, _cleanup_single_vessel)
+      parallel_results = parallel.run_parallelized(cleanupvessellist, _cleanup_single_vessel)
         
-        if len(parallel_results["exception"]) > 0:
-          vessel, exception_message = parallel_results["exception"][0]
-          raise InternalError("Unhandled exception during parallelized vessel cleanup: " + exception_message)
-          
-      finally:
-        # Unlock the nodes.
-        lockserver.unlock_multiple_nodes(lockserver_handle, node_id_list)
-        
+      if len(parallel_results["exception"]) > 0:
+        for vessel, exception_message in parallel_results["exception"]:
+          log_message = "Unhandled exception during parallelized vessel cleanup: " + exception_message
+          log.critical(log_message)
+        # Raise the last exceptions so that the admin gets an email.
+        raise InternalError(log_message)  
+    
     except:
       message = "[cleanup_vessels] Something very bad happened: " + traceback.format_exc()
       log.critical(message)
@@ -409,42 +407,196 @@ def cleanup_vessels():
 
 
 def _cleanup_single_vessel(vessel):
-  # Now that we have a lock on the node that this vessel is on, find out
-  # if we should still clean up this vessel (e.g. maybe a node state
-  # transition script moved the node to a new state and this vessel was
-  # removed).
-  needscleanup, reasonwhynot = maindb.does_vessel_need_cleanup(vessel)
-  if not needscleanup:
-    log.info("[cleanup_vessels] Vessel " + str(vessel) + " no longer needs cleanup: " + reasonwhynot)
-    return
+  """
+  This function is passed by cleanup_vessels() as the function argument to
+  run_parallelized().
+  """
   
-  nodeid = maindb.get_node_identifier_from_vessel(vessel)
+  # This does seem wasteful of lockserver communication to require four
+  # round-trips with the lockserver (get handle, lock, unlock, release handle),
+  # but if we really want to fix that then I think the best thing to do would
+  # be to allow obtaining a lockhandle and releasing a lockhandle to be done
+  # in the same calls as lock acquisition and release. 
   
+  node_id = maindb.get_node_identifier_from_vessel(vessel)
+  lockserver_handle = lockserver.create_lockserver_handle()
+  
+  # Lock the node that the vessels is on.
+  lockserver.lock_node(lockserver_handle, node_id)
   try:
-    nodehandle = _get_node_handle_from_nodeid(nodeid)
-  except DoesNotExistError:
-    message = "A node doesn't in the database anymore! " + traceback.format_exc()
-    log.critical(message)
-    raise InternalError(message)
-  
-  try:
-    log.info("[cleanup_vessels] About to ChangeUsers on vessel " + str(vessel))
-    nodemanager.change_users(nodehandle, vessel.name, [''])
-    log.info("[cleanup_vessels] About to ResetVessel on vessel " + str(vessel))
-    nodemanager.reset_vessel(nodehandle, vessel.name)
-  except NodemanagerCommunicationError:
-    # We don't pass this exception up. Maybe the node is offline now. At some
-    # point, it will be marked in the database as offline (should we be doing
-    # that here?). At that time, the dirty vessels on that node will not be
-    # in the cleanup list anymore.
-    log.info("[cleanup_vessels] Failed to cleanup vessel " + str(vessel) + ". " + traceback.format_exc())
-    return
+    # Get a new vessel object from the db in case it was modified in the db
+    # before the lock was obtained.
+    vessel = maindb.get_vessel(node_id, vessel.name)
     
-  # We only mark it as clean if no exception was raised when trying to
-  # perform the above nodemanager operations.
-  maindb.mark_vessel_as_clean(vessel)
+    # Now that we have a lock on the node that this vessel is on, find out
+    # if we should still clean up this vessel (e.g. maybe a node state
+    # transition script moved the node to a new state and this vessel was
+    # removed).
+    needscleanup, reasonwhynot = maindb.does_vessel_need_cleanup(vessel)
+    if not needscleanup:
+      log.info("[_cleanup_single_vessel] Vessel " + str(vessel) + 
+               " no longer needs cleanup: " + reasonwhynot)
+      return
+    
+    nodeid = maindb.get_node_identifier_from_vessel(vessel)
+    nodehandle = _get_node_handle_from_nodeid(nodeid)
+    
+    try:
+      log.info("[_cleanup_single_vessel] About to ChangeUsers on vessel " + str(vessel))
+      nodemanager.change_users(nodehandle, vessel.name, [''])
+      log.info("[_cleanup_single_vessel] About to ResetVessel on vessel " + str(vessel))
+      nodemanager.reset_vessel(nodehandle, vessel.name)
+    except NodemanagerCommunicationError:
+      # We don't pass this exception up. Maybe the node is offline now. At some
+      # point, it will be marked in the database as offline (should we be doing
+      # that here?). At that time, the dirty vessels on that node will not be
+      # in the cleanup list anymore.
+      log.info("[_cleanup_single_vessel] Failed to cleanup vessel " + 
+               str(vessel) + ". " + traceback.format_exc())
+      return
+      
+    # We only mark it as clean if no exception was raised when trying to
+    # perform the above nodemanager operations.
+    maindb.mark_vessel_as_clean(vessel)
+  
+    log.info("[_cleanup_single_vessel] Successfully cleaned up vessel " + str(vessel))
 
-  log.info("[cleanup_vessels] Successfully cleaned up vessel " + str(vessel))
+  finally:
+    # Unlock the node.
+    lockserver.unlock_node(lockserver_handle, node_id)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+
+
+
+
+
+def sync_user_keys_of_vessels():
+  """
+  This function is started as separate thread. It continually checks whether
+  there are vessels needing their user keys sync'd and initiates the user key
+  sync as needed.
+  """
+
+  log.info("[sync_user_keys_of_vessels] thread started.")
+
+  # Run forever.
+  while True:
+    
+    try:
+      
+      # Sleep a few seconds for those times where we don't have any vessels to clean up.
+      time.sleep(5)
+      
+      # We shouldn't be running the backend in production with
+      # settings.DEBUG = True. Just in case, though, tell django to reset its
+      # list of saved queries each time through the loop.
+      if settings.DEBUG:
+        django.db.reset_queries()
+      
+      # Get a list of vessels that need to have user keys sync'd. This doesn't
+      # include nodes known to be inactive as we would just continue failing to
+      # communicate with nodes that are down.
+      vessellist = maindb.get_vessels_needing_user_key_sync()
+      if len(vessellist) == 0:
+        continue
+        
+      log.info("[sync_user_keys_of_vessels] " + str(len(vessellist)) + 
+               " vessels to have user keys sync'd: " + str(vessellist))
+     
+      parallel_results = parallel.run_parallelized(vessellist, _sync_user_keys_of_single_vessel)
+     
+      if len(parallel_results["exception"]) > 0:
+        for vessel, exception_message in parallel_results["exception"]:
+          log_message = "Unhandled exception during parallelized vessel user key sync: " + exception_message
+          log.critical(log_message)
+        # Raise the last exceptions so that the admin gets an email.
+        raise InternalError(log_message)
+        
+    except:
+      message = "[sync_user_keys_of_vessels] Something very bad happened: " + traceback.format_exc()
+      log.critical(message)
+      
+      # Send an email to the addresses listed in settings.ADMINS
+      if not settings.DEBUG:
+        subject = "Critical SeattleGeni backend error"
+        django.core.mail.mail_admins(subject, message)
+        
+        # Sleep for ten minutes to make sure we don't flood the admins with error
+        # report emails.
+        time.sleep(600)
+
+
+
+
+
+def _sync_user_keys_of_single_vessel(vessel):
+  """
+  This function is passed by sync_user_keys_of_vessels() as the function
+  argument to run_parallelized().
+  """
+  
+  # This does seem wasteful of lockserver communication to require four
+  # round-trips with the lockserver (get handle, lock, unlock, release handle),
+  # but if we really want to fix that then I think the best thing to do would
+  # be to allow obtaining a lockhandle and releasing a lockhandle to be done
+  # in the same calls as lock acquisition and release. 
+  
+  node_id = maindb.get_node_identifier_from_vessel(vessel)
+  lockserver_handle = lockserver.create_lockserver_handle()
+  
+  # Lock the node that the vessels is on.
+  lockserver.lock_node(lockserver_handle, node_id)
+  try:
+    # Get a new vessel object from the db in case it was modified in the db
+    # before the lock was obtained.
+    vessel = maindb.get_vessel(node_id, vessel.name)
+  
+    # Now that we have a lock on the node that this vessel is on, find out
+    # if we should still sync user keys on this vessel (e.g. maybe a node state
+    # transition script moved the node to a new state and this vessel was
+    # removed).
+    needssync, reasonwhynot = maindb.does_vessel_need_user_key_sync(vessel)
+    if not needssync:
+      log.info("[_sync_user_keys_of_single_vessel] Vessel " + str(vessel) + 
+               " no longer needs user key sync: " + reasonwhynot)
+      return
+    
+    nodeid = maindb.get_node_identifier_from_vessel(vessel)
+    nodehandle = _get_node_handle_from_nodeid(nodeid)
+    
+    # The list returned from get_users_with_access_to_vessel includes the key of
+    # the user who has acquired the vessel along with any other users they have
+    # given access to.
+    user_list = maindb.get_users_with_access_to_vessel(vessel)
+    
+    key_list = []
+    for user in user_list:
+      key_list.append(user.user_pubkey)
+      
+    if len(key_list) == 0:
+      raise InternalError("InternalError: Empty user key list for vessel " + str(vessel))
+    
+    try:
+      log.info("[_sync_user_keys_of_single_vessel] About to ChangeUsers on vessel " + str(vessel))
+      nodemanager.change_users(nodehandle, vessel.name, key_list)
+    except NodemanagerCommunicationError:
+      # We don't pass this exception up. Maybe the node is offline now. At some
+      # point, it will be marked in the database as offline and won't show up in
+      # our list of vessels to sync user keys of anymore.
+      log.info("[_sync_user_keys_of_single_vessel] Failed to sync user keys of vessel " + 
+               str(vessel) + ". " + traceback.format_exc())
+      return
+      
+    # We only mark it as sync'd if no exception was raised when trying to perform
+    # the above nodemanager operations.
+    maindb.mark_vessel_as_not_needing_user_key_sync(vessel)
+  
+    log.info("[_sync_user_keys_of_single_vessel] Successfully sync'd user keys of vessel " + str(vessel))
+
+  finally:
+    # Unlock the node.
+    lockserver.unlock_node(lockserver_handle, node_id)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
 
 
 
@@ -463,7 +615,10 @@ def main():
 
   # Start the background thread that does vessel cleanup.
   thread.start_new_thread(cleanup_vessels, ())
-
+  
+  # Start the background thread that does vessel user key synchronization.
+  thread.start_new_thread(sync_user_keys_of_vessels, ())
+  
   # Register the XMLRPCServer. Use allow_none to allow allow the python None value.
   server = ThreadedXMLRPCServer(("127.0.0.1", LISTENPORT), allow_none=True)
 

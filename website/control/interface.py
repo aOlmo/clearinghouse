@@ -349,8 +349,70 @@ def logout_user(request):
     None
   """
   request.session.flush()
+
+
+
+
+
+@log_function_call
+def change_user_keys(geniuser, pubkey=None):
+  """
+  <Purpose>
+    Sets a new public/private key for the user and initiates the change
+    of user keys on all vessels the user has access to. If pubkey is
+    provided, that is used as the user's new pubkey. If pubkey is not
+    provided, a new public/private keypair is generated for the user.
+  <Arguments>
+    geniuser
+      A GeniUser object of the user whose keys are to be updated.
+  <Exceptions>
+    ValidationError
+      If the pubkey is provided and is invalid.
+  <Side Effects>
+    The public and private keys of the user are replaced in the database with
+    new keys (if pubkey was provided, the private key in the database will
+    be empty, otherwise it will be the generated private key). All vessels the
+    user has access to are marked as needing to have their user keys sync'd.
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
   
+  if pubkey is not None:
+    validations.validate_pubkey_string(pubkey)
   
+  # Lock the user.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  lockserver.lock_user(lockserver_handle, geniuser.username)
+  try:
+    # Make sure the user still exists now that we hold the lock. Also makes
+    # sure that we see any changes made to the user before we obtained the lock.
+    # We don't use the user object we retrieve because we want the
+    # object passed in to the function to reflect changes we make to the object.
+    try:
+      maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
+    
+    # Get a key pair from the keygen api if the user didn't supply their own pubkey.
+    if pubkey is None:
+      (pubkey, privkey) = keygen.generate_keypair()
+    else:
+      privkey = None    
+    
+    maindb.set_user_keys(geniuser, pubkey, privkey)
+    
+    # Now we need to find all of the vessels the user has access to and set
+    # them to have their user keys updated by the backend.
+    vessel_list = maindb.get_vessels_accessible_by_user(geniuser)
+    vessels.flag_vessels_for_user_keys_sync(lockserver_handle, vessel_list)
+    
+  finally:
+    # Unlock the user.
+    lockserver.unlock_user(lockserver_handle, geniuser.username)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+  
+
   
   
 
@@ -580,11 +642,7 @@ def release_vessels(geniuser, vessel_list):
     except DoesNotExistError:
       raise InternalError(traceback.format_exc())
     
-    for vessel in vessel_list:
-      if vessel.acquired_by_user != geniuser:
-        raise InvalidRequestError("Only vessels acquired by this user can be released [offending vessel: " + str(vessel) + "]")
-      
-    vessels.release_vessels(lockserver_handle, vessel_list)
+    vessels.release_vessels(lockserver_handle, geniuser, vessel_list)
 
   finally:
     # Unlock the user.
@@ -626,7 +684,7 @@ def release_all_vessels(geniuser):
     # Get a list of all vessels acquired by the user.
     vessel_list = maindb.get_acquired_vessels(geniuser)
     
-    vessels.release_vessels(lockserver_handle, vessel_list)
+    vessels.release_vessels(lockserver_handle, geniuser, vessel_list)
     
   finally:
     # Unlock the user.

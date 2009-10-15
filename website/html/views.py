@@ -135,7 +135,6 @@ def profile(request, info=""):
   affiliation = user.affiliation
   port = user.usable_vessel_port
   has_privkey = user.user_privkey != None
-  info = ""
   
   return direct_to_template(request, 'control/profile.html',
                             {'username' : username,
@@ -573,11 +572,54 @@ def renew_all_resources(request):
 
 
 
-# TODO: This is just temporary to get the existing templates working.
-@require_POST
 @login_required
-def gen_new_key(request):
-  pass
+def change_key(request):
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+  
+  if request.method == 'GET':
+    return direct_to_template(request, 'control/change_key.html',
+                              {'geni_user' : user,
+                               'error_msg' : ""})
+
+  # This is a POST, so figure out if a file was uploaded or if we are supposed
+  # to generate a new key for the user.
+  if request.POST.get('generate', False):
+    interface.change_user_keys(user, pubkey=None)
+    msg = "Your new keys have been generated. You should download them now."
+    return profile(request, msg)
+    
+  else:
+    file = request.FILES.get('pubkey', None)
+    if file is None:
+      msg = "You didn't select a public key file to upload."
+      return direct_to_template(request, 'control/change_key.html',
+                                {'geni_user' : user,
+                                 'error_msg' : msg})
+    
+    if file.size == 0 or file.size > forms.MAX_PUBKEY_UPLOAD_SIZE:
+      msg = "Invalid file uploaded. The file size limit is " 
+      msg += str(forms.MAX_PUBKEY_UPLOAD_SIZE) + " bytes."
+      return direct_to_template(request, 'control/change_key.html',
+                                {'geni_user' : user,
+                                 'error_msg' : msg})
+    
+    pubkey = file.read()
+    
+    try:
+      validations.validate_pubkey_string(pubkey)
+    except ValidationError:
+      msg = "Invalid public key uploaded."
+      return direct_to_template(request, 'control/change_key.html',
+                                {'geni_user' : user,
+                                 'error_msg' : msg})
+    
+    # If we made it here, the uploaded key is good.
+    interface.change_user_keys(user, pubkey=pubkey)
+    msg = "Your public key has been successfully changed."
+    return profile(request, msg)
 
 
 
@@ -593,13 +635,11 @@ def del_priv(request):
     return _show_failed_get_geniuser_page(request)
   
   if user.user_privkey == "":
-    msg = "Private key has already been deleted."
+    msg = "Your private key has already been deleted."
   else:
     interface.delete_private_key(user)
-    msg = "Private key has been deleted."
-  return direct_to_template(request, 'control/profile.html',
-                            {'geni_user' : user,
-                             'info' : msg})
+    msg = "Your private key has been deleted."
+  return profile(request, msg)
 
 
 

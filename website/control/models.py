@@ -277,6 +277,12 @@ class Vessel(models.Model):
   # The vessel is marked as dirty if it needs to be reset, etc. before it can
   # be acquired.
   is_dirty = models.BooleanField(db_index=True)
+  
+  # The vessel's user keys can change due to the user who acquired the vessel
+  # changing their key or providing vessel access to other users. A value of
+  # False here indicates that the user keys have changed since they were last
+  # set on the vessel.
+  user_keys_in_sync = models.BooleanField(db_index=True)
     
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)

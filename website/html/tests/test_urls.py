@@ -169,6 +169,12 @@ def get_pages_without_user_logged_in():
   assert(response.status_code == 200)
   assert(response.template[0].name == "accounts/login.html")
 
+  response = c.get('/html/change_key', follow=True)
+  assert(response.status_code == 200)
+  assert(response.template[0].name == "accounts/login.html")
+
+
+
 
 
 def get_pages_with_user_logged_in():
@@ -228,6 +234,23 @@ def get_pages_with_user_logged_in():
   
   ##########################################################################
   
+  # The change_key page accepts either GET or POST. If it is a GET request,
+  # the the forms for changing keys are displayed. If it is a POST and the
+  # POST is valid (either a request to generate new keys or upload of a key),
+  # the user is shown the profile. If it is an invalid POST, then the same
+  # page is redisplayed with a message.
+  
+  response = c.get('/html/change_key', follow=True)
+  assert(response.status_code == 200)
+  assert(response.template[0].name == "control/change_key.html")
+
+  # Empty post data is invalid.
+  response = c.post('/html/change_key', {}, follow=True)
+  assert(response.status_code == 200)
+  assert(response.template[0].name == "control/change_key.html")
+  
+  ##########################################################################
+  
   # POST is required for deleting private key.
   response = c.get('/html/del_priv', follow=True)
   assert(response.status_code == 405)
@@ -235,7 +258,7 @@ def get_pages_with_user_logged_in():
   response = c.post('/html/del_priv', follow=True)
   assert(response.status_code == 200)
   assert(response.template[0].name == "control/profile.html")
-  assert("Private key has been deleted" in response.content)
+  assert("Your private key has been deleted" in response.content)
   
   # Make sure that priv_key returns an attachment response
   response = c.get('/html/priv_key', follow=True)
@@ -253,6 +276,8 @@ def get_pages_with_user_logged_in():
   response = c.get('/html/logout', follow=True)
   assert(response.status_code == 302)
   assert("/html/login" in response['Location'])
+
+
 
 
 

@@ -4,10 +4,16 @@
 *******************************/
 
 table.profile {
-    margin-top: 20px;
     border-collapse: collapse;
 	border-spacing: 0;
 	width: 70%;
+}
+
+#info {
+    background-color : #ded;
+    border : 1px solid #0a0;
+    padding : 1em;
+    margin-bottom : 1em;
 }
 
 table.profile tr td.key {
@@ -26,7 +32,6 @@ table.profile tr td.value {
     border: 2px solid #666;
     background-color: #fff;
     padding: 10px;
-    margin-top: 20px;
     margin-right: 0px;
     text-align: center;
     font-weight: bold;
