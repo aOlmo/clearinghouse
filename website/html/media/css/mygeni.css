@@ -185,3 +185,21 @@ table.users tr th {
 	color: red;
 	font-weight: bold;
 }
+
+#overcreditlimit {
+    background-color : #edd;
+    border : 1px solid #a00;
+    padding : 1em;
+    margin-top : 1em;
+    margin-bottom : 1em;
+}
+
+/* Paragraphs after another paragraph. */
+#overcreditlimit p+p { 
+    margin-top: 1.5em;
+}
+
+#vesselsused {
+  margin-right : 0.5em;
+}
+

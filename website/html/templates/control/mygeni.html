@@ -63,7 +63,8 @@ function update_shares() {
 	total_percent += {{ percent_total_used }};
 	
 	add_cell("shares", "Free", 100 - total_percent);
-	$("#vesselsavailable").text({{ avail_vessel_credits }}+ " vessels available");
+	$("#vesselsused").text({{ used_vessel_credits }} + " vessels used");
+	$("#vesselsavailable").text("(" + {{ avail_vessel_credits }} + " available)");
 	$("#usageotherstable tr:odd").addClass("odd");
 	$("#usageotherstable tr:even").addClass("even");
 }
@@ -286,6 +287,7 @@ function color_generator(username) {
 		
 			<div class="bar">
 				<span class="vesselstatus" id="vesselsavailable"></span>
+				<span class="vesselstatus" id="vesselsused"></span>
 				<h3>Resource Usage (used by)</h3>
 				<table class="usage">
 					<tr id="usage"></tr>
@@ -334,7 +336,19 @@ function color_generator(username) {
 					<button id="shareresources">Share</button>
 				</div>
 			</div>
-		
+			{% if over_vessel_credits %}
+			<div id="overcreditlimit">
+			  <p>You have acquired {{ over_vessel_credits }} more vessels than we
+			  would normally let you. This usually means that some of your donations
+			  have gone offline.</p>
+			  
+			  <p>We won't remove the extra acquired vessels from your account, but you
+			  won't be able to acquire more vessels or renew your vessels until you
+			  remove or let expire {{ over_vessel_credits }} of them.
+			  (Or, of course, until more donations are made on behalf of your account
+			  or those donations that have gone offline come back online.)</p>
+			</div>
+			{% endif %}
 		</div>
 	</div>
 	

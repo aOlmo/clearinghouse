@@ -319,15 +319,23 @@ def mygeni(request):
   
   total_vessel_credits = interface.get_total_vessel_credits(user)
   num_acquired_vessels = len(interface.get_acquired_vessels(user))
-  avail_vessel_credits = total_vessel_credits - num_acquired_vessels
-  percent_total_used = int((num_acquired_vessels * 1.0 / total_vessel_credits * 1.0) * 100.0)
+  avail_vessel_credits = interface.get_available_vessel_credits(user)
+  
+  if num_acquired_vessels > total_vessel_credits:
+    percent_total_used = 100
+    over_vessel_credits = num_acquired_vessels - total_vessel_credits
+  else:
+    percent_total_used = int((num_acquired_vessels * 1.0 / total_vessel_credits * 1.0) * 100.0)
+    over_vessel_credits = 0
   
   # total_vessel_credits, percent_total_used, avail_vessel_credits
   return direct_to_template(request, 'control/mygeni.html',
                             {'username' : user.username,
                              'total_vessel_credits' : total_vessel_credits,
+                             'used_vessel_credits' : num_acquired_vessels,
                              'percent_total_used' : percent_total_used,
-                             'avail_vessel_credits' : avail_vessel_credits})
+                             'avail_vessel_credits' : avail_vessel_credits,
+                             'over_vessel_credits' : over_vessel_credits})
 
 
 
