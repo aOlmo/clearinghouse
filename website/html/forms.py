@@ -115,37 +115,35 @@ def gen_get_form(geni_user, req_post=None):
 
   <Returns>
       A GetVesselsForm object that is instantiated with a req_post
-      (if given). None is returned if the user cannot acquire any
-      more vessels.
+      (if given).
   """
       
   # the total number of vessels a user may acquire
-  total_vessel_credits = interface.get_total_vessel_credits(geni_user)
-  num_acquired_vessels = len(interface.get_acquired_vessels(geni_user))
-  avail_vessel_credits = total_vessel_credits - num_acquired_vessels
+  avail_vessel_credits = interface.get_available_vessel_credits(geni_user)
   
   # JTC: Dynamic generation of available vessel amounts based off of avail_vessel_credits
-  step = range(1, 10, 1)
-  if avail_vessel_credits < 20:
-    step = range(1, avail_vessel_credits+1, 1)
-  elif avail_vessel_credits >= 20 and avail_vessel_credits < 100:
-    step.extend(range(10, avail_vessel_credits+1, 10))
-  elif avail_vessel_credits >= 100:
-    step.extend(range(10, 100, 10))
-    step.extend(range(100, avail_vessel_credits+1, 100))
-  try:
-    existdup = step.index(avail_vessel_credits)
-  except ValueError:
-    step.extend([avail_vessel_credits])
-  
-  # don't return this form if user has no more available vessel credits
   if avail_vessel_credits == 0:
-    return None
+    step = [0]
+  else:
+    step = range(1, 10, 1)
+    if avail_vessel_credits < 20:
+      step = range(1, avail_vessel_credits+1, 1)
+    elif avail_vessel_credits >= 20 and avail_vessel_credits < 100:
+      step.extend(range(10, avail_vessel_credits+1, 10))
+    elif avail_vessel_credits >= 100:
+      step.extend(range(10, 100, 10))
+      step.extend(range(100, avail_vessel_credits+1, 100))
+      
+    if avail_vessel_credits not in step:
+      step.append(avail_vessel_credits)
 
   # dynamically generate the get vessels form
   #get_vessel_choices = zip(range(1,max_num+1),range(1,max_num+1))
   get_vessel_choices = zip(step, step)
   
+  # This is ugly (nested class definition, that is) and appears to have been
+  # done as a way to avoid using a constructor but still make the value of
+  # get_vessel_choices available to instances of this class.
   class GetVesselsForm(forms.Form):
     """
     <Purpose>

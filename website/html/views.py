@@ -340,7 +340,10 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
   
-  if get_form is False:
+  # get_form of None means don't show the form to acquire vessels.
+  if interface.get_available_vessel_credits(user) == 0:
+    get_form = None
+  elif get_form is False:
     get_form = forms.gen_get_form(user)
 
   # shared vessels that are used by others but which belong to this user (TODO)
@@ -405,8 +408,6 @@ def get_resources(request):
   
   # try and grab form from POST. if it can't, bounce user back to My Vessels page
   get_form = forms.gen_get_form(user, request.POST)
-  #if get_form is None:
-  #  return myvessels(request)
   
   action_summary = ""
   action_detail = ""

@@ -907,7 +907,40 @@ def get_total_vessel_credits(geniuser):
   <Side Effects>
     None
   <Returns>
-    The maximum number of vessels the user is allowed to acquire.
+    The total number of vessels the user is allowed to acquire, regardless
+    of how many they currently have acquired.
   """
+  assert_geniuser(geniuser)
+  
   return maindb.get_user_total_vessel_credits(geniuser)
 
+
+
+
+
+def get_available_vessel_credits(geniuser):
+  """
+  <Purpose>
+    Determine the number vessels the user is allowed to acquire at the moment
+    (that is, the total vessel credits they have minus the number of vessels
+    they have acquired).
+  <Arguments>
+    geniuser
+      The GeniUser whose available vessel credit count is wanted.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    The maximum number of vessels the user is allowed to acquire at this
+    moment without exceeding the total number they are allowed to acquire.
+  """
+  assert_geniuser(geniuser)
+  
+  max_allowed_vessels = maindb.get_user_total_vessel_credits(geniuser)
+  acquired_vessel_count = len(maindb.get_acquired_vessels(geniuser))
+  
+  if acquired_vessel_count >= max_allowed_vessels:
+    return 0
+  else:
+    return max_allowed_vessels - acquired_vessel_count
