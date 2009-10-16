@@ -18,6 +18,7 @@ XML-RPC Interface:
  TODO: describe the interface
 """
 
+import datetime
 import sys
 import time
 import traceback
@@ -367,9 +368,14 @@ def cleanup_vessels():
       # enough to either obtain locks to do this or to rewrite the code to
       # avoid any need for separately marking expired vessels as dirty rather
       # than just trying to process expired vessels directly in the code below.
-      markedcount = maindb.mark_expired_vessels_as_dirty()
-      if markedcount > 0:
-        log.info("[cleanup_vessels] " + str(markedcount) + " expired vessels have been marked as dirty.")
+      date_started=datetime.datetime.now()
+      expired_list = maindb.mark_expired_vessels_as_dirty()
+      if len(expired_list) > 0:
+        log.info("[cleanup_vessels] " + str(len(expired_list)) + 
+                 " expired vessels have been marked as dirty: " + str(expired_list))
+        maindb.create_action_log_event("mark_expired_vessels_as_dirty", user=None, second_arg=None,
+                                       third_arg=None, was_successful=True, message=None,
+                                       date_started=date_started, vessel_list=expired_list)
 
       # Get a list of vessels to clean up. This doesn't include nodes known to
       # be inactive as we would just continue failing to communicate with nodes

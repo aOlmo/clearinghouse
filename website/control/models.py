@@ -355,4 +355,85 @@ class VesselUserAccessMap(models.Model):
     Produces a string representation of the VesselUserAccessMap instance.
     """
     return "VesselUserAccessMap:[%s]:[%s]" % (self.vessel, self.user)
+
+
+
+
+
+class ActionLogEvent(models.Model):
+  """
+  Defines the ActionLogEvent model. An ActionLogEvent record represents an
+  action performed in the system, either by a user or by other components
+  whose actions are logged.
+  """
+  # The name used to refer to the type of action.
+  function_name = models.CharField("Function type", max_length=50, db_index=True)
   
+  # A string representation of the second argument to the function if that
+  # argument was not a vessel list.
+  second_arg = models.CharField("Second arg", null=True, max_length=50)
+  
+  # A string representation of the third argument to the function if that
+  # argument was not a vessel list.
+  third_arg = models.CharField("Third arg", null=True, max_length=50)
+  
+  # If the owner_type is "user", this will be the user that performed the
+  # action.
+  user = models.ForeignKey(GeniUser, null=True, db_index=True)
+  
+  # Whether the action was successful.
+  was_successful = models.BooleanField(db_index=True)
+  
+  # A status message, error message, or other relevant information.
+  message = models.CharField("Message", null=True, max_length=1024)
+  
+  # The number of affected vessels. This is actually redundant as it is just
+  # the number of ActionLogVesselDetails records for this event. However, this
+  # makes some admin-side display code easier.
+  vessel_count = models.IntegerField("Vessel count", null=True, db_index=True)
+  
+  # When the action was started.
+  date_started = models.DateTimeField("Date started", db_index=True)
+  
+  # The number of seconds it took for the action to be completed.
+  completion_time = models.FloatField("Completion time (seconds)", db_index=True)
+  
+  def __unicode__(self):
+    """
+    Produces a string representation of the ActionLogEvent instance.
+    """
+    return "ActionLogEvent:[%s]:[%s]" % (self.id, self.action_type)
+
+
+
+
+
+class ActionLogVesselDetails(models.Model):
+  """
+  Defines the ActionLogVesselDetails model. An ActionLogVesselDetails record
+  represents details of a particular vessel related to an ActionLogEvent. There
+  can be multiple ActionLogVesselDetails for a single ActionLogEvent.
+  """
+  # The ActionLogEvent record that this details record corresponds to.
+  event = models.ForeignKey(ActionLogEvent, db_index=True)
+
+  # The node that this vessel is on.
+  node = models.ForeignKey(Node, db_index=True)
+  
+  # To know the ip or nat string despite the fact that this may change for the
+  # node record itself.
+  node_address = models.CharField("Node address", max_length=100, db_index=True)
+
+  # To know the port despite the fact that this may change for the
+  # node record itself.
+  node_port = models.IntegerField("Node port", max_length=100, db_index=True)
+
+  # We store the vessel name rather than a foreign key to the vessels table
+  # because vessels can be deleted from the database, whereas nodes can't.
+  vessel_name = models.CharField("Vessel name", max_length=50, db_index=True)
+
+  def __unicode__(self):
+    """
+    Produces a string representation of the ActionLogVesselDetails instance.
+    """
+    return "ActionLogVesselDetails:[%s]:[%s]" % (self.event, self.name)

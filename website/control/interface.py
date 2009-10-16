@@ -54,6 +54,8 @@ from seattlegeni.common.util import validations
 
 from seattlegeni.common.util.assertions import *
 
+from seattlegeni.common.util.action_log_decorators import log_action
+
 from seattlegeni.common.util.decorators import log_function_call
 from seattlegeni.common.util.decorators import log_function_call_and_only_first_argument
 from seattlegeni.common.util.decorators import log_function_call_without_arguments
@@ -575,6 +577,10 @@ def get_acquired_vessels(geniuser):
 
 
 
+# @log_action is a decorator that records details of vessel-affecting
+# operations in the database. This decorator should be kept in mind whenever
+# the arguments or return value to this function are changed.
+@log_action
 @log_function_call
 def acquire_vessels(geniuser, vesselcount, vesseltype):
   """
@@ -646,6 +652,10 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
 
 
 
+# @log_action is a decorator that records details of vessel-affecting
+# operations in the database. This decorator should be kept in mind whenever
+# the arguments or return value to this function are changed.
+@log_action
 @log_function_call
 def release_vessels(geniuser, vessel_list):
   """
@@ -694,6 +704,10 @@ def release_vessels(geniuser, vessel_list):
 
 
 
+# @log_action is a decorator that records details of vessel-affecting
+# operations in the database. This decorator should be kept in mind whenever
+# the arguments or return value to this function are changed.
+@log_action
 @log_function_call
 def release_all_vessels(geniuser):
   """
@@ -736,6 +750,10 @@ def release_all_vessels(geniuser):
 
 
 
+# @log_action is a decorator that records details of vessel-affecting
+# operations in the database. This decorator should be kept in mind whenever
+# the arguments or return value to this function are changed.
+@log_action
 @log_function_call
 def renew_vessels(geniuser, vessel_list):
   """
@@ -796,6 +814,10 @@ def renew_vessels(geniuser, vessel_list):
 
 
 
+# @log_action is a decorator that records details of vessel-affecting
+# operations in the database. This decorator should be kept in mind whenever
+# the arguments or return value to this function are changed.
+@log_action
 @log_function_call
 def renew_all_vessels(geniuser):
   """

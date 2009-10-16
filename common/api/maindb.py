@@ -58,6 +58,8 @@ from seattlegeni.website.control.models import Node
 from seattlegeni.website.control.models import Vessel
 from seattlegeni.website.control.models import VesselPort
 from seattlegeni.website.control.models import VesselUserAccessMap
+from seattlegeni.website.control.models import ActionLogEvent
+from seattlegeni.website.control.models import ActionLogVesselDetails
 
 
 
@@ -1760,7 +1762,7 @@ def mark_expired_vessels_as_dirty():
     all vessel user access map entries for each of these vessels have been
     removed.
   <Returns>
-    The number of expired vessels marked as dirty.
+    The list of vessels that were marked as dirty.
   """
   # We want to mark as dirty all vessels past their expiration date that are
   # currently acquired by users.
@@ -1774,7 +1776,7 @@ def mark_expired_vessels_as_dirty():
       record_released_vessel(vessel)
 
   # Return the number of vessels that just expired.
-  return len(vessel_list)
+  return vessel_list
 
 
 
@@ -2072,3 +2074,32 @@ def get_vessels_on_node(node):
   """
   return list(node.vessel_set.all())
 
+
+
+
+def create_action_log_event(function_name, user, second_arg, third_arg,
+                            was_successful, message, date_started, vessel_list):
+  
+  delta = datetime.now() - date_started
+  completion_time = ((delta.days * 3600 * 24) + 
+                     delta.seconds + 
+                     (delta.microseconds / 1000000.0))
+  
+  event = ActionLogEvent(function_name=function_name,
+                         user=user,
+                         second_arg=second_arg,
+                         third_arg=third_arg,
+                         was_successful=was_successful,
+                         message=message,
+                         vessel_count=len(vessel_list),
+                         date_started=date_started,
+                         completion_time=completion_time)
+  
+  event.save()
+  
+  for vessel in vessel_list:
+    vesseldetails = ActionLogVesselDetails(event=event, node=vessel.node,
+                                           node_address=vessel.node.last_known_ip,
+                                           node_port=vessel.node.last_known_port,
+                                           vessel_name=vessel.name)
+    vesseldetails.save()
