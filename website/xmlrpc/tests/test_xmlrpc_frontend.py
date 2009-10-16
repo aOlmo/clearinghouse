@@ -56,11 +56,13 @@ def mock_noop(*args, **kwargs):
 
 
 
-def mock_interface_get_user_with_password(username, password):
-  geniuser = models.GeniUser(username=username, password=password, email='test@test.com',
+def mock_interface_get_user_with_api_key(username, api_key):
+  geniuser = models.GeniUser(username=username, password="password", email='test@test.com',
                              affiliation='test affil', user_pubkey='user_pubkey',
                              user_privkey='user_privkey', donor_pubkey='donor_pubkey',
                              usable_vessel_port='12345', free_vessel_credits=10)
+  geniuser.api_key = api_key
+  # Not saving the geniuser record, we're not trying to interact with the db.
   return geniuser
 
 
@@ -82,7 +84,7 @@ class SeattleGeniTestCase(unittest.TestCase):
 
   def setUp(self):
     # Indicate a user record was found with the provided auth info.
-    interface.get_user_with_password = mock_interface_get_user_with_password
+    interface.get_user_with_api_key = mock_interface_get_user_with_api_key
 
 
 
@@ -115,13 +117,13 @@ class SeattleGeniTestCase(unittest.TestCase):
 
   def test_authcheck(self):
     
-    auth = {'username':'tester', 'password':'password'}
+    auth = {'username':'tester', 'api_key':'api_key'}
 
     response = proxy.authcheck(auth)
     assert(response == 0)
     
     # Indicate no user record was found with the provided auth info.
-    interface.get_user_with_password = mock_raises_DoesNotExistError
+    interface.get_user_with_api_key = mock_raises_DoesNotExistError
     
     response = proxy.authcheck(auth)
     assert(response == -1)
@@ -134,10 +136,10 @@ class SeattleGeniTestCase(unittest.TestCase):
     if the authcheck fails.
     """
     
-    auth = {'username':'tester', 'password':'password'}
+    auth = {'username':'tester', 'api_key':'api_key'}
 
     # Indicate no user record was found with the provided auth info.
-    interface.get_user_with_password = mock_raises_DoesNotExistError
+    interface.get_user_with_api_key = mock_raises_DoesNotExistError
     
     try:
       proxy.renew_resources(auth, [])
@@ -199,7 +201,7 @@ class SeattleGeniTestCase(unittest.TestCase):
 
   def test_renew_resources_invalid_vessel_handle_list(self):
     
-    auth = {'username':'tester', 'password':'password'}
+    auth = {'username':'tester', 'api_key':'api_key'}
 
     vesselhandle_list = {'dict not a list':'123'}
     
@@ -214,7 +216,7 @@ class SeattleGeniTestCase(unittest.TestCase):
   
   def test_renew_resources(self):
     
-    auth = {'username':'tester', 'password':'password'}
+    auth = {'username':'tester', 'api_key':'api_key'}
     vesselhandle_list = ['vessel1', 'vessel2']
     
     # Check successful case. Returns a zero to indicate success.
@@ -272,7 +274,7 @@ class SeattleGeniTestCase(unittest.TestCase):
     
   def test_acquire_resources_rspecs(self):
     
-    auth = {'username':'tester', 'password':'password'}
+    auth = {'username':'tester', 'api_key':'api_key'}
     
     # invalid rspecs
     rspec_negativenodes = {'rspec_type':'random', 'number_of_nodes':-10}

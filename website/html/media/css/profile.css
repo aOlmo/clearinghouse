@@ -41,3 +41,6 @@ table.profile tr td.value {
     width: 150px;
 }
 
+#download_pubkey_form {
+    display : inline;	
+}

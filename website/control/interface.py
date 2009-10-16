@@ -222,27 +222,27 @@ def get_user_with_password(username, password):
 
 
 @log_function_call_and_only_first_argument
-def get_user_with_apikey(username, apikey):
+def get_user_with_api_key(username, api_key):
   """
   <Purpose>
-    Gets the user record corresponding to the username and apikey.
+    Gets the user record corresponding to the username and api_key.
   <Arguments>
     username
       The username (must be a string).
-    apikey
-      The apikey (must be a string).
+    api_key
+      The api_key (must be a string).
   <Exceptions>
     DoesNotExistError
-      If there is no user with the specified username and apikey.
+      If there is no user with the specified username and api_key.
   <Side Effects>
     None
   <Returns>
-    The GeniUser instance if the username/apikey are valid.
+    The GeniUser instance if the username/api_key are valid.
   """
   assert_str(username)
-  assert_str(apikey)
+  assert_str(api_key)
   
-  return maindb.get_user_with_apikey(username, apikey)  
+  return maindb.get_user_with_api_key(username, api_key)  
 
   
 
@@ -411,9 +411,50 @@ def change_user_keys(geniuser, pubkey=None):
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-  
 
+
+
+
+
+@log_function_call
+def regenerate_api_key(geniuser):
+  """
+  <Purpose>
+    Regenerates the user's API key.
+  <Arguments>
+    geniuser
+      A GeniUser object of the user whose api key is to be regenerated.
+  <Exceptions>
+    None
+  <Side Effects>
+    The API key for the user is updated in the database.
+  <Returns>
+    The new API key.
+  """
+  assert_geniuser(geniuser)
   
+  # Lock the user.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  lockserver.lock_user(lockserver_handle, geniuser.username)
+  try:
+    # Make sure the user still exists now that we hold the lock. Also makes
+    # sure that we see any changes made to the user before we obtained the lock.
+    # We don't use the user object we retrieve because we want the
+    # object passed in to the function to reflect changes we make to the object.
+    try:
+      maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
+    
+    return maindb.regenerate_api_key(geniuser)
+    
+  finally:
+    # Unlock the user.
+    lockserver.unlock_user(lockserver_handle, geniuser.username)
+    lockserver.destroy_lockserver_handle(lockserver_handle) 
+
+
+
   
 
 @log_function_call

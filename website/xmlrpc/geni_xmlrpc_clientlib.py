@@ -34,16 +34,16 @@ FAULTCODE_NOTENOUGHCREDITS = 103
 FAULTCODE_KEYALREADYREMOVED = 104
 
 class client:
-  def __init__(self, username, password,
+  def __init__(self, username, api_key,
                xmlrpc_url='https://seattlegeni.cs.washington.edu/xmlrpc', 
                allow_ssl_insecure=False):
-    if not username or not password or not xmlrpc_url:
+    if not username or not api_key or not xmlrpc_url:
       raise ValueError("Parameters were invalid, please check your parameters.")
     elif allow_ssl_insecure == False:
       raise ValueError("WARNING: Operation of SSL in a secure manner is not available yet. Check the Seattle project website to ensure you have the latest version of geni_xmlrpc_clientlib.")
 
     # build authorization dict
-    auth = {'username':username, 'password':password}
+    auth = {'username':username, 'api_key':api_key}
     self.auth = auth
     self.xmlrpc_url = xmlrpc_url
     self.allow_ssl_insecure = allow_ssl_insecure
@@ -55,7 +55,7 @@ class client:
       
       # check auth is valid
       if(self.proxy.authcheck(self.auth) != 0):
-        raise GENIAuthError
+        raise GENIAuthError("Authentication failed. Please check your username and api_key.")
     except socket.error, (value, message):
       raise GENIOpError("Could not open a connection to the XMLRPC server specified at the given location.")
           

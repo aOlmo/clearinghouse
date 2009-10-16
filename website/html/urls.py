@@ -39,6 +39,9 @@ urlpatterns = patterns('seattlegeni.website.html.views',
                        # renew all resource for this user (from form)
                        (r'^renew_all_resources$', 'renew_all_resources', {}, 'renew_all_resources'),
 
+                       # Display and allow changing the API key.
+                       (r'^api_info$', 'api_info', {}, 'api_info'),
+
                        # Form to generate or upload a new key.
                        (r'^change_key$', 'change_key', {}, 'change_key'),
                        

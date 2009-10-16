@@ -110,7 +110,7 @@ class PublicXMLRPCFunctions(object):
         emailmessage += "XMLRPC method called: " + method + "\n"
         
         # If the first argument looks like auth info, don't include the
-        # password in the email we send. Otherwise, include all the args.
+        # api_key in the email we send. Otherwise, include all the args.
         # We wrap this in a try block just in case we screw this up we want to
         # be sure we get an email still.
         try:
@@ -143,7 +143,7 @@ class PublicXMLRPCFunctions(object):
       Acquires resources for users over XMLRPC. 
     <Arguments>
       auth
-        An authorization dict of the form {'username':username, 'password':password}
+        An authorization dict.
       rspec
         A resource specification dict of the form {'rspec_type':type, 'number_of_nodes':num}
     <Exceptions>
@@ -204,7 +204,7 @@ class PublicXMLRPCFunctions(object):
       Release resources for a user over XMLRPC.
     <Arguments>
       auth
-        An authorization dict of the form {'username':username, 'password':password}
+        An authorization dict.
       vesselhandle_list
         A list of vessel handles
     <Exceptions>
@@ -248,7 +248,7 @@ class PublicXMLRPCFunctions(object):
       time to the maximum allowed.
     <Arguments>
       auth
-        An authorization dict of the form {'username':username, 'password':password}
+        An authorization dict.
       vesselhandle_list
         A list of vessel handles
     <Exceptions>
@@ -302,7 +302,7 @@ class PublicXMLRPCFunctions(object):
       Gets a user's acquired vessels over XMLRPC.
     <Arguments>
       auth
-        An authorization dict of the form {'username':username, 'password':password}
+        An authorization dict.
     <Exceptions>
       None.
     <Returns>
@@ -322,7 +322,7 @@ class PublicXMLRPCFunctions(object):
       Gets a user's account info for a client over XMLRPC.
     <Arguments>
       auth
-        An authorization dict of the form {'username':username, 'password':password}
+        An authorization dict.
     <Exceptions>
       None.
     <Returns>
@@ -372,7 +372,7 @@ class PublicXMLRPCFunctions(object):
       Deletes a user's private key for a client over XMLRPC.
     <Arguments>
       auth
-        An authorization dict of the form {'username':username, 'password':password}
+        An authorization dict.
     <Exceptions>
       Raises xmlrpclib Fault Objects:
         FAULTCODE_KEYALREADYREMOVED if the user's privkey was already removed.
@@ -395,7 +395,7 @@ class PublicXMLRPCFunctions(object):
       Checks a user's authorization details.
     <Arguments>
       auth
-        An authorization dict of the form {'username':username, 'password':password}
+        An authorization dict of the form {'username':username, 'api_key':api_key}
     <Exceptions>
       None.
     <Returns>
@@ -420,7 +420,7 @@ def _auth(auth):
     Internally used function that performs actual authorization.
   <Arguments>
     auth
-      An authorization dict of the form {'username':username, 'password':password}
+      An authorization dict of the form {'username':username, 'api_key':api_key}
   <Exceptions>
     Raises xmlrpclib Fault Objects:
       FAULTCODE_INVALIDUSERINPUT if the auth dict is invalid.
@@ -434,13 +434,13 @@ def _auth(auth):
   
   try:
     username = auth['username']
-    password = auth['password']
+    api_key = auth['api_key']
   except KeyError:
     raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT,
-                          "Auth dict must contain both a 'username' and a 'password' key.")
+                          "Auth dict must contain both a 'username' and an 'api_key'.")
     
   try:
-    geni_user = interface.get_user_with_password(username, password)
+    geni_user = interface.get_user_with_api_key(username, api_key)
   except DoesNotExistError:
     raise xmlrpclib.Fault(FAULTCODE_AUTHERROR, "User auth failed.")
   

@@ -634,6 +634,40 @@ def change_key(request):
 
 
 
+@login_required
+def api_info(request):
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+  
+  if request.method == 'GET':
+    return direct_to_template(request, 'control/api_info.html',
+                              {'geni_user' : user,
+                               'api_key' : user.api_key,
+                               'msg' : ""})
+
+  # This is a POST, so it should be generation of an API key.
+  if not request.POST.get('generate_api_key', False):
+    msg = "Sorry, we didn't understand your request."
+    return direct_to_template(request, 'control/api_info.html',
+                              {'geni_user' : user,
+                               'api_key' : user.api_key,
+                               'msg' : msg})
+    
+  interface.regenerate_api_key(user)
+  msg = "Your API key has been regenerated. Your old one will no longer work."
+  msg += " You should update any places you are using the API key"
+  msg += " (e.g. in programs using the XML-RPC client)."
+  return direct_to_template(request, 'control/api_info.html',
+                            {'geni_user' : user,
+                             'api_key' : user.api_key,
+                             'msg' : msg})
+
+
+
+
+
 @log_function_call
 @require_POST
 @login_required

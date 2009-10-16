@@ -42,15 +42,20 @@ Profile - SeattleGENI
 					<td class="value">{{ port }}</td>
 				</tr>
 				<tr class="even">
+					<td class="key">API Key</td>
+					<td class="value"><a href="{% url api_info %}">View or change your API key</a></td>
+				</tr>
+				<tr class="odd">
 					<td class="key">Public Key</td>
 					<td class="value">
-					  <form method="POST" action="{% url pub_key %}"> 
+					  <form method="POST" action="{% url pub_key %}" id="download_pubkey_form"> 
 						<input type="submit" value="Download" />
 					  </form>
+					  <a href="{% url change_key %}">Generate or upload a new key</a>
 					</td>
 				</tr>
 				{% if has_privkey %}
-				<tr class="odd">
+				<tr class="even">
 				  <td class="key">Private Key</td>
 				  <td class="value"><a href="#">
 				      <form class="inline" method="POST" action="{% url priv_key %}"> 
@@ -58,7 +63,7 @@ Profile - SeattleGENI
 				    </form>
 				  </td>
 				</tr>
-				<tr class="even">
+				<tr class="odd">
 				  <td class="key">Delete your private key</td>
 				  <td class="value">
 				    <form class="inline" method="POST" action="{% url del_priv %}"> 
@@ -67,7 +72,7 @@ Profile - SeattleGENI
 				    </form>
 				  </td>
 				</tr>
-				<tr class="odd">
+				<tr class="even">
 					<td colspan="2">
 					    <p class="warning"> For better
 					      security we recommend that you
@@ -79,10 +84,6 @@ Profile - SeattleGENI
 					</td>
 				</tr>
 				{% endif %}
-				<tr class="{% if has_privkey %}even{% else %}odd{% endif %}">
-					<td class="key"></td>
-					<td class="value"><a href="{% url change_key %}">Generate or upload a new key.</a></td>
-				</tr>
 			</table>
 		</div>
 	</div>

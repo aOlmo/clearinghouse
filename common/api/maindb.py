@@ -260,7 +260,7 @@ def regenerate_api_key(geniuser):
     Updates the database as well as the geniuser object passed in with a new,
     randomly-generated api key.
   <Returns>
-    None
+    The new api key that has been set for the user.
   """
   assert_geniuser(geniuser)
   
@@ -278,6 +278,8 @@ def regenerate_api_key(geniuser):
     
   geniuser.api_key = api_key
   geniuser.save()
+
+  return api_key
 
 
 
@@ -705,30 +707,30 @@ def get_user_with_password(username, password):
 
 
 @log_function_call_and_only_first_argument
-def get_user_with_apikey(username, apikey):
+def get_user_with_api_key(username, api_key):
   """
   <Purpose>
-    Retrieve the user that a has the given username and apikey.
+    Retrieve the user that a has the given username and api_key.
   <Arguments>
     username
       The username of the user to be retrieved.
-    apikey
-      The apikey of the user to be retrieved.
+    api_key
+      The api_key of the user to be retrieved.
   <Exceptions>
     DoesNotExistError
-      If there is no user with the given username and apikey.
+      If there is no user with the given username and api_key.
   <Side Effects>
     None
   <Returns>
     The GeniUser object of the user.
   """
   assert_str(username)
-  assert_str(apikey)
+  assert_str(api_key)
   
   # Throws a DoesNotExistError if there is no such user.
   geniuser = get_user(username)
 
-  if not geniuser.apikey == apikey:
+  if not geniuser.api_key == api_key:
     # Intentionally vague message to prevent a security problem if this ever
     # gets displayed on the frontend.
     raise DoesNotExistError("No such user.")

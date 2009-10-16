@@ -173,6 +173,10 @@ def get_pages_without_user_logged_in():
   assert(response.status_code == 200)
   assert(response.template[0].name == "accounts/login.html")
 
+  response = c.get('/html/api_info', follow=True)
+  assert(response.status_code == 200)
+  assert(response.template[0].name == "accounts/login.html")
+
 
 
 
@@ -231,6 +235,11 @@ def get_pages_with_user_logged_in():
   response = c.get('/html/renew_all_resources', follow=True)
   assert(response.status_code == 200)
   assert(response.template[0].name == "control/myvessels.html")
+  
+  response = c.get('/html/api_info', follow=True)
+  assert(response.status_code == 200)
+  assert(response.template[0].name == "control/api_info.html")
+  assert("Your API key is" in response.content)
   
   ##########################################################################
   
