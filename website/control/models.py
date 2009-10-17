@@ -402,7 +402,7 @@ class ActionLogEvent(models.Model):
     """
     Produces a string representation of the ActionLogEvent instance.
     """
-    return "ActionLogEvent:[%s]:[%s]" % (self.id, self.action_type)
+    return "ActionLogEvent:[%s]:[%s]" % (self.id, self.function_name)
 
 
 
@@ -436,4 +436,5 @@ class ActionLogVesselDetails(models.Model):
     """
     Produces a string representation of the ActionLogVesselDetails instance.
     """
-    return "ActionLogVesselDetails:[%s]:[%s]" % (self.event, self.name)
+    return "ActionLogVesselDetails:[%s]:[%s]:[%s]" % (self.event, self.node_address,
+                                                      self.vessel_name)

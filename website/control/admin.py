@@ -23,6 +23,8 @@ from seattlegeni.website.control.models import Node
 from seattlegeni.website.control.models import Vessel
 from seattlegeni.website.control.models import VesselPort
 from seattlegeni.website.control.models import VesselUserAccessMap
+from seattlegeni.website.control.models import ActionLogEvent
+from seattlegeni.website.control.models import ActionLogVesselDetails
 
 from django.contrib import admin
 
@@ -141,6 +143,32 @@ class VesselUserAccessMapAdmin(admin.ModelAdmin):
 
 
 
+class ActionLogEventAdmin(admin.ModelAdmin):
+  """Customized admin view of the ActionLogEvent model."""
+  
+  list_display = ["function_name", "user", "second_arg", "third_arg",
+                  "was_successful", "message", "vessel_count", "date_started",
+                  "completion_time"]
+  list_filter = ["function_name", "user", "third_arg", "was_successful",
+                 "vessel_count", "date_started"]
+  search_fields = ["function_name", "user"]
+  ordering = ["-date_started"]
+
+
+
+
+
+class ActionLogVesselDetailsAdmin(admin.ModelAdmin):
+  """Customized admin view of the ActionLogVesselDetails model."""
+  
+  list_display = ["event", "node", "node_address", "node_port", "vessel_name"]
+  search_fields = ["node_address"]
+  ordering = ["-event"]
+
+
+
+
+
 # Register/associate each custom admin view defined above with the
 # corresponding model defined in seattlegeni.website.control.models
 admin.site.register(GeniUser, GeniUserAdmin)
@@ -149,4 +177,5 @@ admin.site.register(Donation, DonationAdmin)
 admin.site.register(Vessel, VesselAdmin)
 admin.site.register(VesselPort, VesselPortAdmin)
 admin.site.register(VesselUserAccessMap, VesselUserAccessMapAdmin)
-
+admin.site.register(ActionLogEvent, ActionLogEventAdmin)
+admin.site.register(ActionLogVesselDetails, ActionLogVesselDetailsAdmin)
