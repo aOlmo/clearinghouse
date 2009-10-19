@@ -225,7 +225,7 @@ class PublicXMLRPCFunctions(object):
       # given handle refers to a non-existant vessel
       raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
     except InvalidRequestError, err:
-      # given handle is of invalid format
+      # A handle is of an invalid format or the list of vessels is empty.
       raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
     
     try:
@@ -275,7 +275,7 @@ class PublicXMLRPCFunctions(object):
       # The handle refers to a non-existent vessel.
       raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
     except InvalidRequestError, err:
-      # The handle is of an invalid format.
+      # A handle is of an invalid format or the list of vessels is empty.
       raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
     
     try:

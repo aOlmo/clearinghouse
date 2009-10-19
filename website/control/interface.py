@@ -669,7 +669,7 @@ def release_vessels(geniuser, vessel_list):
   <Exceptions>
     InvalidRequestError
       If any of the vessels in the vessel_list are not currently acquired by
-      geniuser.
+      geniuser or if the list of vessels is empty.
   <Side Effects>
     The vessel is no longer assigned to the user. If this was the last user
     assigned to the vessel, the vessel is freed.
@@ -680,6 +680,9 @@ def release_vessels(geniuser, vessel_list):
   assert_list(vessel_list)
   for vessel in vessel_list:
     assert_vessel(vessel)
+
+  if not vessel_list:
+    raise InvalidRequestError("The list of vessels cannot be empty.")
 
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
@@ -767,7 +770,7 @@ def renew_vessels(geniuser, vessel_list):
   <Exceptions>
     InvalidRequestError
       If any of the vessels in the vessel_list are not currently acquired by
-      geniuser.
+      geniuser or if the list of vessels is empty.
     InsufficientUserResourcesError
       If the user is currently over their limit of acquired resources.
   <Side Effects>
@@ -780,6 +783,9 @@ def renew_vessels(geniuser, vessel_list):
   assert_list(vessel_list)
   for vessel in vessel_list:
     assert_vessel(vessel)
+
+  if not vessel_list:
+    raise InvalidRequestError("The list of vessels cannot be empty.")
 
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
