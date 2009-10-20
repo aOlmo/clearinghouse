@@ -707,10 +707,6 @@ def release_vessels(geniuser, vessel_list):
 
 
 
-# @log_action is a decorator that records details of vessel-affecting
-# operations in the database. This decorator should be kept in mind whenever
-# the arguments or return value to this function are changed.
-@log_action
 @log_function_call
 def release_all_vessels(geniuser):
   """
@@ -722,33 +718,23 @@ def release_all_vessels(geniuser):
   <Exceptions>
     None
   <Side Effects>
-    All of the user's acquired vessels have been released.
+    All of the user's acquired vessels at the time of this function call
+    have been released. This function does not guarantee that the user has
+    no acquired vessels at the time that it returns, though.
   <Returns>
     None
   """
-  assert_geniuser(geniuser)
-  
-  # Lock the user.
-  lockserver_handle = lockserver.create_lockserver_handle()
-  lockserver.lock_user(lockserver_handle, geniuser.username)
-  try:
-    # Make sure the user still exists now that we hold the lock. Also makes
-    # sure that we see any changes made to the user before we obtained the lock.
-    try:
-      geniuser = maindb.get_user(geniuser.username)
-    except DoesNotExistError:
-      raise InternalError(traceback.format_exc())
-    
-    # Get a list of all vessels acquired by the user.
-    vessel_list = maindb.get_acquired_vessels(geniuser)
-    
-    vessels.release_vessels(lockserver_handle, geniuser, vessel_list)
-    
-  finally:
-    # Unlock the user.
-    lockserver.unlock_user(lockserver_handle, geniuser.username)
-    lockserver.destroy_lockserver_handle(lockserver_handle)
+  # We get the list of vessels without holding a lock. An acquisition
+  # request or other request could sneak in after we get the vessel list but
+  # before we hold the lock. I'm not going to worry about this because it won't
+  # lead to data integrity. At worst the user could get an error about not
+  # being able to release all vessels.
 
+  # Get a list of all vessels acquired by the user.
+  vessel_list = maindb.get_acquired_vessels(geniuser)
+  
+  release_vessels(geniuser, vessel_list)
+  
 
 
 
@@ -820,10 +806,6 @@ def renew_vessels(geniuser, vessel_list):
 
 
 
-# @log_action is a decorator that records details of vessel-affecting
-# operations in the database. This decorator should be kept in mind whenever
-# the arguments or return value to this function are changed.
-@log_action
 @log_function_call
 def renew_all_vessels(geniuser):
   """
@@ -836,42 +818,22 @@ def renew_all_vessels(geniuser):
     InsufficientUserResourcesError
       If the user is currently over their limit of acquired resources.
   <Side Effects>
-    All vessels acquired by the user are renewed to the maximum time vessels
-    can be acquired for, regardless of their previous individual expiration
-    times.
+    All vessels acquired by the user at the time of this function all are
+    renewed to the maximum time vessels can be acquired for, regardless of
+    their previous individual expiration times.
   <Returns>
     None
   """
-  assert_geniuser(geniuser)
-
-  # Lock the user.
-  lockserver_handle = lockserver.create_lockserver_handle()
-  lockserver.lock_user(lockserver_handle, geniuser.username)
+  # We get the list of vessels without holding a lock. An acquisition
+  # request or other request could sneak in after we get the vessel list but
+  # before we hold the lock. I'm not going to worry about this because it won't
+  # lead to data integrity. At worst the user could get an error about not
+  # being able to renew all vessels.
+    
+  # Get a list of all vessels acquired by the user.
+  vessel_list = maindb.get_acquired_vessels(geniuser)
   
-  try:
-    # Make sure the user still exists now that we hold the lock. Also makes
-    # sure that we see any changes made to the user before we obtained the lock.
-    try:
-      geniuser = maindb.get_user(geniuser.username)
-    except DoesNotExistError:
-      raise InternalError(traceback.format_exc())
-    
-    # Ensure the user is not over their limit of acquired vessels due to
-    # donations of theirs having gone offline. This call will raise an
-    # InsufficientUserResourcesError if the user is currently over their
-    # limit.
-    vesselcount = 0
-    maindb.require_user_can_acquire_resources(geniuser, vesselcount)
-    
-    # Get a list of all vessels acquired by the user.
-    vessel_list = maindb.get_acquired_vessels(geniuser)
-    
-    vessels.renew_vessels(lockserver_handle, geniuser, vessel_list)
-
-  finally:
-    # Unlock the user.
-    lockserver.unlock_user(lockserver_handle, geniuser.username)
-    lockserver.destroy_lockserver_handle(lockserver_handle)
+  renew_vessels(geniuser, vessel_list)
 
 
 
