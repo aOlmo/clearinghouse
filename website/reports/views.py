@@ -40,6 +40,7 @@ def index(request):
   html += '<li><a href="%s">%s</a></li>' % ("donations", "Donations")
   html += '<li><a href="%s">%s</a></li>' % ("acquired_vessels", "Acquired vessels")
   html += '<li><a href="%s">%s</a></li>' % ("vessels_by_port", "Available vessels by port")
+  html += '<li><a href="%s">%s</a></li>' % ("lan_sizes_by_port", "Available LAN sizes by port")
   html += '</ul>'
   html += '</body></html>'
   return HttpResponse(html)
@@ -56,6 +57,8 @@ def all(request):
   lines += _get_text_donations_per_user()
   lines.append("")
   lines += _get_text_available_vessels_by_port()
+  lines.append("")
+  lines += _get_text_lan_sizes_by_port()
   output = "\n".join(lines)
   return HttpResponse(output, content_type='text/plain')
   
@@ -87,6 +90,14 @@ def vessels_by_port(request):
   return HttpResponse(output, content_type='text/plain')
 
 
+
+
+
+def lan_sizes_by_port(request):
+  output = "\n".join(_get_text_lan_sizes_by_port())
+  return HttpResponse(output, content_type='text/plain')
+
+  
 
 
 
@@ -159,5 +170,26 @@ def _get_text_available_vessels_by_port():
   for port in available_vessels_dict:
     portdict = available_vessels_dict[port]
     lines.append("%s\t%s\t%s\t%s" % (port, portdict["all"], portdict["no_nat"], portdict["only_nat"]))
+
+  return lines
+
+
+
+
+
+def _get_text_lan_sizes_by_port():
+  
+  lines = []
+  lines.append("Available LAN sizes by port")
+  lines.append("---------------------------")
+  
+  lan_sizes_by_port = statistics.get_available_lan_vessel_counts()
+  
+  lines.append("%s\t%s" % ("Port", "Size List (top five)"))
+  lines.append("%s\t%s" % ("----", "--------------------"))
+  
+  for port in lan_sizes_by_port:
+    size_list = lan_sizes_by_port[port][:5]
+    lines.append("%s\t%s" % (port, size_list))
 
   return lines

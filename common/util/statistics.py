@@ -85,4 +85,32 @@ def get_available_vessel_counts_by_port():
   log.set_log_level(initial_log_level)
   
   return available_vessels_dict
+
+
+
+
+
+def get_available_lan_vessel_counts():
+  """
+  Returns a dictionary where each key is a port and each value is a
+  reverse-sorted list of integers representing the the sizes of subnets with
+  available vessels on that port. These will be the maximum numbers of LAN
+  vessels a user on that port could request at once.
+  """
   
+  lan_sizes_by_port = {}
+
+  subnetlist = maindb._get_subnet_list()
+
+  for port in maindb.ALLOWED_USER_PORTS:
+    subnet_vessel_list_sizes = []
+    nonnatvesselsqueryset = maindb._get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(port)
+  
+    for subnet in subnetlist:
+      lanvesselsqueryset = nonnatvesselsqueryset.filter(node__last_known_ip__startswith=subnet + '.')
+      subnet_vessel_list_sizes.append(lanvesselsqueryset.count())
+  
+    subnet_vessel_list_sizes.sort(reverse=True)
+    lan_sizes_by_port[port] = subnet_vessel_list_sizes
+
+  return lan_sizes_by_port
