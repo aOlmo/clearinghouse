@@ -293,9 +293,10 @@ def _acquire_vessels_from_list(lockserver_handle, geniuser, vesselcount, vessel_
       return acquired_vessels
 
   # If we got here, then we didn't acquire the vessels the user wanted. We
-  # release these vessels rather than leave the user with a partial set of
-  # what they requested.
-  release_vessels(lockserver_handle, geniuser, acquired_vessels)
+  # release any vessels that may have been acquired rather than leave the user
+  # with a partial set of what they requested.
+  if acquired_vessels:
+    release_vessels(lockserver_handle, geniuser, acquired_vessels)
 
   raise UnableToAcquireResourcesError("Failed to acquire enough vessels to fulfill the request")
 
