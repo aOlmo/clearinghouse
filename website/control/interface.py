@@ -407,7 +407,8 @@ def change_user_keys(geniuser, pubkey=None):
     # Now we need to find all of the vessels the user has access to and set
     # them to have their user keys updated by the backend.
     vessel_list = maindb.get_vessels_accessible_by_user(geniuser)
-    vessels.flag_vessels_for_user_keys_sync(lockserver_handle, vessel_list)
+    if vessel_list:
+      vessels.flag_vessels_for_user_keys_sync(lockserver_handle, vessel_list)
     
   finally:
     # Unlock the user.
@@ -733,6 +734,9 @@ def release_all_vessels(geniuser):
   # Get a list of all vessels acquired by the user.
   vessel_list = maindb.get_acquired_vessels(geniuser)
   
+  if not vessel_list:
+    raise InvalidRequestError("You have no vessels and so nothing to release.")
+  
   release_vessels(geniuser, vessel_list)
   
 
@@ -815,6 +819,8 @@ def renew_all_vessels(geniuser):
     geniuser
       The GeniUser whose vessels are to be renewed.
   <Exceptions>
+    InvalidRequestError
+      If the user has no acquired vessels.
     InsufficientUserResourcesError
       If the user is currently over their limit of acquired resources.
   <Side Effects>
@@ -832,6 +838,9 @@ def renew_all_vessels(geniuser):
     
   # Get a list of all vessels acquired by the user.
   vessel_list = maindb.get_acquired_vessels(geniuser)
+  
+  if not vessel_list:
+    raise InvalidRequestError("You have no vessels and so nothing to renew.")
   
   renew_vessels(geniuser, vessel_list)
 

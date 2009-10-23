@@ -488,6 +488,7 @@ def del_resource(request):
 
 
 
+
 @login_required
 def del_all_resources(request):
   try:
@@ -500,9 +501,14 @@ def del_all_resources(request):
     return myvessels(request)
   
   remove_summary = ""
-  interface.release_all_vessels(user)
+
+  try:
+    interface.release_all_vessels(user)
+  except InvalidRequestError, err:
+    remove_summary = "Unable to release all vessels: " + str(err)
   
   return myvessels(request, remove_summary=remove_summary)
+
 
 
 
