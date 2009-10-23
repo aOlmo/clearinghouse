@@ -49,12 +49,20 @@ from seattlegeni.common.util.decorators import log_function_call
 # All of the work that needs to be done is passed through the controller interface.
 from seattlegeni.website.control import interface
 
+
+
+
+
 # XMLRPC Fault Code Constants
-FAULTCODE_OPERROR = 100
+FAULTCODE_INTERNALERROR = 100
 FAULTCODE_AUTHERROR = 101
-FAULTCODE_INVALIDUSERINPUT = 102
+FAULTCODE_INVALIDREQUEST = 102
 FAULTCODE_NOTENOUGHCREDITS = 103
-FAULTCODE_KEYALREADYREMOVED = 104
+# 104 used to be used for "private key doesn't exist".
+FAULTCODE_UNABLETOACQUIRE = 105
+
+
+
 
 class PublicXMLRPCFunctions(object):
   """
@@ -131,7 +139,7 @@ class PublicXMLRPCFunctions(object):
       # It's not unlikely that the user ends up seeing this message, so we
       # are careful about what the content of the message is. We don't
       # include the exception trace.
-      raise xmlrpclib.Fault(FAULTCODE_OPERROR, "Internal error while handling the xmlrpc request.")
+      raise xmlrpclib.Fault(FAULTCODE_INTERNALERROR, "Internal error while handling the xmlrpc request.")
       
 
 
@@ -148,8 +156,8 @@ class PublicXMLRPCFunctions(object):
         A resource specification dict of the form {'rspec_type':type, 'number_of_nodes':num}
     <Exceptions>
       Raises xmlrpclib Fault objects:
-        FAULTCODE_OPERROR for internal errors.
-        FAULTCODE_INVALIDUSERINPUT for bad user input.
+        FAULTCODE_INTERNALERROR for internal errors.
+        FAULTCODE_INVALIDREQUEST for bad user input.
         FAULTCODE_NOTENOUGHCREDITS if user has insufficient vessel credits to complete request.
     <Returns>
       A list of 'info' dictionaries, each 'infodict' contains acquired vessel info.
@@ -157,26 +165,26 @@ class PublicXMLRPCFunctions(object):
     geni_user = _auth(auth)
     
     if not isinstance(rspec, dict):
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec is an invalid data type.")
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "rspec is an invalid data type.")
     
     try:
       resource_type = rspec['rspec_type']
     except KeyError:
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec is missing rspec_type")
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "rspec is missing rspec_type")
     
     try:
       num_vessels = rspec['number_of_nodes']
     except KeyError:
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec is missing number_of_nodes")
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "rspec is missing number_of_nodes")
     
     acquired_vessels = []
     
     # validate rspec data
     if not isinstance(resource_type, str) or not isinstance(num_vessels, int):
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec has invalid data types.")
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "rspec has invalid data types.")
     
     if resource_type not in ['wan', 'lan', 'nat', 'random'] or num_vessels < 1:
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "rspec has invalid values.")
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "rspec has invalid values.")
       
     # The interface.acquire_vessels() call expects 'rand' instead of 'random'.
     if resource_type == 'random':
@@ -185,7 +193,7 @@ class PublicXMLRPCFunctions(object):
     try:
       acquired_vessels = interface.acquire_vessels(geni_user, num_vessels, resource_type)
     except UnableToAcquireResourcesError, err:
-      raise xmlrpclib.Fault(FAULTCODE_OPERROR, "Unable to fulfill vessel acquire request at this given time. Details: " + str(err))
+      raise xmlrpclib.Fault(FAULTCODE_UNABLETOACQUIRE, "Unable to fulfill vessel acquire request at this given time. Details: " + str(err))
     except InsufficientUserResourcesError, err:
       raise xmlrpclib.Fault(FAULTCODE_NOTENOUGHCREDITS, "You do not have enough vessel credits to acquire the number of vessels requested.")
     
@@ -208,14 +216,14 @@ class PublicXMLRPCFunctions(object):
         A list of vessel handles
     <Exceptions>
       Raises xmlrpclib Fault objects:
-        FAULTCODE_INVALIDUSERINPUT if a user provides invalid vessel handles.
+        FAULTCODE_INVALIDREQUEST if a user provides invalid vessel handles.
     <Returns>
       0 on success. Raises a fault otherwise.
     """
     geni_user = _auth(auth)
   
     if not isinstance(vesselhandle_list, list):
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "Invalid data type for handle list.")
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "Invalid data type for handle list.")
     
     # since we're given a list of vessel 'handles', we need to convert them to a 
     # list of actual Vessel objects; as release_vessels_of_user expects Vessel objs.
@@ -223,16 +231,16 @@ class PublicXMLRPCFunctions(object):
       list_of_vessel_objs = interface.get_vessel_list(vesselhandle_list)
     except DoesNotExistError, err:
       # given handle refers to a non-existant vessel
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, str(err))
     except InvalidRequestError, err:
       # A handle is of an invalid format or the list of vessels is empty.
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, str(err))
     
     try:
       interface.release_vessels(geni_user, list_of_vessel_objs)
     except InvalidRequestError, err:
       # vessel exists but isn't valid for you to use.
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, str(err))
     
     return 0
 
@@ -252,7 +260,7 @@ class PublicXMLRPCFunctions(object):
         A list of vessel handles
     <Exceptions>
       Raises xmlrpclib Fault objects with fault codes:
-        FAULTCODE_INVALIDUSERINPUT if a user provides invalid vessel handles.
+        FAULTCODE_INVALIDREQUEST if a user provides invalid vessel handles.
         FAULTCODE_NOTENOUGHCREDITS if user has insufficient vessel credits to complete request.
     <Returns>
       0 on success. Raises a fault otherwise.
@@ -260,11 +268,11 @@ class PublicXMLRPCFunctions(object):
     geni_user = _auth(auth)
   
     if not isinstance(vesselhandle_list, list):
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, "Invalid data type for handle list.")
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "Invalid data type for handle list.")
     
     for handle in vesselhandle_list:
       if not isinstance(handle, str):
-        raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, 
+        raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, 
                               "Invalid data type for handle. Expected str, received " + str(type(handle)))
     
     # since we're given a list of vessel 'handles', we need to convert them to a 
@@ -273,16 +281,16 @@ class PublicXMLRPCFunctions(object):
       list_of_vessel_objs = interface.get_vessel_list(vesselhandle_list)
     except DoesNotExistError, err:
       # The handle refers to a non-existent vessel.
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, str(err))
     except InvalidRequestError, err:
       # A handle is of an invalid format or the list of vessels is empty.
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, str(err))
     
     try:
       interface.renew_vessels(geni_user, list_of_vessel_objs)
     except InvalidRequestError, err:
       # The vessel exists but isn't valid for this user to use.
-      raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT, str(err))
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, str(err))
     except InsufficientUserResourcesError, err:
       message = "Vessels cannot be renewed because you are currently"
       message += " over your vessel credit limit: "
@@ -330,15 +338,10 @@ class PublicXMLRPCFunctions(object):
     geni_user = _auth(auth)
     user_port = geni_user.usable_vessel_port
     user_name = geni_user.username
-    urlinstaller = ""
-    private_key_exists = True
-    if not geni_user.user_privkey:
-      private_key_exists = False
-    max_vessel = interface.get_total_vessel_credits(geni_user)
+    max_vessels = interface.get_total_vessel_credits(geni_user)
     user_affiliation = geni_user.affiliation
     infodict = {'user_port':user_port, 'user_name':user_name,
-                'urlinstaller':urlinstaller, 'private_key_exists':private_key_exists,
-                'max_vessel':max_vessel, 'user_affiliation':user_affiliation}
+                'max_vessels':max_vessels, 'user_affiliation':user_affiliation}
     return infodict
   
   
@@ -351,64 +354,6 @@ class PublicXMLRPCFunctions(object):
     return geni_user.user_pubkey
   
   
-  
-  @staticmethod
-  @log_function_call
-  def get_private_key(auth):
-    # Gets a user's private key.
-    geni_user = _auth(auth)
-    if not geni_user.user_privkey:
-      raise xmlrpclib.Fault(FAULTCODE_KEYALREADYREMOVED, "Your private key has already been removed.")
-    return geni_user.user_privkey
-  
-  
-  
-  @staticmethod
-  @log_function_call
-  def delete_private_key(auth):
-    """
-    <Purpose>
-      Deletes a user's private key for a client over XMLRPC.
-    <Arguments>
-      auth
-        An authorization dict.
-    <Exceptions>
-      Raises xmlrpclib Fault Objects:
-        FAULTCODE_KEYALREADYREMOVED if the user's privkey was already removed.
-    <Returns>
-      Returns True on success, raises a fault otherwise.
-    """
-    geni_user = _auth(auth)
-    if not geni_user.user_privkey:
-      raise xmlrpclib.Fault(FAULTCODE_KEYALREADYREMOVED, "Your private key has already been removed.")
-    interface.delete_private_key(geni_user)
-    return True
-  
-  
-  
-  @staticmethod
-  @log_function_call
-  def authcheck(auth):
-    """
-    <Purpose>
-      Checks a user's authorization details.
-    <Arguments>
-      auth
-        An authorization dict of the form {'username':username, 'api_key':api_key}
-    <Exceptions>
-      None.
-    <Returns>
-      Returns 0 on valid auth credentials, -1 otherwise.
-    """
-    try:
-      _auth(auth)
-    except xmlrpclib.Fault, e:
-      if e.faultCode == FAULTCODE_AUTHERROR:
-        return -1
-      else:
-        raise
-    else:
-      return 0
 
 
 
@@ -422,20 +367,20 @@ def _auth(auth):
       An authorization dict of the form {'username':username, 'api_key':api_key}
   <Exceptions>
     Raises xmlrpclib Fault Objects:
-      FAULTCODE_INVALIDUSERINPUT if the auth dict is invalid.
+      FAULTCODE_INVALIDREQUEST if the auth dict is invalid.
       FAULTCODE_AUTHERROR if user auth fails.
   <Returns>
     On successful authentication, returns a geniuser object. Raises a fault otherwise.
   """
   if not isinstance(auth, dict):
-    raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT,
+    raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST,
                           "Auth dict must be a dictionary, not a " + str(type(auth)))
   
   try:
     username = auth['username']
     api_key = auth['api_key']
   except KeyError:
-    raise xmlrpclib.Fault(FAULTCODE_INVALIDUSERINPUT,
+    raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST,
                           "Auth dict must contain both a 'username' and an 'api_key'.")
     
   try:

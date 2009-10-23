@@ -51,6 +51,11 @@ def mock_raises_InsufficientUserResourcesError(*args, **kwargs):
 
 
 
+def mock_raises_UnableToAcquireResourcesError(*args, **kwargs):
+  raise UnableToAcquireResourcesError
+
+
+
 def mock_noop(*args, **kwargs):
   pass
 
@@ -98,42 +103,27 @@ class SeattleGeniTestCase(unittest.TestCase):
     auth = 'not a dict'
     
     try:
-      proxy.authcheck(auth)
+      proxy.get_account_info(auth)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
     
     auth = {'username':'tester'}
     
     try:
-      proxy.authcheck(auth)
+      proxy.get_account_info(auth)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
-
-
-
-  def test_authcheck(self):
-    
-    auth = {'username':'tester', 'api_key':'api_key'}
-
-    response = proxy.authcheck(auth)
-    assert(response == 0)
-    
-    # Indicate no user record was found with the provided auth info.
-    interface.get_user_with_api_key = mock_raises_DoesNotExistError
-    
-    response = proxy.authcheck(auth)
-    assert(response == -1)
     
     
     
   def test_all_functions_auth_failure(self):
     """
-    Make sure all of the xmlrpc calls (other than authcheck) raise an exception
-    if the authcheck fails.
+    Make sure all of the xmlrpc calls raise an exception if the auth check
+    fails.
     """
     
     auth = {'username':'tester', 'api_key':'api_key'}
@@ -183,20 +173,6 @@ class SeattleGeniTestCase(unittest.TestCase):
     else:
       self.fail("Expected an exception.")
 
-    try:
-      proxy.get_private_key(auth)
-    except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_AUTHERROR)
-    else:
-      self.fail("Expected an exception.")
-
-    try:
-      proxy.delete_private_key(auth)
-    except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_AUTHERROR)
-    else:
-      self.fail("Expected an exception.")
-
     
 
   def test_renew_resources_invalid_vessel_handle_list(self):
@@ -208,7 +184,7 @@ class SeattleGeniTestCase(unittest.TestCase):
     try:
       proxy.renew_resources(auth, vesselhandle_list)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
 
@@ -227,7 +203,7 @@ class SeattleGeniTestCase(unittest.TestCase):
     response = proxy.renew_resources(auth, vesselhandle_list)
     self.assertEqual(response, 0)
     
-    # Check various error cases. These all return FAULTCODE_INVALIDUSERINPUT.
+    # Check various error cases. These all return FAULTCODE_INVALIDREQUEST.
     
     interface.get_vessel_list = mock_raises_DoesNotExistError
     interface.renew_vessels = mock_noop
@@ -235,7 +211,7 @@ class SeattleGeniTestCase(unittest.TestCase):
     try:
       proxy.renew_resources(auth, vesselhandle_list)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
     
@@ -245,7 +221,7 @@ class SeattleGeniTestCase(unittest.TestCase):
     try:
       proxy.renew_resources(auth, vesselhandle_list)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
   
@@ -255,12 +231,11 @@ class SeattleGeniTestCase(unittest.TestCase):
     try:
       proxy.renew_resources(auth, vesselhandle_list)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
     
     # This is the case where the user has less credits than acquired resources.
-    # This returns a FAULTCODE_NOTENOUGHCREDITS.
     
     interface.get_vessel_list = mock_interface_get_vessel_list
     interface.renew_vessels = mock_raises_InsufficientUserResourcesError
@@ -271,10 +246,15 @@ class SeattleGeniTestCase(unittest.TestCase):
       self.assertEqual(e.faultCode, views.FAULTCODE_NOTENOUGHCREDITS)
     else:
       self.fail("Expected an exception.")
-    
+
+
+  
   def test_acquire_resources_rspecs(self):
     
     auth = {'username':'tester', 'api_key':'api_key'}
+    vesselhandle_list = ['vessel1', 'vessel2']
+    
+    rspec_valid = {'rspec_type':'random', 'number_of_nodes':2}
     
     # invalid rspecs
     rspec_negativenodes = {'rspec_type':'random', 'number_of_nodes':-10}
@@ -287,44 +267,71 @@ class SeattleGeniTestCase(unittest.TestCase):
     try:
       proxy.acquire_resources(auth, rspec_negativenodes)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
       
     try:
       proxy.acquire_resources(auth, rspec_invalid_rtype)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
     
     try:
       proxy.acquire_resources(auth, rspec_badtype)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
       
     try:
       proxy.acquire_resources(auth, rspec_empty)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
     
     try:
       proxy.acquire_resources(auth, rspec_missingkey)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
     
     try:
       proxy.acquire_resources(auth, rspec_badkeys)
     except xmlrpclib.Fault, e:
-      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDUSERINPUT)
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
     else:
       self.fail("Expected an exception.")
+      
+    # This is the case where the user has less credits than the number of
+    # vessels they are trying to acquire.
+    
+    interface.get_vessel_list = mock_interface_get_vessel_list
+    interface.acquire_vessels = mock_raises_InsufficientUserResourcesError
+    
+    try:
+      proxy.acquire_resources(auth, rspec_valid)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_NOTENOUGHCREDITS)
+    else:
+      self.fail("Expected an exception.")
+      
+    # This is the case where SeattleGENI doesn't have enough resources to
+    # acquire the requested vessels.
+
+    interface.get_vessel_list = mock_interface_get_vessel_list
+    interface.acquire_vessels = mock_raises_UnableToAcquireResourcesError
+    
+    try:
+      proxy.acquire_resources(auth, rspec_valid)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_UNABLETOACQUIRE)
+    else:
+      self.fail("Expected an exception.")
+
 
 
 def main():
