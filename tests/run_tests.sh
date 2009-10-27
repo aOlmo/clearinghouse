@@ -16,7 +16,8 @@ fi
 failure=0
 
 # Deploy to a tmp directory.
-tmpdir=`mktemp -d`
+# A mktemp command that works on mac/bsd and linux.
+tmpdir=`mktemp -d -t tmp.XXXXXXXX` || exit 1
 
 python $trunkdir/seattlegeni/deploymentscripts/deploy_seattlegeni.py $trunkdir $tmpdir/deploy
 pushd $tmpdir/deploy/seattlegeni
