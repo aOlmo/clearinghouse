@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script runs all seattlegeni tests. It sends all output to stdout/stderr
 # and exits with a non-zero if any tests fail.
