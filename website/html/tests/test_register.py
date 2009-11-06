@@ -40,9 +40,6 @@ from django.contrib.auth.models import User as DjangoUser
 # functions. 
 from django.test.client import Client
 
-# Setup test environment
-testlib.setup_test_environment()
-testlib.setup_test_db()
 
 # Declare our mock functions
 def mock_register_user(username, password, email, affiliation, pubkey=None):
@@ -68,28 +65,39 @@ good_data = {'username': 'tester',
 test_data = {}
 
 def main():
-  # mock out interface calls
-  interface.register_user = mock_register_user
-  interface.get_logged_in_user = mock_get_logged_in_user
   
-  # run tests
-  test_post_blank_form()
-  test_short_username()
-  test_long_username()
-  test_invalid_username()
-  test_short_password()
-  test_nonmatching_password()
-  test_matching_username_password()
-  test_short_affil()
-  test_long_affil()
-  test_invalid_email()
-  test_key_upload_with_no_file()
-  test_key_upload_with_oversized_file()
-  test_key_upload_with_bad_format_key()
-  test_key_upload_with_valid_key()
-  test_normal()
+  # Setup test environment
+  testlib.setup_test_environment()
+  testlib.setup_test_db()
   
-  print "All tests passed."
+  try:
+    # mock out interface calls
+    interface.register_user = mock_register_user
+    interface.get_logged_in_user = mock_get_logged_in_user
+    
+    # run tests
+    test_post_blank_form()
+    test_short_username()
+    test_long_username()
+    test_invalid_username()
+    test_short_password()
+    test_nonmatching_password()
+    test_matching_username_password()
+    test_short_affil()
+    test_long_affil()
+    test_invalid_email()
+    test_key_upload_with_no_file()
+    test_key_upload_with_oversized_file()
+    test_key_upload_with_bad_format_key()
+    test_key_upload_with_valid_key()
+    test_normal()
+    
+    print "All tests passed."
+    
+  finally:
+    testlib.teardown_test_db()
+    testlib.teardown_test_environment()
+
   
 
 def test_post_blank_form():

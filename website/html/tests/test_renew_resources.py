@@ -32,9 +32,6 @@ from django.contrib.auth.models import User as DjangoUser
 # functions. 
 from django.test.client import Client
 
-# Setup test environment
-testlib.setup_test_environment()
-testlib.setup_test_db()
 
 # Declare our mock functions
 def mock_get_logged_in_user(request):
@@ -64,14 +61,24 @@ good_data = {'handle':'12345'}
 interface.get_vessel_list = mock_get_vessel_list
 
 def main():
-  login_test_user()
   
-  test_normal()
-  test_get_vessel_list_throws_DoesNotExistError()
-  test_get_vessel_list_throws_InvalidRequestError()
-  test_renew_vessels_throws_InvalidRequestError()
+  # Setup test environment
+  testlib.setup_test_environment()
+  testlib.setup_test_db()
   
-  print "All tests passed."
+  try:
+    login_test_user()
+    
+    test_normal()
+    test_get_vessel_list_throws_DoesNotExistError()
+    test_get_vessel_list_throws_InvalidRequestError()
+    test_renew_vessels_throws_InvalidRequestError()
+    
+    print "All tests passed."
+    
+  finally:
+    testlib.teardown_test_db()
+    testlib.teardown_test_environment()
 
 
 

@@ -40,9 +40,7 @@ from django.contrib.auth.models import User as DjangoUser
 # functions. 
 from django.test.client import Client
 
-# Setup test environment
-testlib.setup_test_environment()
-testlib.setup_test_db()
+
 
 # Declare our mock functions
 def mock_get_logged_in_user_throws_DoesNotExistError(request):
@@ -82,10 +80,21 @@ c = Client()
 
 
 def main():
-  # Run tests
-  get_pages_without_user_logged_in()
-  get_pages_with_user_logged_in()
-  print "All tests passed."
+  
+  # Setup test environment
+  testlib.setup_test_environment()
+  testlib.setup_test_db()
+  
+  try:
+    # Run tests
+    get_pages_without_user_logged_in()
+    get_pages_with_user_logged_in()
+    
+    print "All tests passed."
+    
+  finally:
+    testlib.teardown_test_db()
+    testlib.teardown_test_environment()
 
 
 

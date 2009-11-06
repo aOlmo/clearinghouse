@@ -37,13 +37,6 @@ from django.test.client import Client
 
 
 
-# Setup test environment
-testlib.setup_test_environment()
-testlib.setup_test_db()
-
-
-
-
 
 # Declare our mock functions
 def mock_get_logged_in_user(request):
@@ -73,16 +66,25 @@ interface.change_user_keys = mock_noop
 
 
 def main():
-  login_test_user()
   
-  test_regenerate_key()
-  test_upload_key_no_file()
-  test_upload_key_file()
-  test_upload_key_file_empty_file()
-  test_upload_key_file_invalid_key()
+  # Setup test environment
+  testlib.setup_test_environment()
+  testlib.setup_test_db()
   
-  print "All tests passed."
-
+  try:
+    login_test_user()
+    
+    test_regenerate_key()
+    test_upload_key_no_file()
+    test_upload_key_file()
+    test_upload_key_file_empty_file()
+    test_upload_key_file_invalid_key()
+    
+    print "All tests passed."
+    
+  finally:
+    testlib.teardown_test_db()
+    testlib.teardown_test_environment()
 
 
 

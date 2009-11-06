@@ -37,12 +37,6 @@ from django.test.client import Client
 
 
 
-# Setup test environment
-testlib.setup_test_environment()
-testlib.setup_test_db()
-
-
-
 
 
 # Declare our mock functions
@@ -73,11 +67,19 @@ interface.regenerate_api_key = mock_noop
 
 
 def main():
-  login_test_user()
   
-  test_regenerate_api_key()
+  # Setup test environment
+  testlib.setup_test_environment()
+  testlib.setup_test_db()
   
-  print "All tests passed."
+  try:
+    login_test_user()
+    test_regenerate_api_key()
+    print "All tests passed."
+    
+  finally:
+    testlib.teardown_test_db()
+    testlib.teardown_test_environment()
 
 
 

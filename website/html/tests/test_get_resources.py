@@ -32,9 +32,6 @@ from django.contrib.auth.models import User as DjangoUser
 # functions. 
 from django.test.client import Client
 
-# Setup test environment
-testlib.setup_test_environment()
-testlib.setup_test_db()
 
 # Declare our mock functions
 def mock_get_logged_in_user(request):
@@ -58,16 +55,26 @@ good_data = {'num':5, 'env':'rand'}
 
 
 def main():
-  login_test_user()
   
-  test_normal()
-  test_interface_throws_UnableToAcquireResourcesError()
-  test_interface_throws_InsufficientUserResourcesError()
-  test_blank_POST_data()
-  test_invalid_POST_data_invalid_num()
-  test_invalid_POST_data_invalid_env()
+  # Setup test environment
+  testlib.setup_test_environment()
+  testlib.setup_test_db()
   
-  print "All tests passed."
+  try:
+    login_test_user()
+    
+    test_normal()
+    test_interface_throws_UnableToAcquireResourcesError()
+    test_interface_throws_InsufficientUserResourcesError()
+    test_blank_POST_data()
+    test_invalid_POST_data_invalid_num()
+    test_invalid_POST_data_invalid_env()
+    
+    print "All tests passed."
+    
+  finally:
+    testlib.teardown_test_db()
+    testlib.teardown_test_environment()
 
 
 
