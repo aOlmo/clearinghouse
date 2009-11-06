@@ -271,7 +271,44 @@ class SeattleGeniTestCase(unittest.TestCase):
     # Make sure backend.acquire_vessel() got called the correct number of
     # times (that is, the call_results list got pop(0)'d enough times).
     self.assertEqual(0, len(calls_results))
+
+
+
+  def test_acquire_specific_vessels(self):
+    # 8 vessels will ultimately be acquired.
+    calls_results = [True] * 8
+    mocklib.mock_backend_acquire_vessel(calls_results)
     
+    # Create a user who will be doing the acquiring.
+    user = maindb.create_user("testuser", "password", "example@example.com", "affiliation", "1 2", "2 2 2", "3 4")
+    userport = user.usable_vessel_port
+    
+    vesselcount = maindb.get_user_free_vessel_credits(user)
+    
+    # We use userport + 1 to make sure the user isn't being restricted to only
+    # vessels that have their user port in their port list.
+    testutil.create_nodes_on_different_subnets(vesselcount + 10, [userport + 1])
+    
+    vessels = list(maindb._get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(userport + 1))
+    
+    # Request the first 4 vessels in the list.
+    first_vessel_list = interface.acquire_specific_vessels(user, vessels[:4])
+    
+    # Now request the first 6 vessels in the list. We should only get 2.
+    second_vessel_list = interface.acquire_specific_vessels(user, vessels[:6])
+
+    self.assertEqual(4, len(first_vessel_list))
+    self.assertEqual(2, len(second_vessel_list))
+    
+    # Now ask for more vessels than the user has available, regardless of the
+    # fact that some of the requested vessels aren't available.
+    requestcount = vesselcount - 6 + 1
+    
+    func = interface.acquire_specific_vessels
+    args = (user, vessels[:requestcount])
+    self.assertRaises(InsufficientUserResourcesError, func, *args)
+
+
 
 
 

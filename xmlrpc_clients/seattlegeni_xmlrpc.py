@@ -232,9 +232,31 @@ class SeattleGENIClient(object):
     
     rspec = {'rspec_type':res_type, 'number_of_nodes':count}
     return self._do_call(self.proxy.acquire_resources, rspec)
-      
-      
-      
+
+
+
+  def acquire_specific_vessels(self, handlelist):
+    """
+    <Purpose>
+      Attempt to acquire specific vessels.
+    <Arguments>
+      handlelist
+        A list of vessel handles.
+    <Exceptions>
+      The common exceptions described in the module comments, as well as:
+      SeattleGENINotEnoughCredits
+        If the account does not have enough available vessel credits to fulfill
+        the request.
+    <Side Effects>
+      If successful, zero or more vessels from handlelist have been acquired.
+    <Returns>
+      A list of vessel handles of the acquired vessels.
+    """
+    _validate_handle_list(handlelist)
+    return self._do_call(self.proxy.acquire_specific_vessels, handlelist)
+
+
+
   def release_resources(self, handlelist):
     """
     <Purpose>

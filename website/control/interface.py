@@ -648,7 +648,70 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
+
+
+
+
+
+# @log_action is a decorator that records details of vessel-affecting
+# operations in the database. This decorator should be kept in mind whenever
+# the arguments or return value to this function are changed.
+@log_action
+@log_function_call
+def acquire_specific_vessels(geniuser, vessel_list):
+  """
+  <Purpose>
+    Attempt to acquire specific vessels for a user.
+  <Arguments>
+    geniuser
+      The GeniUser which will be assigned the vessels.
+    vessel_list
+      A list of vessels to be acquired for the user.
+  <Exceptions>
+    InsufficientUserResourcesError
+      The user does not have enough vessel credits to acquire the number of
+      vessels requested.
+    InvalidRequestError
+      If the list of vessels is empty.
+  <Side Effects>
+    Zero or more of the vessels in vessel_list have been acquired by the user.
+  <Returns>
+    A list of the vessels acquired as a result of this function call. The
+    length of this list may be less than the length of vessel_list if one or
+    more of the vessels in vessel_list could not be acquired.
+  """
+  assert_geniuser(geniuser)
+  assert_list(vessel_list)
+  for vessel in vessel_list:
+    assert_vessel(vessel)
+
+  if not vessel_list:
+    raise InvalidRequestError("The list of vessels cannot be empty.")
+
+  # Lock the user.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  lockserver.lock_user(lockserver_handle, geniuser.username)
+  
+  try:
+    # Make sure the user still exists now that we hold the lock. Also makes
+    # sure that we see any changes made to the user before we obtained the lock.
+    try:
+      geniuser = maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
     
+    # Ensure the user is allowed to acquire these resources. This call will
+    # raise an InsufficientUserResourcesError if the additional vessels would
+    # cause the user to be over their limit.
+    maindb.require_user_can_acquire_resources(geniuser, len(vessel_list))
+    
+    return vessels.acquire_specific_vessels_best_effort(lockserver_handle, geniuser, vessel_list)
+    
+  finally:
+    # Unlock the user.
+    lockserver.unlock_user(lockserver_handle, geniuser.username)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+
 
 
 

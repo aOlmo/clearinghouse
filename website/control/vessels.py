@@ -72,6 +72,67 @@ def _parallel_process_vessels_from_list(vessel_list, process_func, lockserver_ha
 
 
 @log_function_call
+def acquire_specific_vessels_best_effort(lockserver_handle, geniuser, vessel_list):
+  """
+  <Purpose>
+    Acquire for geniuser as many vessels in vessel_list as possible.
+  <Arguments>
+    lockserver_handle
+      The lockserver handle to be used for obtaining node locks.
+    geniuser
+      The GeniUser the vessels should be acquired for.
+    vessel_list
+      The vessels to attempt to acquire for geniuser.
+  <Exceptions>
+    None
+  <Side Effects>
+    Zero or more of the vessels are acquired for the user. The database has
+    been updated to reflect the acquisition.
+  <Returns>
+    A list of the vessels that were acquired.
+  """
+  
+  acquired_vessels = []
+  
+  parallel_results = _parallel_process_vessels_from_list(vessel_list, _do_acquire_vessel,
+                                                         lockserver_handle, geniuser)
+
+  # The "exception" key contains a list of tuples where the first item of
+  # the tuple is the vessel object and the second item is the str(e) of
+  # the exception. Because the repy parellelization module that is used
+  # underneath only passes up the exception string, we have made
+  # _do_acquire_vessel() include the string "UnableToAcquireResourcesError"
+  # in the exception message so we can tell these apart from more
+  # serious failures (e.g the backed is down).
+  for (vessel, exception_message) in parallel_results["exception"]:
+    
+    if "UnableToAcquireResourcesError" in exception_message:
+      # This is ok, maybe the node is offline.
+      log.info("Failed to acquire vessel: " + str(vessel))
+      
+    elif "UnableToAcquireResourcesError" not in exception_message:
+      # Something serious happened, maybe the backend is down.
+      raise InternalError("Unexpected exception occurred during parallelized " + 
+                          "acquisition of vessels: " + exception_message)
+    
+  # The "returned" key contains a list of tuples where the first item of
+  # the tuple is the vessel object and the second is the return value
+  # (which is None).
+  for (ignored_argument_vessel, returned_vessel) in parallel_results["returned"]:
+    # We successfully acquired this vessel.
+    # Append the returned vessel from _do_acquire_vessel() rather than
+    # the argument that the parallelize.repy library used. Somewhere
+    # along the way a copy of the argument_vessel is being made so it
+    # doesn't reflect changes made to it.
+    acquired_vessels.append(returned_vessel)
+
+  return acquired_vessels
+
+
+
+
+
+@log_function_call
 def acquire_wan_vessels(lockserver_handle, geniuser, vesselcount):
   """
   <Purpose>

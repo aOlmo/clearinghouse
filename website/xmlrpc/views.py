@@ -200,7 +200,57 @@ class PublicXMLRPCFunctions(object):
     # since acquire_vessels returns a list of Vessel objects, we
     # need to convert them into a list of 'info' dictionaries.
     return interface.get_vessel_infodict_list(acquired_vessels)
-  
+
+
+
+  @staticmethod
+  @log_function_call
+  def acquire_specific_vessels(auth, vesselhandle_list):
+    """
+    <Purpose>
+      Acquires specific vessels for a user. This will be best effort. Zero or
+      more of the vessels may be acquired. The list, however, cannot include
+      more vessels than the maximum number the user is allowed to acquire.
+    <Arguments>
+      auth
+        An authorization dict.
+      vesselhandle_list
+        A list of vessel handles.
+    <Exceptions>
+      Raises xmlrpclib Fault objects:
+        FAULTCODE_INTERNALERROR for internal errors.
+        FAULTCODE_INVALIDREQUEST for bad user input.
+        FAULTCODE_NOTENOUGHCREDITS if user has insufficient vessel credits to complete request.
+    <Returns>
+      A list of 'info' dictionaries, each 'infodict' contains acquired vessel info.
+    """
+    geni_user = _auth(auth)
+    
+    if not isinstance(vesselhandle_list, list):
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "Invalid data type for handle list.")
+    
+    # since we're given a list of vessel 'handles', we need to convert them to a 
+    # list of actual Vessel objects; as release_vessels_of_user expects Vessel objs.
+    try:
+      list_of_vessel_objs = interface.get_vessel_list(vesselhandle_list)
+    except DoesNotExistError, err:
+      # given handle refers to a non-existant vessel
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, str(err))
+    except InvalidRequestError, err:
+      # A handle is of an invalid format or the list of vessels is empty.
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, str(err))
+    
+    try:
+      acquired_vessels = interface.acquire_specific_vessels(geni_user, list_of_vessel_objs)
+    except InvalidRequestError, err:
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, str(err))
+    except InsufficientUserResourcesError, err:
+      raise xmlrpclib.Fault(FAULTCODE_NOTENOUGHCREDITS, "You do not have enough " + 
+                            "vessel credits to acquire the number of vessels requested.")
+    
+    # Convert the list of vessel objects into a list of 'info' dictionaries.
+    return interface.get_vessel_infodict_list(acquired_vessels)
+
 
 
   @staticmethod

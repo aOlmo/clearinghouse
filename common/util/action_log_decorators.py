@@ -90,8 +90,9 @@ def log_action(func):
     
     try:
       result = func(*args, **kwargs)
-      # If we weren't passed a vessel list, we assume there's one returned.
-      if not vessel_list and _is_vessel_list(result):
+      # If a vessel list is returned, that's the one we want even if we took
+      # one in as an argument.
+      if _is_vessel_list(result):
         vessel_list = result
       was_successful = True
       message = None

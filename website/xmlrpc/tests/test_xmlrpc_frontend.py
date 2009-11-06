@@ -78,6 +78,12 @@ def mock_interface_get_vessel_list(vesselhandle_list):
 
 
 
+def mock_interface_get_vessel_infodict_list(vessel_list):
+  return []
+
+
+
+
 proxy = xmlrpclib.ServerProxy('http://fakehost/xmlrpc/',
                               transport=xmlrpctestutil.TestTransport())
 
@@ -140,6 +146,13 @@ class SeattleGeniTestCase(unittest.TestCase):
     
     try:
       proxy.acquire_resources(auth, {})
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_AUTHERROR)
+    else:
+      self.fail("Expected an exception.")
+      
+    try:
+      proxy.acquire_specific_vessels(auth, [])
     except xmlrpclib.Fault, e:
       self.assertEqual(e.faultCode, views.FAULTCODE_AUTHERROR)
     else:
@@ -334,16 +347,57 @@ class SeattleGeniTestCase(unittest.TestCase):
 
 
 
+  def test_acquire_specific_vessels(self):
+    
+    auth = {'username':'tester', 'api_key':'api_key'}
+    vesselhandle_list = ['vessel1', 'vessel2']
+    
+    # Check successful case. Returns a zero to indicate success.
+    
+    interface.get_vessel_list = mock_interface_get_vessel_list
+    interface.get_vessel_infodict_list = mock_interface_get_vessel_infodict_list
+    interface.acquire_specific_vessels = mock_noop
+    
+    response = proxy.acquire_specific_vessels(auth, vesselhandle_list)
+    self.assertTrue(isinstance(response, list))
+    
+    # vesselhandle_list is not a list.
+    try:
+      proxy.acquire_specific_vessels(auth, 1)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_INVALIDREQUEST)
+    else:
+      self.fail("Expected an exception.")
+
+    # This is the case where the user has less credits than the number of
+    # vessels they are trying to acquire.
+    
+    interface.get_vessel_list = mock_interface_get_vessel_list
+    interface.acquire_specific_vessels = mock_raises_InsufficientUserResourcesError
+    
+    try:
+      proxy.acquire_specific_vessels(auth, vesselhandle_list)
+    except xmlrpclib.Fault, e:
+      self.assertEqual(e.faultCode, views.FAULTCODE_NOTENOUGHCREDITS)
+    else:
+      self.fail("Expected an exception.")
+
+
+
+
+
 def main():
   # The tests don't use the database, so we just make a single database
   # so that it exists to prevent unrelated errors when we use the models.
   testlib.setup_test_environment()
   testlib.setup_test_db()
   
-  unittest.main()
+  try:
+    unittest.main()
   
-  testlib.teardown_test_db()
-  testlib.teardown_test_environment()
+  finally:
+    testlib.teardown_test_db()
+    testlib.teardown_test_environment()
 
 
 
