@@ -23,7 +23,16 @@ else:
 # Do not change the DATABASE_ENGINE. We want to be sure that sqlite3 is used
 # for tests.
 settings.DATABASE_ENGINE = 'sqlite3'
-settings.TEST_DATABASE_NAME = tempfile.NamedTemporaryFile(dir=sqlite_database_file_dir, suffix=".sqlite").name
+
+# We just want the name of a temporary file that we'll use multiple times.
+# We don't want it to exist already, so we remove it after creating it. This is
+# not for anything security sensitive, it will only be used for test sqlite
+# databases. We could just make up a random name of our, really.
+test_db_filehandle, test_db_filename = tempfile.mkstemp(dir=sqlite_database_file_dir, suffix=".sqlite")
+os.close(test_db_filehandle)
+os.remove(test_db_filename)
+
+settings.TEST_DATABASE_NAME = test_db_filename
 # We set the DATABASE_OPTIONS for two reasons:
 #   1. We need to get rid of the init_command that we have for mysql in our
 #      default settings.py
