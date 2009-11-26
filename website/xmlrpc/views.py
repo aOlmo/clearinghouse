@@ -31,6 +31,8 @@
 # To send the admins emails when there's an unhandled exception.
 import django.core.mail 
 
+import random
+import string
 import traceback
 
 # Used for raising xmlrpc faults
@@ -41,6 +43,7 @@ from seattlegeni.website import settings
 # Make available all of our own standard exceptions.
 from seattlegeni.common.exceptions import *
 
+from seattlegeni.common.util import assertions
 from seattlegeni.common.util import log
 
 # This is the logging decorator we use.
@@ -49,7 +52,18 @@ from seattlegeni.common.util.decorators import log_function_call
 # All of the work that needs to be done is passed through the controller interface.
 from seattlegeni.website.control import interface
 
+from seattle import repyhelper
+from seattle import repyportability
 
+repyhelper.translate_and_import("rsa.repy")
+
+
+
+
+# The number of bytes of random padding data, not including the "!" separator,
+# which is included in the encrypted API key.
+# Don't change this without changing the API spec and the xmlrpc client.
+ENCRYPTED_API_KEY_PADDING_BYTES = 20
 
 
 
@@ -402,8 +416,77 @@ class PublicXMLRPCFunctions(object):
     # Gets a user's public key.
     geni_user = _auth(auth)
     return geni_user.user_pubkey
-  
-  
+
+
+
+  @staticmethod
+  @log_function_call
+  def get_encrypted_api_key(username):
+    """
+    <Purpose>
+      Retrieve the account's API key encrypted with the account's public key.
+      This provides the holder of an account's private key a means of obtaining
+      the SeattleGENI API key for the account. A side effect is that this also
+      provide a means of determining whether an account exists on seattlegeni.
+      However, we do not protect against such querying here because the same
+      can be determined in a handful of other ways through the html interface.
+      
+      This approach of obtaining the encrypted api key can be removed later if
+      we implement a way to sign requests.
+    <Arguments>
+      username
+        The username of the account whose encrypted API key we want.
+    <Exceptions>
+      Raises xmlrpclib Fault objects with fault codes:
+        FAULTCODE_INVALIDREQUEST if a the provided username is not a string
+          specifying a valid (existing) account username.
+    <Returns>
+      An string that represents DATA encrypted by (seattlelib) rsa.repy's
+      rsa_encrypt() function. DATA is a string that is the concatenation of
+      a random string of 0-9a-fA-F of fixed length, an exclamation mark, and
+      the API key.
+      
+      For example, DATA may be the following string:
+        l28yDKLQGqhqdfDquDq0433!AD98OF2308Q9RYFHDHKJAC
+      where
+        AD98OF2308Q9RYFHDHKJAC
+      is the API key.
+      
+      Note that this random data being prepended is just a dirty workaround for
+      the lack of random padding being used by the encryption format offered by
+      rsa.repy or other repy libraries. This should be changed after a repy
+      implementation of PKCS#1 is available.
+    """
+    try:
+      assertions.assert_str(username)
+    except AssertionError:
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "Username must be a string.")
+    
+    try:
+      geniuser = interface.get_user_without_password(username)
+    except DoesNotExistError:
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "Username does not exist.")
+      
+    # Don't change the number of bytes of random data without changing the API
+    # spec and the xmlrpc client.
+    randstring = ''.join(random.sample(string.letters + string.digits,
+                                       ENCRYPTED_API_KEY_PADDING_BYTES)) 
+    data = randstring + "!" + geniuser.api_key
+    data = str(data) # make sure it's type str, not unicode, as required by rsa_encrypt
+    user_pubkey_dict = rsa_string_to_publickey(geniuser.user_pubkey)
+    encrypted_data = rsa_encrypt(data, user_pubkey_dict)
+    # rsa_encrypt returns returns a string with an extra space in the front.
+    encrypted_data = encrypted_data.strip() 
+    # If the encrypted_data is more than one "block" long, something odd is
+    # going on and there may be no padding applied to one or more encrypted
+    # blocks.
+    if ' ' in encrypted_data:
+      raise InternalError("The encrypted_data to be returned by get_encrypted_api_key() " +
+                          "was more than one block long. user: " + username + 
+                          " encrypted_data: "+ encrypted_data)
+    return encrypted_data
+
+
 
 
 

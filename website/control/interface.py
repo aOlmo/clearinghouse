@@ -196,6 +196,30 @@ def get_user_for_installers(username):
 
 
 
+@log_function_call
+def get_user_without_password(username):
+  """
+  <Purpose>
+    Gets the user record corresponding to the given username.
+  <Arguments>
+    username
+      The username (must be a string).
+  <Exceptions>
+    DoesNotExistError
+      If there is no user with the specified username.
+  <Side Effects>
+    None
+  <Returns>
+    The GeniUser instance if the username is valid.
+  """
+  assert_str(username)
+  
+  return maindb.get_user(username)
+
+
+
+
+
 @log_function_call_and_only_first_argument
 def get_user_with_password(username, password):
   """

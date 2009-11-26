@@ -33,6 +33,9 @@ from seattlegeni.website.xmlrpc.tests import xmlrpctestutil
 from seattlegeni.website.control import interface
 from seattlegeni.website.control import models
 
+from seattle import repyhelper
+from seattle import repyportability
+repyhelper.translate_and_import("rsa.repy")
 
 
 
@@ -70,6 +73,22 @@ def mock_interface_get_user_with_api_key(username, api_key):
   # Not saving the geniuser record, we're not trying to interact with the db.
   return geniuser
 
+
+
+def create_mock_get_user(username, password="testpassword", api_key="testapikey",
+                         pubkeystr="pubkeystr", privkeystr="privkeystr"):
+  
+  geniuser = models.GeniUser(username=username, password=password, email='test@test.com',
+                             affiliation='test affil', user_pubkey=pubkeystr,
+                             user_privkey=privkeystr, donor_pubkey='donor_pubkey',
+                             usable_vessel_port='12345', free_vessel_credits=10,
+                             api_key = api_key)
+  # Not saving the geniuser record, we're not trying to interact with the db.
+
+  def mock_interface_get_user(username, *args, **kwargs):
+    return geniuser
+
+  return mock_interface_get_user
 
 
 
@@ -381,6 +400,30 @@ class SeattleGeniTestCase(unittest.TestCase):
       self.assertEqual(e.faultCode, views.FAULTCODE_NOTENOUGHCREDITS)
     else:
       self.fail("Expected an exception.")
+
+
+
+  def test_get_encrypted_api_key(self):
+    
+    username = "testuser"
+    api_key = "testapikey"
+    
+    (pubkeydict, privkeydict) = rsa_gen_pubpriv_keys(512)
+    pubkeystr = rsa_publickey_to_string(pubkeydict)
+    privkeystr = rsa_privatekey_to_string(privkeydict)
+    
+    interface.get_user_without_password = create_mock_get_user(username, api_key=api_key,
+                                                               pubkeystr=pubkeystr,
+                                                               privkeystr=privkeystr)
+    
+    response = proxy.get_encrypted_api_key(username)
+    self.assertTrue(isinstance(response, str))
+    
+    encrypted_data = proxy.get_encrypted_api_key(username)
+    decrypted_data = rsa_decrypt(encrypted_data, privkeydict)
+    split_data = decrypted_data.split("!")
+    
+    self.assertEqual(api_key, split_data[1])
 
 
 
