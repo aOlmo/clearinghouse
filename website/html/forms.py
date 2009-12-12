@@ -121,21 +121,18 @@ def gen_get_form(geni_user, req_post=None):
   # the total number of vessels a user may acquire
   avail_vessel_credits = interface.get_available_vessel_credits(geni_user)
   
-  # JTC: Dynamic generation of available vessel amounts based off of avail_vessel_credits
+  # Dynamic generation of the options for numbers the user can request based
+  # on their number of available vessel credits.
   if avail_vessel_credits == 0:
     step = [0]
+  elif avail_vessel_credits < 100:
+    step = range(1, avail_vessel_credits+1)
   else:
-    step = range(1, 10, 1)
-    if avail_vessel_credits < 20:
-      step = range(1, avail_vessel_credits+1, 1)
-    elif avail_vessel_credits >= 20 and avail_vessel_credits < 100:
-      step.extend(range(10, avail_vessel_credits+1, 10))
-    elif avail_vessel_credits >= 100:
-      step.extend(range(10, 100, 10))
-      step.extend(range(100, avail_vessel_credits+1, 100))
-      
-    if avail_vessel_credits not in step:
-      step.append(avail_vessel_credits)
+    step = range(1, 100)
+    step.extend(range(100, avail_vessel_credits+1, 10))
+    
+  if avail_vessel_credits not in step:
+    step.append(avail_vessel_credits)
 
   # dynamically generate the get vessels form
   #get_vessel_choices = zip(range(1,max_num+1),range(1,max_num+1))
