@@ -79,9 +79,18 @@ class SeattleGENIClient(object):
   """
   
   def __init__(self, username, api_key=None, private_key_string=None,
-               xmlrpc_url=DEFAULT_XMLRPC_URL,
-               allow_ssl_insecure=False,
-               ca_certs_file=DEFAULT_CA_CERTIFICATES_FILE):
+               xmlrpc_url=None,
+               allow_ssl_insecure=None,
+               ca_certs_file=None):
+    
+    if xmlrpc_url is None:
+      xmlrpc_url = DEFAULT_XMLRPC_URL
+      
+    if allow_ssl_insecure is None:
+      allow_ssl_insecure = False
+      
+    if ca_certs_file is None:
+      ca_certs_file = DEFAULT_CA_CERTIFICATES_FILE
     
     if not isinstance(username, basestring):
       raise TypeError("username must be a string")
