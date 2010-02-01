@@ -16,6 +16,13 @@ Profile - GENI
 {% block content %}
 	<div id="main">
 		<div id="middle">
+		
+		  <div id="learn-about-seattle">
+		    New to Seattle? We suggest you first
+		    <a href="https://seattle.cs.washington.edu/">learn about Seattle</a>
+		    before using SeattleGENI, a resource sharing website.
+		  </div>
+		
 		  <form action="{% url register %}" method="POST" enctype="multipart/form-data">
 
 		  {% if form.username.errors or form.password1.errors or form.password2.errors or form.affiliation.errors or form.email.errors or form.pubkey.errors %}

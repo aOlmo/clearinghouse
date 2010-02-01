@@ -196,3 +196,14 @@ ul.errorlist li {
     padding: 3px;
     list-style-position: inside;
 }
+
+#learn-about-seattle {
+    max-width : 800px;
+    text-align : center;
+    background-color : #ded;
+    border : 1px solid #0a0;
+    padding : 1em;
+    margin-top : 1em;
+    margin-bottom : 1em;
+    font-size : 1.3em;
+}
