@@ -1,5 +1,6 @@
 #!/bin/bash
 
+trunkdir=$1
 SCRIPT_DIR=`dirname $0`
 
 some_tests_failed=0
@@ -8,19 +9,67 @@ some_tests_failed=0
 # to be the current working directory.
 pushd $SCRIPT_DIR >/dev/null
 
-# Run the unit tests.
-python run_unit_tests.py
 
-if [ "$?" != "0" ]; then
+
+#####################################################
+##                LOCKSERVER UNIT TESTS            
+#####################################################
+
+cd ..
+echo `pwd`
+utf=$trunkdir/utf/utf.py
+utfutil=$trunkdir/utf/utfutil.py
+
+
+cp $utf ./utf.py
+cp $utfutil ./utfutil.py
+cp tests/unit/ut_*.py .
+
+if [ -e file.txt ]; then
+  echo "Filename 'file.txt' or 'results.txt' already exists, skipping lockserver unit tests <ERROR>"
   some_tests_failed=1
-fi
+else 
+  python utf.py -m lockserverunit > file.txt
+  retval=$?
 
-# Run the integration tests.
-./run_integration_tests.sh
+  numErrors=`cat file.txt | egrep '(FAIL|ERROR)' | wc -l`
+  cat file.txt
 
-if [ "$?" != "0" ]; then
+  if [ $numErrors -gt 0 -o "$retval" != "0" ]; then
+    some_tests_failed=1
+  fi
+  rm file.txt
+fi 
+
+rm utf.py
+rm utfutil.py
+
+
+####################################################
+##              INTEGRATION TESTS
+####################################################
+
+cp $utf ./utf.py
+cp $utfutil ./utfutil.py
+cp ./tests/integration/ut_*.py .
+
+if [ -e file.txt ]; then
+  echo "Filename 'file.txt' already exists, skipping integration tests <ERROR>"
   some_tests_failed=1
-fi
+else 
+  python utf.py -m integration > file.txt
+  retval=$?
+ 
+  numErrors=`cat file.txt | egrep '(FAIL|ERROR)' | wc -l`
+  cat file.txt
+
+  if [ $numErrors -gt 0 -o "$retval" != "0" ]; then
+    some_tests_failed=1
+  fi
+  rm file.txt
+fi 
+
+rm ut*.py
 
 popd >/dev/null
 

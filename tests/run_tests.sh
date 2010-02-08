@@ -19,6 +19,9 @@ failure=0
 # A mktemp command that works on mac/bsd and linux.
 tmpdir=`mktemp -d -t tmp.XXXXXXXX` || exit 1
 
+utf=$trunkdir/utf/utf.py
+utfutil=$trunkdir/utf/utfutil.py
+
 python $trunkdir/seattlegeni/deploymentscripts/deploy_seattlegeni.py $trunkdir $tmpdir/deploy
 pushd $tmpdir/deploy/seattlegeni
 
@@ -34,13 +37,29 @@ pushd website/tests
 # We assume each of these tests is a python script that returns a non-zero
 # exit code on failure.
 
-for i in *.py; do
-  echo "------------ $i ------------"
-  python $i
-  if [ "$?" != "0" ]; then
+cp $utf ./utf.py
+cp $utfutil ./utfutil.py
+
+
+if [ -e file.txt ]; then
+  echo "Filename 'file.txt' or 'results.txt' already exists, skipping website tests <ERROR>"
+  failure=1
+else 
+  python utf.py -m website > file.txt
+  retval=$?
+
+  cat file.txt
+  numErrors=`cat file.txt | egrep '(FILE|ERROR)' | wc -l`
+  
+  if [ "$retval" != "0" -o $numErrors -gt 0 ]; then
     failure=1
   fi
-done
+
+  rm file.txt
+fi 
+
+rm utf.py
+rm utfutil.py
 
 popd
 
@@ -50,15 +69,29 @@ popd
 echo "############# html frontend tests #############"
 pushd website/html/tests
 
-# We assume each of these tests is a python script that returns a non-zero
-# exit code on failure.
-for i in *.py; do
-  echo "------------ $i ------------"
-  python $i
-  if [ "$?" != "0" ]; then
+
+cp $utf ./utf.py
+cp $utfutil ./utfutil.py
+
+
+if [ -e file.txt ]; then
+  echo "Filename 'file.txt' or 'results.txt' already exists, skipping html tests"
+  failure=1
+else 
+  python utf.py -m html > file.txt
+  retval=$?
+
+  cat file.txt
+  numErrors=`cat file.txt | egrep '(FILE|ERROR)' | wc -l`
+
+  if [ "$retval" != "0" -o $numErrors -gt 0 ]; then
     failure=1
   fi
-done
+  rm file.txt
+fi 
+
+rm utf.py
+rm utfutil.py
 
 popd
 
@@ -68,15 +101,30 @@ popd
 echo "############# xmlrpc frontend tests #############"
 pushd website/xmlrpc/tests
 
-# We assume each of these tests is a python script that returns a non-zero
-# exit code on failure.
-for i in *.py; do
-  echo "------------ $i ------------"
-  python $i
-  if [ "$?" != "0" ]; then
+
+cp $utf ./utf.py
+cp $utfutil ./utfutil.py
+
+
+if [ -e file.txt ]; then
+  echo "Filename 'file.txt' already exists, skipping xmlrpc tests <ERROR>"
+  failure=1
+else 
+  python utf.py -m xmlrpc > file.txt
+  retval=$?
+
+  cat file.txt
+  numErrors=`cat file.txt | egrep '(FILE|ERROR)' | wc -l`
+  
+  if [ "$retval" != "0" -o $numErrors -gt 0 ]; then
     failure=1
   fi
-done
+
+  rm file.txt
+fi 
+
+rm utf.py
+rm utfutil.py
 
 popd
 
@@ -86,7 +134,9 @@ popd
 echo "############# Lockserver tests #############"
 pushd lockserver/tests
 
-./run_all_tests.sh
+
+./run_all_tests.sh $trunkdir
+
 if [ "$?" != "0" ]; then
   failure=1
 fi
@@ -99,15 +149,27 @@ popd
 echo "############# Transition script tests #############"
 pushd node_state_transitions/tests
 
-# We assume each of these tests is a python script that returns a non-zero
-# exit code on failure. This will also run __init__.py here, but that's fine.
-for i in *.py; do
-  echo "------------ $i ------------"
-  python $i
-  if [ "$?" != "0" ]; then
+cp $utf ./utf.py
+cp $utfutil ./utfutil.py
+
+
+if [ -e file.txt ]; then
+  echo "Filename 'file.txt' or 'results.txt' already exists, skipping nodestatetransitions tests <ERROR>"
+  failure=1
+else 
+  python utf.py -m nodestatetransitions > file.txt
+  retval=$?  
+
+  numErrors=`cat file.txt | egrep '(FILE|ERROR)' | wc -l`
+  cat file.txt
+ 
+  if [ $numErrors -gt 0 -o "$retval" != "0" ]; then
     failure=1
   fi
-done
+  rm file.txt
+fi 
+rm utf.py
+rm utfutil.py
 
 popd
 
