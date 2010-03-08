@@ -638,13 +638,16 @@ def _remove_all_user_access_to_vessel(vessel):
 
 
 @log_function_call
-def get_user(username):
+def get_user(username, allow_inactive=False):
   """
   <Purpose>
     Retrieve the user that a has the given username.
   <Arguments>
     username
       The username of the user to be retrieved.
+    allow_inactive
+      If True, don't raise an exception if the account is inactive (which
+      means probably banned for being a bad citizen).
   <Exceptions>
     DoesNotExistError
       If there is no user with the given username.
@@ -657,6 +660,12 @@ def get_user(username):
   
   try:
     geniuser = GeniUser.objects.get(username=username)
+    if not geniuser.is_active and not allow_inactive:
+      # They've probably been banned. We could completely lie, but if this is
+      # really a banned account then they probably know they've been banned.
+      # If it's not someone who was up to no good, then they should be
+      # encouraged to contact us (at least, if they get to see this message).
+      raise DoesNotExistError("Account must be activated. Please contact support.")
     
   except django.core.exceptions.ObjectDoesNotExist:
     # Intentionally vague message to prevent a security problem if this ever
