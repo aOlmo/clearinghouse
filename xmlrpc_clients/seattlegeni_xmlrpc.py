@@ -181,6 +181,27 @@ class SeattleGENIClient(object):
 
 
 
+  def _do_pwauth_call(self, function, password, *args):
+    """For use by calls that require a password rather than an api key."""
+    pwauth = {'username':self.auth['username'], 'password':password}
+    try:
+      return function(pwauth, *args)
+    except socket.error, err:
+      raise CommunicationError("XMLRPC failed: " + str(err))
+    except xmlrpclib.Fault, fault:
+      if fault.faultCode == FAULTCODE_AUTHERROR:
+        raise AuthenticationError
+      elif fault.faultCode == FAULTCODE_INVALIDREQUEST:
+        raise InvalidRequestError(fault.faultString)
+      elif fault.faultCode == FAULTCODE_NOTENOUGHCREDITS:
+        raise NotEnoughCreditsError(fault.faultString)
+      elif fault.faultCode == FAULTCODE_UNABLETOACQUIRE:
+        raise UnableToAcquireResourcesError(fault.faultString)
+      else:
+        raise InternalError(fault.faultString)
+
+
+
   def acquire_lan_resources(self, count):
     """
     <Purpose>
@@ -406,6 +427,7 @@ class SeattleGENIClient(object):
       None
     <Exceptions>
       The common exceptions described in the module comments, as well as:
+        None
     <Side Effects>
       None
     <Returns>
@@ -414,8 +436,53 @@ class SeattleGENIClient(object):
     return self._do_call(self.proxy.get_public_key)
 
 
+
+  def set_public_key(self, password, pubkeystring):
+    """
+    <Purpose>
+      Set the public key of the account.
+    <Arguments>
+      password
+        The account password. This is required because changing the public
+        key of the account cannot be done with just the api key.
+      pubkeystring
+        A string representing the new public key to be set for the account.
+    <Exceptions>
+      The common exceptions described in the module comments, as well as:
+        InvalidRequestError
+          If the pubkey is invalid.
+    <Side Effects>
+      The public key of the account is changed and will be updated on all
+      vessels the account has acquired.
+    <Returns>
+      None
+    """
+    self._do_pwauth_call(self.proxy.set_public_key, password, pubkeystring)
+
+
+
+  def regenerate_api_key(self, password):
+    """
+    <Purpose>
+      Generate a new API key for the account..
+    <Arguments>
+      password
+        The account password. This is required because changing the api
+        key of the account cannot be done with just the current api key.
+    <Exceptions>
+      The common exceptions described in the module comments, as well as:
+        None
+    <Side Effects>
+      The account's api key has been changed.
+    <Returns>
+      The new api key for the account.
+    """
+    api_key = self._do_pwauth_call(self.proxy.regenerate_api_key, password)
+    self.auth['api_key'] = api_key
+    return api_key
    
       
+
 
 def _validate_handle_list(handlelist):
   """

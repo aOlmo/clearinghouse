@@ -15,6 +15,10 @@
   The xmlrpc client should be tested separately.
 """
 
+#pragma out
+#pragma error OK
+
+
 # We import the testlib FIRST, as the test db settings 
 # need to be set before we import anything else.
 from seattlegeni.tests import testlib
@@ -25,6 +29,8 @@ import unittest
 from django.contrib.auth.models import User as DjangoUser
 
 from seattlegeni.common.exceptions import *
+
+from seattlegeni.common.api import maindb
 
 from seattlegeni.website.xmlrpc import views
 
@@ -75,6 +81,17 @@ def mock_interface_get_user_with_api_key(username, api_key):
 
 
 
+def mock_interface_get_user_with_password(username, password):
+  geniuser = models.GeniUser(username=username, password=password, email='test@test.com',
+                             affiliation='test affil', user_pubkey='user_pubkey',
+                             user_privkey='user_privkey', donor_pubkey='donor_pubkey',
+                             usable_vessel_port='12345', free_vessel_credits=10)
+  geniuser.password = password
+  # Not saving the geniuser record, we're not trying to interact with the db.
+  return geniuser
+
+
+
 def create_mock_get_user(username, password="testpassword", api_key="testapikey",
                          pubkeystr="pubkeystr", privkeystr="privkeystr"):
   
@@ -101,6 +118,12 @@ def mock_interface_get_vessel_infodict_list(vessel_list):
   return []
 
 
+def mock_interface_regenerate_api_key(geniuser):
+  return "a" * maindb.API_KEY_LENGTH
+
+
+def mock_interface_change_user_keys(geniuser, pubkeystring):
+  pass
 
 
 proxy = xmlrpclib.ServerProxy('http://fakehost/xmlrpc/',
@@ -115,7 +138,7 @@ class SeattleGeniTestCase(unittest.TestCase):
   def setUp(self):
     # Indicate a user record was found with the provided auth info.
     interface.get_user_with_api_key = mock_interface_get_user_with_api_key
-
+    interface.get_user_with_password = mock_interface_get_user_with_password
 
 
   def tearDown(self):
@@ -426,6 +449,42 @@ class SeattleGeniTestCase(unittest.TestCase):
     self.assertEqual(api_key, split_data[1])
 
 
+
+  def test_regenerate_api_key(self):
+    
+    username = "testuser"
+    password = "testpassword"
+    original_api_key = "original_api_key"
+    
+    interface.get_user_without_password = create_mock_get_user(username, password=password,
+                                                               api_key=original_api_key)
+    interface.regenerate_api_key = mock_interface_regenerate_api_key
+    
+    pwauth = {"username" : username, "password" : password}
+    
+    response = proxy.regenerate_api_key(pwauth)
+    self.assertTrue(isinstance(response, str))
+    self.assertNotEqual(response, original_api_key)
+    self.assertEqual(len(response), maindb.API_KEY_LENGTH)
+
+
+
+  def test_set_public_key(self):
+    
+    username = "testuser"
+    password = "testpassword"
+    original_api_key = "original_api_key"
+    
+    interface.get_user_without_password = create_mock_get_user(username, password=password,
+                                                               api_key=original_api_key)
+    interface.change_user_keys = mock_interface_change_user_keys
+    
+    pwauth = {"username" : username, "password" : password}
+    
+    (pubkeydict, privkeydict) = rsa_gen_pubpriv_keys(512)
+    pubkeystr = rsa_publickey_to_string(pubkeydict)
+    
+    proxy.set_public_key(pwauth, pubkeystr)
 
 
 

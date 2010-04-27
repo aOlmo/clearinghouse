@@ -48,6 +48,7 @@ from seattlegeni.common.util import log
 
 # This is the logging decorator we use.
 from seattlegeni.common.util.decorators import log_function_call
+from seattlegeni.common.util.decorators import log_function_call_without_first_argument
 
 # All of the work that needs to be done is passed through the controller interface.
 from seattlegeni.website.control import interface
@@ -488,6 +489,52 @@ class PublicXMLRPCFunctions(object):
 
 
 
+  @staticmethod
+  @log_function_call_without_first_argument
+  def regenerate_api_key(pwauth):
+    """
+    <Purpose>
+      Regenerate a user's API key.This requires authenticating with the account
+      password rather than the current API key.
+    <Arguments>
+      pwauth
+        An authorization dict that includes a password instead of an apikey.
+    <Exceptions>
+      None.
+    <Returns>
+      The new API key.
+    """
+    geni_user = _pwauth(pwauth)
+    return interface.regenerate_api_key(geni_user)
+
+
+
+  @staticmethod
+  @log_function_call_without_first_argument
+  def set_public_key(pwauth, pubkeystring):
+    """
+    <Purpose>
+      Sets the user account's public key. This requires authenticating with the
+      account password rather than the current API key.
+    <Arguments>
+      pwauth
+        An authorization dict that includes a password instead of an apikey.
+      pubkeystring
+        The account's new public key.
+    <Exceptions>
+      Raises xmlrpclib Fault Objects:
+        FAULTCODE_INVALIDREQUEST if pubkey is invalid.
+    <Returns>
+      None.
+    """
+    geni_user = _pwauth(pwauth)
+    try:
+      interface.change_user_keys(geni_user, pubkeystring)
+    except ValidationError, e:
+      raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "Invalid public key: %s" % e)
+
+    return 0
+
 
 
 @log_function_call
@@ -518,6 +565,42 @@ def _auth(auth):
     
   try:
     geni_user = interface.get_user_with_api_key(username, api_key)
+  except DoesNotExistError:
+    raise xmlrpclib.Fault(FAULTCODE_AUTHERROR, "User auth failed.")
+  
+  return geni_user
+
+
+
+
+def _pwauth(auth):
+  """
+  <Purpose>
+    Internally used function that performs authorization based on the account
+    password rather than the account api key.
+  <Arguments>
+    auth
+      An authorization dict of the form {'username':username, 'password':password}
+  <Exceptions>
+    Raises xmlrpclib Fault Objects:
+      FAULTCODE_INVALIDREQUEST if the auth dict is invalid.
+      FAULTCODE_AUTHERROR if user auth fails.
+  <Returns>
+    On successful authentication, returns a geniuser object. Raises a fault otherwise.
+  """
+  if not isinstance(auth, dict):
+    raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST,
+                          "Auth dict must be a dictionary, not a " + str(type(auth)))
+  
+  try:
+    username = auth['username']
+    password = auth['password']
+  except KeyError:
+    raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST,
+                          "PasswordAuth dict must contain both a 'username' and an 'password'.")
+    
+  try:
+    geni_user = interface.get_user_with_password(username, password)
   except DoesNotExistError:
     raise xmlrpclib.Fault(FAULTCODE_AUTHERROR, "User auth failed.")
   
