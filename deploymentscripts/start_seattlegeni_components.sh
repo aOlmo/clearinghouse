@@ -35,7 +35,8 @@ if [ "$USER" != "root" ]; then
   exit 1
 fi
 
-ALREADY_RUNNING_COUNT=`ps -ef | grep start_seattlegeni_components.sh | grep -v grep | grep -v $$ | wc -l`
+# ignore our grep script and also ignore screen instances...
+ALREADY_RUNNING_COUNT=`ps -ef | grep start_seattlegeni_components.sh | grep -v grep | grep -v -i screen | grep -v $$ | wc -l`
 # We expect one copy to be running, at least (this one).
 if [ "$ALREADY_RUNNING_COUNT" != "0" ]; then
   echo "There appears to already be a copy of start_seattlegeni_components.sh running."
