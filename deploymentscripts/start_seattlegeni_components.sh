@@ -30,6 +30,11 @@ LOG_DIR="/home/geni/logs"
 # variables for django.
 SUDO_CMD="sudo -u geni PYTHONPATH=$PYTHONPATH DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE"
 
+# When run via crontab, the $USER environment variable may not be set.
+if [ "$USER" == "" ]; then
+  USER=`whoami`
+fi
+
 if [ "$USER" != "root" ]; then
   echo "You must run this script as root. Exiting."
   exit 1
