@@ -179,6 +179,17 @@ def main():
     # Use copy2 to preserve permissions, e.g. in case these weren't world-readable.
     shutil.copy2(old_keydb_config_path, new_keydb_config_path)
 
+  state_key_path = os.path.join(seattlegeni_deploy_dir, "node_state_transitions", "statekeys")
+  beta_state_key_path = os.path.join(seattlegeni_deploy_dir, "node_state_transitions", "statekeys_beta")
+  
+  # Remove the production key from the deployment, as we don't want anyone to get confused by them.
+  # If there is any error, just ignore it.
+  try:
+    shutil.rmtree(state_key_path, ignore_errors=True)
+    shutil.rmtree(beta_state_key_path, ignore_errors=True)
+  except:
+    pass
+
   _print_post_deploy_instructions()
 
 
