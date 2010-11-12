@@ -47,9 +47,7 @@ def main():
     None
   """
 
-  state_function_arg_tuplelist = [
-    (("donation_state", node_transition_lib.acceptdonationpublickey),
-      ("canonical_state", node_transition_lib.canonicalpublickey), node_transition_lib.noop, node_transition_lib.noop)]
+  state_function_arg_tuplelist = [("acceptdonation", "canonical",  node_transition_lib.noop, node_transition_lib.noop, False)]
 
   sleeptime = 10
   process_name = "donation_to_canonical"

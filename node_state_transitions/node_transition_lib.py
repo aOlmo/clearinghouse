@@ -40,6 +40,7 @@
 
 import sys
 import time
+import random
 import traceback
 import os
 
@@ -82,25 +83,21 @@ is_initialized = False
 
 
 
-def _state_key_file_to_publickey(key_file_name):
+def _retrieve_state_key(key_file_name):
   """ Retrieve pubkey from file and return the dictionary form of key"""
   return rsa_file_to_publickey(os.path.join(settings.STATE_KEYS_DIR, key_file_name))  
 
 
+known_transition_states = ['canonical', 'acceptdonation', 
+                           'movingto_onepercentmanyevents', 
+                           'movingto_canonical', 'twopercent',
+                           'onepercentmanyevents',
+                           'movingto_twopercent']
 
+transition_state_keys = {}
 
-canonicalpublickey = _state_key_file_to_publickey("canonical.publickey")
-# The key used for new donations...
-acceptdonationpublickey = _state_key_file_to_publickey("acceptdonation.publickey")
-
-# Used for our first attempt at doing something sensible...
-movingtoonepercentmanyeventspublickey = _state_key_file_to_publickey("movingtoonepercent_manyevents.publickey")
-onepercentmanyeventspublickey = _state_key_file_to_publickey("onepercentmanyevents.publickey")
-
-known_transition_states = [canonicalpublickey, acceptdonationpublickey,
-                              movingtoonepercentmanyeventspublickey, 
-                              onepercentmanyeventspublickey]
-
+for state in known_transition_states:
+  transition_state_keys[state] = _retrieve_state_key(state + '.publickey')
 
 
 
@@ -117,7 +114,8 @@ def process_nodes_and_change_state(change_nodestate_function_tuplelist, transiti
     change_state_function_tuplelist - a list of tuples that contains all
       the info to change the state of a node.
       Tuple arguments:
-        ((startstate_name, startstate_publickey), (endstate_name, endstate_publickey), processfunction, errorfunction, processfunc_args)
+        ((startstate_name, startstate_publickey), (endstate_name, endstate_publickey), 
+         processfunction, errorfunction, processfunc_args)
 
     transition_script_name - a unique name used to get a process lock.
 
@@ -166,7 +164,8 @@ def do_one_processnode_run(change_nodestate_function_tuplelist, transition_scrip
     change_state_function_tuplelist - a list of tuples that contains all
       the info to change the state of a node.
       Tuple arguments:
-        ((startstate_name, startstate_publickey), (endstate_name, endstate_publickey), processfunction, errorfunction, processfunc_args)
+        (startstate_name, endstate_name, processfunction, 
+         errorfunction, mark_node_active, processfunc_args)
 
     transition_script_name - a unique name used to get a process lock.
 
@@ -190,8 +189,10 @@ def do_one_processnode_run(change_nodestate_function_tuplelist, transition_scrip
   # Going through the list of node state functions.
   for change_nodestate_function_tuple in change_nodestate_function_tuplelist:
     # Get some of the information out of the nodestate_function tuple.
-    startstate_name, startstate_publickey = change_nodestate_function_tuple[0]
-    endstate_name = change_nodestate_function_tuple[1][0]
+    startstate_name = change_nodestate_function_tuple[0]
+    endstate_name = change_nodestate_function_tuple[1]
+
+    startstate_publickey = transition_state_keys[startstate_name]
 
 
 
@@ -241,7 +242,7 @@ def run_parallel_processes(nodeprocesslist, lockname, parallel_instances, *proce
     lockname - the name of the lock that was acquired earlier. To ensure
       that the lock is still held    
 
-    *processargs - this includes startstate_info, endstate_info, 
+    *processargs - this includes startstate, endstate, 
       nodeprocess_func, nodeerror_func and nodeprocess_args 
 
   <Exceptions>
@@ -321,7 +322,7 @@ def run_parallel_processes(nodeprocesslist, lockname, parallel_instances, *proce
 
     
 @log_function_call
-def processnode(node_string, startstate_info, endstate_info, nodeprocess_func, nodeerror_func, *nodeprocess_args):
+def processnode(node_string, startstate_name, endstate_name, nodeprocess_func, nodeerror_func, mark_node_active, *nodeprocess_args):
   """
   <Purpose>
     First check the current state of the node, to ensure that it is in the
@@ -333,15 +334,16 @@ def processnode(node_string, startstate_info, endstate_info, nodeprocess_func, n
     node_string - this is the node itself that is gotten from advertise_lookup,
       most likely an ip:port address or NAT:ip.
 
-    startstate_info - a tuple about the startstate: (startstate_name,
-      startstate_publickey)
+    startstate_name - the state in which the nodes are in now.
 
-    endstate_info - a tuple about the endstate that the node should be
-      (endstate_name, endstate_publickey)
+    endstate_name - the state we want to transition the nodes to.
 
     nodeprocess_func - the function that is used to process the node
 
     nodeerror_func - the function that is run, if there is an error
+
+    mark_node_active - This bit determines if we want to mark the node
+      as an active node or not.
 
     nodeprocess_args - the arguments for nodeprocess_func
 
@@ -364,14 +366,14 @@ def processnode(node_string, startstate_info, endstate_info, nodeprocess_func, n
   """
  
   # The pubkey for the state.
-  startstate_pubkey = startstate_info[1]
-  endstate_pubkey = endstate_info[1]
+  startstate_pubkey = transition_state_keys[startstate_name]
+  endstate_pubkey = transition_state_keys[endstate_name]
 
   # Make sure that the node is just not an empty string. 
   # The node_string could be bad due to bad advertise_lookup.
   if not node_string:
     raise NodeError("An empty node was passed down to processnode() with startstate: "+
-                   startstate_info[0])
+                   startstate_name)
 
   # Note that the first portion of the node might be an ip or a NAT string.
   (ip_or_nat_string, port_num) = split_node_string(node_string)
@@ -400,7 +402,7 @@ def processnode(node_string, startstate_info, endstate_info, nodeprocess_func, n
 
     # If the nodes are in acceptdonationstate, update/check the database
     # to ensure that it matches the node information.
-    if startstate_pubkey == acceptdonationpublickey:
+    if startstate_pubkey == transition_state_keys['acceptdonation']:
       add_new_node_to_db(node_string, node_info)         
       log("Successfully added node to the database for node" + node_string)
       log("The database should reflect the node information accurately")
@@ -430,14 +432,14 @@ def processnode(node_string, startstate_info, endstate_info, nodeprocess_func, n
       log("Trying to set new state for node: " + node_string)
       set_node_state(database_nodeobject, endstate_pubkey)
       
-      # We have this special case here only for the transition from canonical
-      # to onepercentmany events, so the donor doesn't have to wait for the
-      # node to be seen once by the 1pct-to-1pct script before they are
-      # credited for the donation.
-      if endstate_info[1] == onepercentmanyeventspublickey:
+      # If the mark_node_active bit was set, then we want to mark the node
+      # as active in the database. Until the node is marked active, the user
+      # may not get credited. This is usually set at the final stage when all
+      # vessels have been split.
+      if mark_node_active:
         maindb.mark_node_as_active(database_nodeobject)
         
-      log("Finished setting new state " + endstate_info[0] + " on node " + node_string) 
+      log("Finished setting new state " + endstate_name + " on node " + node_string) 
 
     else:
       log("Not setting node state: start state and end state are the same.")
@@ -807,7 +809,7 @@ def find_extra_vessel_name_and_donor_key(node_info, node_string):
   # its userkey's list. 
   for vesselname in node_info['vessels']:
     log("looking in vessel "+vesselname+".....")
-    if acceptdonationpublickey in node_info['vessels'][vesselname]['userkeys']:
+    if transition_state_keys['acceptdonation'] in node_info['vessels'][vesselname]['userkeys']:
       donation_key = node_info['vessels'][vesselname]['ownerkey']
       donation_vesselname = vesselname
       log("Found donation key in vessel "+donation_vesselname+" : "+
@@ -870,6 +872,160 @@ def find_advertised_nodes(startstate_name, startstate_publickey):
 
       log("Sleeping for 10 second before retrying advertise_lookup...")
       time.sleep(1)
+
+
+
+
+
+
+@log_function_call
+def split_vessels (node_string, node_info, database_nodeobject, resourcetemplate):
+  """
+  <Purpose>
+    The purpose of this function is to take a node has an extra vessel that is
+    big enough to be split into two or more vessels. The resources on a vessel
+    is determined by the resourcetemplate that is provided as well as the usable
+    ports on the node.
+
+  <Arguments>
+    node_string - the name of the node. ip:port or NAT:port
+
+    node_info - a dictionary containing information about the node
+
+    database_nodeobject - a database object for the node
+
+    resourcetemplate - the file that has information about resources
+
+  <Exceptions>
+    NodeError - Error raised if node is not in the right state
+
+    NodemanagerCommunicationError - raised if we cannot retrieve the usable ports for a node
+
+    NodeProcessError - raised if unable to split vessels properly
+
+    DatabaseError - raised if unable to modify the database
+
+  <Side Effects>
+    Database gets modified.
+
+  <Return>
+    None
+  """
+
+  log("Beginning to divide vessel on node: "+node_string)
+
+  # Extract the ip/NAT and the port.
+  # Note that the first portion of the node might be an ip or a NAT string.
+  (ip_or_nat_string, port_num) = split_node_string(node_string)
+
+  donated_vesselname = database_nodeobject.extra_vessel_name
+
+  # Retrieve the usable ports list for the node and then shuffle
+  # the ports so each vessel gets a random subset of the ports
+  usable_ports_list = nodemanager.get_vessel_resources(ip_or_nat_string, port_num, donated_vesselname)['usableports']
+  log("List of usable ports in node: "+node_string+". "+str(usable_ports_list))
+  random.shuffle(usable_ports_list)
+
+  #the vessel that we start with
+  current_vessel = donated_vesselname
+  log("Name of starting vessel: "+current_vessel)
+
+  # Keep splittiing the vessel until we run out of resources.
+  # Note that when split_vessel is called the left vessel
+  # has the leftover (extra vessel)and the right vessel has
+  # the vessel with the exact resources.
+  while len(usable_ports_list) >= 10:
+    desired_resourcedata = get_resource_data(resourcetemplate, usable_ports_list)
+
+    #use the first 10 ports so remove them from the list of usable_ports_list
+    used_ports_list = usable_ports_list[:10]
+    usable_ports_list = usable_ports_list[10:]
+
+    log("Ports we are going to use for the new vessel: "+str(used_ports_list))
+    log("Starting to split vessel: "+current_vessel)
+
+    # Split the current vessel. The exact vessel is the right vessel
+    # and the extra vessel is the left vessel.
+    try:
+      leftover_vessel, new_vessel = backend.split_vessel(database_nodeobject, current_vessel, desired_resourcedata)
+    except NodemanagerCommunicationError, e:
+      # The object 'e' will already include traceback info that has the actual node error.
+      # If the failure is due to inability to split further, that's ok.
+      if 'Insufficient quantity:' in str(e):
+        log("Could not split " + current_vessel + " any further due to insufficient resource/quantity. " + str(e))
+        # We must break out of the while loop here. If we let the exception get,
+        # raised, it will look like the transition failed.
+        break
+      raise
+
+    log("Successfully split vessel: "+current_vessel+" into vessels: "+leftover_vessel+" and "+new_vessel)
+    current_vessel = leftover_vessel
+
+    # Make sure to update the database and record the new
+    # name of the extra vessel as when backend.split_vessels()
+    # is called, the old vessel does not exist anymore.
+    # Instead two new vessels are created, where the first
+    # vessel is the extra vessel with leftover resources
+    # and the second vessel has the actual amount of resources
+    maindb.set_node_extra_vessel_name(database_nodeobject, current_vessel)
+
+    # Set the user_list for the new vesel to be empty. Remember that user_list is what determines
+    # the transition state, and only the extra vessel should have this set.
+    backend.set_vessel_user_keylist(database_nodeobject, new_vessel, [])
+    log("Changed the userkeys for the vessel "+new_vessel+" to []")
+
+    # Add the newly created vessel to the database and then add the ports associated with
+    # the vessel to the database also.
+    log("Creating a vessel record in the database for vessel "+new_vessel+" for node "+node_string)
+    try:
+      vessel_object = maindb.create_vessel(database_nodeobject, new_vessel)
+      log("Setting the vessel ports in the database for vessel "+new_vessel+" with port list: "+str(used_ports_list))
+      maindb.set_vessel_ports(vessel_object, used_ports_list)
+    except:
+      raise DatabaseError("Failed to create vessel entry or change vessel entry for vessel: " +
+                          new_vessel + ". " + traceback.format_exc())
+
+
+  log("Finished splitting vessels up for the node: "+node_string)
+
+
+
+
+
+@log_function_call
+def get_resource_data(resourcetemplate, usable_ports_list):
+  """
+  <Purpose>
+    Create the resource_template and return it.
+
+  <Arguments>
+    resourcetemplate - the resource file
+
+    usable_ports_list - the list of ports that the node has
+
+  <Exception>
+    None
+
+  <Side Effects>
+    None
+
+  <Return>
+    None
+  """
+
+  # Edit the resource file to add the resources in.
+  resources_data = resourcetemplate % (str(usable_ports_list[0]), str(usable_ports_list[1]),
+                                       str(usable_ports_list[2]), str(usable_ports_list[3]),
+                                       str(usable_ports_list[4]), str(usable_ports_list[5]),
+                                       str(usable_ports_list[6]), str(usable_ports_list[7]),
+                                       str(usable_ports_list[8]), str(usable_ports_list[9]),
+                                       str(usable_ports_list[0]), str(usable_ports_list[1]),
+                                       str(usable_ports_list[2]), str(usable_ports_list[3]),
+                                       str(usable_ports_list[4]), str(usable_ports_list[5]),
+                                       str(usable_ports_list[6]), str(usable_ports_list[7]),
+                                       str(usable_ports_list[8]), str(usable_ports_list[9]))
+
+  return resources_data
 
 
 
@@ -960,7 +1116,7 @@ def create_combined_vessel(database_nodeobject, extra_vessel, vessel_list):
   # the extra vessel. Be the end we should have only one vessel,
   # which should be the extra_vessel. Make sure to also update
   # the database with each iteration to ensure that the
-  # extra_vessel_name gets updated appropriately
+  # extra_vessel_name gets updated appropriately.
   for current_vessel in vessel_list:
     try: 
       combined_vessel = backend.join_vessels(database_nodeobject, extra_vessel, current_vessel)
@@ -978,6 +1134,101 @@ def create_combined_vessel(database_nodeobject, extra_vessel, vessel_list):
   log("Finished combining all the vessels for node: " + database_nodeobject.node_identifier)
   
   return extra_vessel
+
+
+
+
+
+@log_function_call
+def update_database(node_string, node_info, database_nodeobject, update_database_node):
+  """
+  <Purpose>
+    The purpose of this function is to update the database
+
+  <Arguments>
+    node_string - the name of the node. ip:port or NAT:port
+
+    node_info - a dictionary containing information about the node
+
+    node_database - a node object from the database
+
+    update_database_node - This is a function that updates the database. May be replaced
+      in the future.
+
+  <Exceptions>
+    DatabaseError - raised if unable to modify the database
+
+  <Side Effects>
+    None
+
+  <Return>
+    None
+  """
+
+  log("Beginning update_database on node: "+node_string)
+
+  # Extract the ip/NAT and the port.
+  # Note that the first portion of the node might be an ip or a NAT string.
+  ip_or_nat_string, port_num = split_node_string(node_string)
+
+  # Update the database with the most up to date info about the node.
+  # Currently only updates the node version
+  log("Retrieved database node object for node: " + node_string)
+  try:
+    update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num)
+  except:
+    raise node_transition_lib.DatabaseError("Unable to update the database." + traceback.format_exc())
+
+  log("updated node database record with version: "+str(database_nodeobject.last_known_version))
+
+  return
+
+
+
+
+
+@log_function_call
+def update_database_node(database_nodeobject, node_info, ip_or_nat_string, port_num):
+  """
+  <Purpose>
+    Update the database with the information provided
+
+  <Arguments>
+    database_nodeobject - a database object of the node
+
+    node_info - information about the node including the vesseldict
+
+    ip_or_nat_string - the ip or nat address of the node
+
+    port_num - the port number that is being used for the port
+
+    node_status - the status of the node that should be set
+
+  <Exception>
+    DatabaseError - raise if we could not update database
+
+  <Side Effects>
+    None
+
+  <Return>
+    database_object
+  """
+
+  version = node_info['version']
+
+  # If the node objec was inactive, then we are going to make it active.
+  if not database_nodeobject.is_active:
+    log("The node "+ip_or_nat_string+":"+str(port_num)+" was inactive. Now activating")
+
+  try:
+    # Update all the database info about the node.
+    maindb.record_node_communication_success(database_nodeobject, version, ip_or_nat_string, port_num)
+  except:
+    raise DatabaseError("Unable to modify database to update info on node: "+ip_or_nat_string)
+
+  log("Updated the database for node: "+ip_or_nat_string+", with the latest info")
+
+  return database_nodeobject
 
 
 

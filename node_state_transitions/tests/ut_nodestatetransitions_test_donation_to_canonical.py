@@ -21,15 +21,14 @@ from seattlegeni.tests import testlib
 
 from seattlegeni.node_state_transitions import node_transition_lib
 
+
 from seattlegeni.common.api import maindb
 
 from seattlegeni.node_state_transitions.tests import mockutil
 
-
-
 #vessel dictionary for this test
 vessels_dict = {}
-vessels_dict[mockutil.extra_vessel_name] = {"userkeys" : [node_transition_lib.acceptdonationpublickey],
+vessels_dict[mockutil.extra_vessel_name] = {"userkeys" : [node_transition_lib.transition_state_keys['acceptdonation']],
                                    "ownerkey" : mockutil.donor_key,
                                    "ownerinfo" : "",
                                    "status" : "",
@@ -72,7 +71,7 @@ def setup_test():
   mockutil.mock_backend_set_vessel_owner_key()
   mockutil.mock_backend_split_vessel()
   mockutil.mock_backend_set_vessel_user_keylist([mockutil._mock_pubkey_to_string(
-                                                node_transition_lib.canonicalpublickey)])
+                                                node_transition_lib.transition_state_keys['canonical'])])
  
 
 
@@ -99,10 +98,9 @@ def run_success_test():
 
   transitionlist = []
 
-  transitionlist.append((("donation_state", node_transition_lib.acceptdonationpublickey),
-                        ("canonical_state", node_transition_lib.canonicalpublickey),
+  transitionlist.append(("acceptdonation", "canonical", 
                          node_transition_lib.noop,
-                         node_transition_lib.noop))
+                         node_transition_lib.noop, False))
 
   (success_count, failure_count) = node_transition_lib.do_one_processnode_run(transitionlist, "startstatename", 1)[0]
 
@@ -117,7 +115,7 @@ def run_success_test():
 
 
 
-def run_database_stituation_two_test():
+def run_database_situation_two_test():
   """
   <Purpose>
     The purpose of this test is to test the case where a record
@@ -144,10 +142,9 @@ def run_database_stituation_two_test():
 
   transitionlist = []
 
-  transitionlist.append((("donation_state", node_transition_lib.acceptdonationpublickey),
-                        ("canonical_state", node_transition_lib.canonicalpublickey),
+  transitionlist.append(("acceptdonation", "canonical", 
                          node_transition_lib.noop,
-                         node_transition_lib.noop))
+                         node_transition_lib.noop, False))
 
   print "Running test where database has record of node, no record of donation and node has donor key"
 
@@ -164,7 +161,7 @@ def run_database_stituation_two_test():
 
 
 
-def run_database_stituation_three_test():
+def run_database_situation_three_test():
   """
   <Purpose>
     The purpose of this test is to test the case where a record
@@ -196,10 +193,9 @@ def run_database_stituation_three_test():
 
   transitionlist = []
 
-  transitionlist.append((("donation_state", node_transition_lib.acceptdonationpublickey),
-                        ("canonical_state", node_transition_lib.canonicalpublickey),
+  transitionlist.append(("acceptdonation", "canonical", 
                          node_transition_lib.noop,
-                         node_transition_lib.noop))
+                         node_transition_lib.noop, False))
 
   print "Running test where database has record of node, has record of donation and node has donor key"
 
@@ -243,10 +239,10 @@ def run_multiple_donation_test():
   """
  
   # Have the extra vessel in canonical form
-  vessels_dict[mockutil.extra_vessel_name]["userkeys"] = [node_transition_lib.canonicalpublickey]
+  vessels_dict[mockutil.extra_vessel_name]["userkeys"] = [node_transition_lib.transition_state_keys['canonical']]
 
   # Have a second vessel in acceptdonation state. Essentially a second donation.
-  vessels_dict["second_donation"] = {"userkeys" : [node_transition_lib.acceptdonationpublickey],
+  vessels_dict["second_donation"] = {"userkeys" : [node_transition_lib.transition_state_keys['acceptdonation']],
                                    "ownerkey" : mockutil.donor_key,
                                    "ownerinfo" : "",
                                    "status" : "",
@@ -267,10 +263,9 @@ def run_multiple_donation_test():
 
   transitionlist = []
 
-  transitionlist.append((("donation_state", node_transition_lib.acceptdonationpublickey),
-                        ("canonical_state", node_transition_lib.canonicalpublickey),
+  transitionlist.append(("acceptdonation", "canonical", 
                          node_transition_lib.noop,
-                         node_transition_lib.noop))
+                         node_transition_lib.noop, False))
 
   print "Running test where database has record of node, no record of donation and node has donor key"
 
@@ -331,13 +326,13 @@ if __name__ == "__main__":
 
   setup_test()
   try:
-    run_database_stituation_two_test()
+    run_database_situation_two_test()
   finally:
     teardown_test()
 
   setup_test()
   try:
-    run_database_stituation_three_test()
+    run_database_situation_three_test()
   finally:
     teardown_test()
 
@@ -347,4 +342,3 @@ if __name__ == "__main__":
   finally:
     teardown_test()
 
-  

@@ -13,6 +13,7 @@
 
 <Started>
   Aug 21, 2009
+  Modified: Nov 12, 2010
 """
 
 #pragma out
@@ -38,12 +39,12 @@ repyhelper.translate_and_import('rsa.repy')
 
 #vessel dictionary for this test
 vessels_dict = {}
-vessels_dict[mockutil.extra_vessel_name] = {"userkeys" : [node_transition_lib.canonicalpublickey],
+vessels_dict[mockutil.extra_vessel_name] = {"userkeys" : [node_transition_lib.transition_state_keys['canonical']],
                                    "ownerkey" : mockutil.donor_key,
                                    "ownerinfo" : "",
                                    "status" : "",
                                    "advertise" : True}
-vessels_dict["vessel_non_seattlegeni"] = {"userkeys" : [node_transition_lib.canonicalpublickey],
+vessels_dict["vessel_non_seattlegeni"] = {"userkeys" : [node_transition_lib.transition_state_keys['canonical']],
                                    "ownerkey" : mockutil.donor_key,
                                    "ownerinfo" : "",
                                    "status" : "",
@@ -104,7 +105,7 @@ def setup_test():
   mockutil.mock_backend_set_vessel_owner_key()
   mockutil.mock_backend_split_vessel()
   mockutil.mock_backend_set_vessel_user_keylist([mockutil._mock_pubkey_to_string(
-                                                node_transition_lib.movingtoonepercentmanyeventspublickey)])
+                                                node_transition_lib.transition_state_keys['movingto_onepercentmanyevents'])])
  
 
 
@@ -132,10 +133,9 @@ def run_can_to_moving1percent_test():
   print "Starting canonical to movingtoonepercentmanyevents test....."
   transitionlist = []
 
-  transitionlist.append((("canonical_state", node_transition_lib.canonicalpublickey),
-                        ("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey),
+  transitionlist.append(("canonical", "movingto_onepercentmanyevents", 
                          node_transition_lib.noop,
-                         node_transition_lib.noop))
+                         node_transition_lib.noop, False))
   
 
 
@@ -152,19 +152,20 @@ def run_can_to_moving1percent_test():
 
 
 
+
 def run_moving2onepercent_to_onepercent_test():
 
   transitionlist = []
 
 
   # Change the vessel_dict and reset all the mock functions in order to have the appropriate info
-  vessels_dict[mockutil.extra_vessel_name]["userkeys"] = [node_transition_lib.movingtoonepercentmanyeventspublickey]  
+  vessels_dict[mockutil.extra_vessel_name]["userkeys"] = [node_transition_lib.transition_state_keys['movingto_onepercentmanyevents']]  
 
   mockutil.mock_nodemanager_get_node_info(mockutil.nodeid_key, "10.0test", vessels_dict)
   mockutil.mock_backend_set_vessel_owner_key()
   mockutil.mock_backend_split_vessel()
   mockutil.mock_backend_set_vessel_user_keylist([mockutil._mock_pubkey_to_string(
-                                                node_transition_lib.onepercentmanyeventspublickey)])
+                                                node_transition_lib.transition_state_keys['onepercentmanyevents'])])
 
   onepercentmanyevents_resource_fd = file(transition_canonical_to_onepercentmanyevents.RESOURCES_TEMPLATE_FILE_PATH)
   onepercentmanyevents_resourcetemplate = onepercentmanyevents_resource_fd.read()
@@ -173,10 +174,9 @@ def run_moving2onepercent_to_onepercent_test():
   
 
 
-  transitionlist.append((("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey),
-                        ("onepercentmanyevents_state", node_transition_lib.onepercentmanyeventspublickey),
-                         transition_canonical_to_onepercentmanyevents.onepercentmanyevents_divide,
-                         node_transition_lib.noop,
+  transitionlist.append(("movingto_onepercentmanyevents", "onepercentmanyevents",
+                         node_transition_lib.split_vessels,
+                         node_transition_lib.noop, True,
                          onepercentmanyevents_resourcetemplate))
 
   print "Starting canonical to movingtoonepercentmanyevents test....."
@@ -240,20 +240,19 @@ def run_moving2onepercent_to_canonical_test():
 
 
 
-  vessels_dict[mockutil.extra_vessel_name]["userkeys"] = [node_transition_lib.movingtoonepercentmanyeventspublickey]
+  vessels_dict[mockutil.extra_vessel_name]["userkeys"] = [node_transition_lib.transition_state_keys['movingto_onepercentmanyevents']]
   vessels_dict[mockutil.extra_vessel_name]["ownerkey"] = rsa_string_to_publickey(node.owner_pubkey)
 
   mockutil.mock_nodemanager_get_node_info(mockutil.nodeid_key, "10.0test", vessels_dict)
   mockutil.mock_backend_set_vessel_owner_key()
   mockutil.mock_backend_join_vessels()
   mockutil.mock_backend_set_vessel_user_keylist([mockutil._mock_pubkey_to_string(
-                                                node_transition_lib.canonicalpublickey)])
+                                                node_transition_lib.transition_state_keys['canonical'])])
 
 
-  transitionlist.append((("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey),
-                        ("canonical_state", node_transition_lib.canonicalpublickey),
+  transitionlist.append(("movingto_onepercentmanyevents", "canonical",
                          node_transition_lib.combine_vessels,
-                         node_transition_lib.noop))
+                         node_transition_lib.noop, False))
 
   print "Starting canonical to movingtoonepercentmanyevents test....."
 

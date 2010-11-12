@@ -43,7 +43,7 @@ from seattlegeni.node_state_transitions import node_transition_lib
 
 
 # The full path to the onepercentmanyevents.resources file, including the filename.
-RESOURCES_TEMPLATE_FILE_PATH = os.path.join(os.path.dirname(__file__), "onepercentmanyevents.resources")
+RESOURCES_TEMPLATE_FILE_PATH = os.path.join(os.path.dirname(__file__), "resource_files", "onepercentmanyevents.resources")
 
 
 
@@ -244,17 +244,13 @@ def main():
   """
 
   state_function_arg_tuplelist = [
-    (("canonical_state", node_transition_lib.canonicalpublickey), ("movingto_onepercent_state", 
-      node_transition_lib.movingtoonepercentmanyeventspublickey), 
-      node_transition_lib.noop, node_transition_lib.noop),
+    ("canonical", "movingto_onepercentmanyevents", node_transition_lib.noop, node_transition_lib.noop),
 
-    (("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey),
-      ("onepercentmanyevents_state", node_transition_lib.onepercentmanyeventspublickey), 
-      onepercentmanyevents_divide, node_transition_lib.noop,onepercentmanyevents_resourcetemplate),
+    ("movingto_onepercentmanyevents", "onepercentmanyevents", onepercentmanyevents_divide, 
+     node_transition_lib.noop,onepercentmanyevents_resourcetemplate),
 
-    (("movingto_onepercent_state", node_transition_lib.movingtoonepercentmanyeventspublickey), 
-      ("canonical_state", node_transition_lib.canonicalpublickey), node_transition_lib.combine_vessels, 
-      node_transition_lib.noop)]
+    ("movingto_onepercentmanyevents", "canonical", node_transition_lib.combine_vessels, 
+     node_transition_lib.noop)]
  
   sleeptime = 10
   process_name = "canonical_to_onepercentmanyevents"

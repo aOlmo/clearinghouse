@@ -20,7 +20,6 @@
 from seattlegeni.tests import testlib
 
 from seattlegeni.node_state_transitions import node_transition_lib
-from seattlegeni.node_state_transitions import transition_onepercentmanyevents_to_onepercentmanyevents
 
 from seattlegeni.common.api import maindb
 
@@ -30,7 +29,7 @@ from seattlegeni.node_state_transitions.tests import mockutil
 
 #vessel dictionary for this test
 vessels_dict = {}
-vessels_dict[mockutil.extra_vessel_name] = {"userkeys" : [node_transition_lib.onepercentmanyeventspublickey],
+vessels_dict[mockutil.extra_vessel_name] = {"userkeys" : [node_transition_lib.transition_state_keys['onepercentmanyevents']],
                                    "ownerkey" : "SeattleGENI",
                                    "ownerinfo" : "",
                                    "status" : "",
@@ -124,11 +123,10 @@ def run_database_update_test():
   active_nodes_list[0].is_active = False
   active_nodes_list[0].save()
 
-  transitionlist.append((("startstatename", node_transition_lib.onepercentmanyeventspublickey),
-                        ("endstatename", node_transition_lib.onepercentmanyeventspublickey),
-                         transition_onepercentmanyevents_to_onepercentmanyevents.update_database,
-                         node_transition_lib.noop,
-                         transition_onepercentmanyevents_to_onepercentmanyevents.update_database_node))
+  transitionlist.append(("onepercentmanyevents", "onepercentmanyevents", 
+                         node_transition_lib.update_database,
+                         node_transition_lib.noop, True,
+                         node_transition_lib.update_database_node))
 
   (success_count, failure_count) = node_transition_lib.do_one_processnode_run(transitionlist, "startstatename", 1)[0]
 
