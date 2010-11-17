@@ -28,7 +28,7 @@
   python transition_onepercentmanyevents_to_canonical.py
 """
 
-
+import os
 
 from seattlegeni.common.exceptions import *
 
@@ -37,6 +37,9 @@ from seattlegeni.common.util.decorators import log_function_call
 from seattlegeni.node_state_transitions import node_transition_lib
 
 
+
+# The full path to the onepercentmanyevents.resources file, including the filename.
+RESOURCES_TEMPLATE_FILE_PATH = os.path.join(os.path.dirname(__file__), "resource_files", "onepercentmanyevents.resources")
 
 
 def main():
@@ -61,6 +64,13 @@ def main():
   <Return>
     None.
   """
+
+
+  # Open and read the resource file that is necessary for onepercentmanyevents
+  onepercentmanyevents_resource_fd = file(RESOURCES_TEMPLATE_FILE_PATH)
+  onepercentmanyevents_resourcetemplate = onepercentmanyevents_resource_fd.read()
+  onepercentmanyevents_resource_fd.close()
+
 
   # Create a  list that is used to call node_transition_lib.
   # The list will have a list of three tuples. The first 

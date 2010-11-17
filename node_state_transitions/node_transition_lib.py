@@ -179,7 +179,7 @@ def do_one_processnode_run(change_nodestate_function_tuplelist, transition_scrip
     None
 
   <Return>
-    (success_processrun_count, fail_processrun_count)
+    [(success_processrun_count, fail_processrun_count)]
 
       success_processrun_count - how many nodes were processed sucessfully
       fail_processrun_count - how many nodes were processed unsuccessfully
@@ -438,6 +438,8 @@ def processnode(node_string, startstate_name, endstate_name, nodeprocess_func, n
       # vessels have been split.
       if mark_node_active:
         maindb.mark_node_as_active(database_nodeobject)
+      else:
+        maindb.mark_node_as_inactive(database_nodeobject)
         
       log("Finished setting new state " + endstate_name + " on node " + node_string) 
 

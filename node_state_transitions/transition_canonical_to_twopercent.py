@@ -39,7 +39,7 @@ RESOURCES_TEMPLATE_FILE_PATH = os.path.join(os.path.dirname(__file__), "resource
 
 
 
-def main()
+def main():
   """
   <Purpose>
     The main function that calls the process_nodes_and_change_state() function
