@@ -93,16 +93,13 @@ def main():
   mark_nodes_inactive=False
 
   state_function_arg_tuplelist = [
-    (("onepercentmanyevents_state", node_transition_lib.onepercentmanyevents_publickey), 
-     ("movingto_canonical_state", node_transition_lib.movingto_canonical_publickey),
+    ("onepercentmanyevents", "movingto_canonical", 
      node_transition_lib.noop, node_transition_lib.noop, mark_nodes_inactive),
 
-    (("movingto_canonical_state", node_transition_lib.movingto_canonical_publickey),
-     ("canonical_state", node_transition_lib.canonical_publickey),
+    ("movingto_canonical", "canonical", 
      node_transition_lib.combine_vessels, node_transition_lib.noop, mark_nodes_inactive),
 
-    (("movingto_canonical_state", node_transition_lib.movingto_canonical_publickey),
-     ("onepercentmanyevents_state", node_transition_lib.onepercentmanyevents_publickey),
+    ("movingto_canonical", "onepercentmanyevents_state", 
      node_transition_lib.split_vessels, node_transition_lib.noop, mark_nodes_inactive, 
      onepercentmanyevents_resourcetemplate)]
 
