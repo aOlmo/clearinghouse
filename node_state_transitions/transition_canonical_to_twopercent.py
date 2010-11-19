@@ -59,7 +59,7 @@ def main():
   # This will determine how the vessels will be split and how much resource 
   # will be allocated to each vessel.
   twopercent_resource_fd = file(RESOURCES_TEMPLATE_FILE_PATH)
-  twopercent_resourcetemplate = onepercentmanyevents_resource_fd.read()
+  twopercent_resourcetemplate = twopercent_resource_fd.read()
   twopercent_resource_fd.close()
   
   # We are going to transition all the nodes that are in the canonical state
