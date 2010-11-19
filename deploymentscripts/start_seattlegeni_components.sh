@@ -81,11 +81,15 @@ TRANSITION_NAME=transition_donation_to_canonical
 echo "Starting transition script $TRANSITION_NAME"
 $SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
 
-TRANSITION_NAME=transition_canonical_to_onepercentmanyevents
+TRANSITION_NAME=transition_canonical_to_twopercent
 echo "Starting transition script $TRANSITION_NAME"
 $SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
 
-TRANSITION_NAME=transition_onepercentmanyevents_to_onepercentmanyevents
+TRANSITION_NAME=transition_twopercent_to_twopercent
+echo "Starting transition script $TRANSITION_NAME"
+$SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
+
+TRANSITION_NAME=transition_onepercentmanyevents_to_canonical
 echo "Starting transition script $TRANSITION_NAME"
 $SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
 
