@@ -38,22 +38,24 @@
   resource differently.
 """
 
+import os
 import sys
 import time
 import random
 import traceback
-import os
 
+import django.db
+
+from seattle import runonce
 from seattle import repyhelper
 from seattle import repyportability
-from seattle import runonce
 
 import seattlegeni.common.util.log
 
-from seattlegeni.common.api import nodemanager
 from seattlegeni.common.api import maindb
-from seattlegeni.common.api import lockserver
 from seattlegeni.common.api import backend
+from seattlegeni.common.api import lockserver
+from seattlegeni.common.api import nodemanager
 
 # For setting the backend authcode.
 import seattlegeni.backend.config
@@ -224,6 +226,13 @@ def do_one_processnode_run(change_nodestate_function_tuplelist, transition_scrip
     # Return the number of failures and successes.
     log("Succeeded on "+str(success_processrun_count)+" nodes, Failed on "+str(fail_processrun_count)+" nodes")
     result_list.append( (success_processrun_count, fail_processrun_count) )
+
+    
+    # Since we do a lot of lookup in the database we are going to have
+    # a lot of database objects since django caches all the lookups.
+    # We have to clear these queries so our memory usage doesn't grow
+    # over time.
+    django.db.reset_queries()
 
   return result_list   
 
