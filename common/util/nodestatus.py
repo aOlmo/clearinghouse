@@ -74,7 +74,8 @@ statekeyfiles = {"acceptdonation" : "acceptdonation.publickey",
                  "onepercentmanyevents" : "onepercentmanyevents.publickey",
                  "movingtoonepercent_manyevents" : "movingtoonepercent_manyevents.publickey",
                  "twopercent" : "twopercent.publickey",
-                 "movingto_twopercent" : "movingto_twopercent.publickey"
+                 "movingto_twopercent" : "movingto_twopercent.publickey",
+                 "movingto_canonical" : "movingto_canonical.publickey"
                  }
 
 statekeys = {}
