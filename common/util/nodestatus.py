@@ -73,6 +73,8 @@ statekeyfiles = {"acceptdonation" : "acceptdonation.publickey",
                  "canonical" : "canonical.publickey",
                  "onepercentmanyevents" : "onepercentmanyevents.publickey",
                  "movingtoonepercent_manyevents" : "movingtoonepercent_manyevents.publickey",
+                 "twopercent" : "twopercent.publickey",
+                 "movingto_twopercent" : "movingto_twopercent.publickey"
                  }
 
 statekeys = {}
@@ -355,7 +357,7 @@ def check_node(node, readonly=True, lockserver_handle=None):
                             "' doesn't have a recognized user/state key")
     
       if len(vessels_in_db) == 0:
-        if recognized_state_name == "onepercentmanyevents":
+        if recognized_state_name == "onepercentmanyevents" or recognized_state_name == "twopercent":
           # We don't mark it as broken because it may be in transition by a
           # transition script away from onepercentmanyevents. If the vessels
           # in the db have been deleted first but the state key hasn't been
@@ -363,10 +365,10 @@ def check_node(node, readonly=True, lockserver_handle=None):
           # not be marked as broken when it's like this, as it has no vessels
           # we know about, anyways, so we're not going to be giving questionable
           # resources to users because of it.
-          _report_node_problem(node, "The node is in the onepercentmanyevents state " + 
+          _report_node_problem(node, "The node is in the " + recognized_state_name + " state " + 
                               "but we don't have any vessels for it in the database.")
       else:
-        if recognized_state_name != "onepercentmanyevents":
+        if recognized_state_name != "onepercentmanyevents" and recognized_state_name != "twopercent":
           # We don't mark it as broken because it may be in transition by a
           # transition script. Also, we may have other states in the future
           # besides onepercentmanyevents that have vessels. We don't want
