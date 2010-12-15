@@ -22,7 +22,13 @@ tmpdir=`mktemp -d -t tmp.XXXXXXXX` || exit 1
 utf=$trunkdir/utf/utf.py
 utfutil=$trunkdir/utf/utfutil.py
 
+statekeys=$trunkdir/seattlegeni/node_state_transitions/statekeys
+
 python $trunkdir/seattlegeni/deploymentscripts/deploy_seattlegeni.py $trunkdir $tmpdir/deploy
+
+# Copy over the state keys as the deployment script doesn't do that.
+cp -r $statekeys $tmpdir/deploy/seattlegeni/node_state_transitions/
+
 pushd $tmpdir/deploy/seattlegeni
 
 export PYTHONPATH=$tmpdir/deploy:$tmpdir/deploy/seattle:$PYTHONPATH
@@ -49,7 +55,7 @@ else
   retval=$?
 
   cat file.txt
-  numErrors=`cat file.txt | egrep '(FILE|ERROR)' | wc -l`
+  numErrors=`cat file.txt | egrep '(FAIL|ERROR)' | wc -l`
   
   if [ "$retval" != "0" -o $numErrors -gt 0 ]; then
     failure=1
@@ -82,7 +88,7 @@ else
   retval=$?
 
   cat file.txt
-  numErrors=`cat file.txt | egrep '(FILE|ERROR)' | wc -l`
+  numErrors=`cat file.txt | egrep '(FAIL|ERROR)' | wc -l`
 
   if [ "$retval" != "0" -o $numErrors -gt 0 ]; then
     failure=1
@@ -114,7 +120,7 @@ else
   retval=$?
 
   cat file.txt
-  numErrors=`cat file.txt | egrep '(FILE|ERROR)' | wc -l`
+  numErrors=`cat file.txt | egrep '(FAIL|ERROR)' | wc -l`
   
   if [ "$retval" != "0" -o $numErrors -gt 0 ]; then
     failure=1
@@ -160,7 +166,7 @@ else
   python utf.py -m nodestatetransitions > file.txt
   retval=$?  
 
-  numErrors=`cat file.txt | egrep '(FILE|ERROR)' | wc -l`
+  numErrors=`cat file.txt | egrep '(FAIL|ERROR)' | wc -l`
   cat file.txt
  
   if [ $numErrors -gt 0 -o "$retval" != "0" ]; then
