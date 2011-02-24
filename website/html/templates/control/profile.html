@@ -10,7 +10,7 @@ Profile - SeattleGENI
 {% endblock title %}
 
 {% block nav_profile %}
-<td class="active">Profile</td>
+<td class="active"><a href="{% url profile %}">Profile</a></td>
 {% endblock nav_profile %}
 
 {% block content %}
@@ -18,7 +18,7 @@ Profile - SeattleGENI
 		<div id="middle">
 			
 			<div id="download">
-				<a href="http://seattlegeni.cs.washington.edu/dist/demokit.zip"><img src="{{ MEDIA_URL }}images/download_toolkit.jpg" /></a>
+				<a href="http://seattlegeni.cs.washington.edu/dist/demokit.zip"><img src="{{ MEDIA_URL }}images/download_demokit.jpg" alt="Download demokit" />Download demokit</a>
 			</div>
 			
 			<table class="profile">
@@ -38,14 +38,18 @@ Profile - SeattleGENI
 					<td class="value">{{ affiliation }}</td>
 				</tr>
 				<tr class="odd">
+					<td class="key">E-mail Address</td>
+					<td class="value">{{ email }}</td>
+				</tr>
+				<tr class="even">
 					<td class="key">Port</td>
 					<td class="value">{{ port }}</td>
 				</tr>
-				<tr class="even">
+				<tr class="odd">
 					<td class="key">API Key</td>
 					<td class="value"><a href="{% url api_info %}">View or change your API key</a></td>
 				</tr>
-				<tr class="odd">
+				<tr class="even">
 					<td class="key">Public Key</td>
 					<td class="value">
 					  <form method="POST" action="{% url pub_key %}" id="download_pubkey_form"> 
@@ -55,7 +59,7 @@ Profile - SeattleGENI
 					</td>
 				</tr>
 				{% if has_privkey %}
-				<tr class="even">
+				<tr class="odd">
 				  <td class="key">Private Key</td>
 				  <td class="value"><a href="#">
 				      <form class="inline" method="POST" action="{% url priv_key %}"> 
@@ -63,7 +67,7 @@ Profile - SeattleGENI
 				    </form>
 				  </td>
 				</tr>
-				<tr class="odd">
+				<tr class="even">
 				  <td class="key">Delete your private key</td>
 				  <td class="value">
 				    <form class="inline" method="POST" action="{% url del_priv %}"> 
@@ -72,7 +76,7 @@ Profile - SeattleGENI
 				    </form>
 				  </td>
 				</tr>
-				<tr class="even">
+				<tr class="odd">
 					<td colspan="2">
 					    <p class="warning"> For better
 					      security we recommend that you

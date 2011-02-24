@@ -72,3 +72,9 @@ table.vessels tr th {
     background-color: #666;
     color: #fff;
 }
+
+table.vessels tr th a.help {
+    float: right;
+    padding-right: 0.5em;
+    color: #fff;
+}

@@ -10,7 +10,7 @@ Help - SeattleGENI
 {% endblock style %}
 
 {% block nav_help %}
-<td class="active">Help</td>
+<td class="active"><a href="{% url help %}">Help</a></td>
 {% endblock nav_help %}
 
 {% block content %}
@@ -83,7 +83,7 @@ Help - SeattleGENI
 
 
 			<ul>
-			  <li><strong>Download the toolkit.</strong> The toolkit
+			  <li><strong>Download the demokit.</strong> The demokit
 			  includes the Seattle shell which you will
 			  need to run programs on your acquired
 			  vessels. For more information on how to use
@@ -95,7 +95,7 @@ Help - SeattleGENI
 			  to access your acquired vessels. Once you
 			  download them, place the two key files in
 			  the same directory as Seattle shell you
-			  downloaded with the Seattle toolkit
+			  downloaded with the Seattle demokit
 			  above. <p class="warning">For better security we recommend
 			  that you download and delete your private
 			  key from the server. Always store your
@@ -157,27 +157,22 @@ Help - SeattleGENI
 			<h3><a name="myvessels">My Vessels : Managing vessels -- acquiring and releasing vessel resources</a></h3>
 			
 			<p>On this page you can see more detailed
-			information about your acquired vessels, such
-			as their IP addresses, and how long you have
-			before the vessels are released. This page
-			also allows you to acquire more vessel
-			resources.</p>
+			information about your acquired vessels, including
+			name, location, and expiration time. This page also
+			allows you to acquire more vessel resources, or remove
+			the ones you currently have.</p>
 
 			<ul>
 
 			  <li><strong>Vessel Information.</strong> For each
-			  vessel that you acquire, you will see a
-			  record in the table on this page that tells
-			  you the <strong>vessel id</strong> which is the same
-			  id that your seash session will display when
-			  you browse your vessels. You will also see
-			  the <strong>vessel status</strong> which will tell you
-			  whether the vessel is in the correct
-			  state. Also you will see an <strong>expires
-			  in</strong> time value which indicates how long
-			  you have before the vessel will be returned
-			  back into the Seattle pool for use by other
-			  users.</li>
+			  vessel that you acquire, you will see an
+			  entry in the table with the <strong>vessel
+			  location</strong> (denoted by its IP address) and
+			  <strong>vessel name</strong>. This is the name that seash
+			  will display when you browse your vessels. Each vessel also
+			  has an <strong>expiration time</strong> listed. This is the
+			  time remaining until your hold on the vessel expires and it
+			  is returned to the Seattle pool for use by other users.
 
 			  <li><strong>Getting more vessels.</strong>
 

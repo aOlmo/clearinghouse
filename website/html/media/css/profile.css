@@ -38,7 +38,12 @@ table.profile tr td.value {
 }
 
 #download a img {
+    display: block;
     width: 150px;
+}
+
+#download a {
+  color: black;
 }
 
 #download_pubkey_form {

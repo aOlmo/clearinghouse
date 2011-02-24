@@ -21,6 +21,7 @@ import os
 import sys
 import shutil
 import subprocess
+import xmlrpclib
 
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
@@ -62,10 +63,14 @@ from seattle import repyportability
 
 repyhelper.translate_and_import('rsa.repy')
 
-# Path to the customize_installers.py. In this case, it's in the same directory
-# as this views.py file.
-PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT = os.path.join(os.path.dirname(__file__),
-                                                  "customize_installers.py")
+
+
+
+
+# The key used as the state key for new donations.
+ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonation.publickey")
+
+
 
 
 
@@ -91,15 +96,6 @@ def _state_key_file_to_publickey_string(key_file_name):
   """
   fullpath = os.path.join(settings.STATE_KEYS_DIR, key_file_name)
   return rsa_publickey_to_string(rsa_file_to_publickey(fullpath))
-
-
-
-
-
-# The key used as the state key for new donations.
-ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonation.publickey")
-
-SEATTLE_OWNER_PUBKEY = "22599311712094481841033180665237806588790054310631222126405381271924089573908627143292516781530652411806621379822579071415593657088637116149593337977245852950266439908269276789889378874571884748852746045643368058107460021117918657542413076791486130091963112612854591789518690856746757312472362332259277422867 12178066700672820207562107598028055819349361776558374610887354870455226150556699526375464863913750313427968362621410763996856543211502978012978982095721782038963923296750730921093699612004441897097001474531375768746287550135361393961995082362503104883364653410631228896653666456463100850609343988203007196015297634940347643303507210312220744678194150286966282701307645064974676316167089003178325518359863344277814551559197474590483044733574329925947570794508677779986459413166439000241765225023677767754555282196241915500996842713511830954353475439209109249856644278745081047029879999022462230957427158692886317487753201883260626152112524674984510719269715422340038620826684431748131325669940064404757120601727362881317222699393408097596981355810257955915922792648825991943804005848347665699744316223963851263851853483335699321871483966176480839293125413057603561724598227617736944260269994111610286827287926594015501020767105358832476708899657514473423153377514660641699383445065369199724043380072146246537039577390659243640710339329506620575034175016766639538091937167987100329247642670588246573895990251211721839517713790413170646177246216366029853604031421932123167115444834908424556992662935981166395451031277981021820123445253"
 
 
 
@@ -743,32 +739,36 @@ def download(request, username):
 def build_win_installer(request, username):
   """
   <Purpose>
-    Allows the user to download a Windows distribution of Seattle
-    that will donate resources to user with 'username'.
+    Allows the user to download a Windows distribution of Seattle that will
+    donate resources to user with 'username'.
   
   <Arguments>
     request:
-       HTTP Request object
-    username (string):
-       A string representing the GENI user's username into the GENI portal
+      Django HttpRequest object
+       
+    username:
+      A string representing the GENI user to which the installer will donate
+      resources.
   
   <Exceptions>
-    None?
+    None
   
   <Side Effects>
     None
   
   <Returns>
-    On failure of username lookup returns an HTTP response with
-    description of the error. On success, returns the seattle windows
-    distribution file for the user to donate to as username.
+    On failure, returns an HTTP response with a description of the error. On
+    success, redirects the user to download the installer.
   """
-  success, ret = _build_installer(username, 'w')
+  
+  success, return_value = _build_installer(username, "windows")
+  
   if not success:
-      return HttpResponse("Installer build failed.")
-  redir_url = ret + "seattle_win.zip"
-  #return redirect_to(request, redir_url)
-  return HttpResponseRedirect(redir_url)
+    error_response = return_value
+    return error_response
+  
+  installer_url = return_value
+  return HttpResponseRedirect(installer_url)
 
 
 
@@ -776,33 +776,37 @@ def build_win_installer(request, username):
 
 def build_linux_installer(request, username):
   """
- <Purpose>
-    Allows the user to download a Linux distribution of Seattle
-    that will donate resources to user with 'username'.
+  <Purpose>
+    Allows the user to download a Linux distribution of Seattle that will
+    donate resources to user with 'username'.
 
- <Arguments>
+  <Arguments>
     request:
-       HTTP Request object
-    username (string):
-       A string representing the GENI user's username into the GENI portal
+      Django HttpRequest object
 
- <Exceptions>
-    None?
- 
- <Side Effects>
+    username:
+      A string representing the GENI user to which the installer will donate
+      resources.
+
+  <Exceptions>
     None
 
- <Returns>
-    On failure of username lookup returns an HTTP response with
-    description of the error. On success, returns the seattle linux
-    distribution file for the user to donate to as username.
+  <Side Effects>
+    None
+
+  <Returns>
+    On failure, returns an HTTP response with a description of the error. On
+    success, redirects the user to download the installer.
   """
-  success, ret = _build_installer(username, 'l')
+
+  success, return_value = _build_installer(username, "linux")
+
   if not success:
-      return HttpResponse("Installer build failed.")
-  redir_url = ret + "seattle_linux.tgz"
-  #return redirect_to(request, redir_url)
-  return HttpResponseRedirect(redir_url)
+    error_response = return_value
+    return error_response
+
+  installer_url = return_value
+  return HttpResponseRedirect(installer_url)
 
 
 
@@ -810,116 +814,94 @@ def build_linux_installer(request, username):
 
 def build_mac_installer(request, username):
   """
- <Purpose>
-    Allows the user to download a Mac/OSX distribution of Seattle
-    that will donate resources to user with 'username'.
+  <Purpose>
+    Allows the user to download a Mac distribution of Seattle that will
+    donate resources to user with 'username'.
 
- <Arguments>
+  <Arguments>
     request:
-       HTTP Request object
-    username (string):
-       A string representing the GENI user's username into the GENI portal
+      Django HttpRequest object
 
- <Exceptions>
-    None?
- 
- <Side Effects>
+    username:
+      A string representing the GENI user to which the installer will donate
+      resources.
+
+  <Exceptions>
     None
 
- <Returns>
-    On failure of username lookup returns an HTTP response with
-    description of the error. On success, returns the seattle mac
-    distribution file for the user to donate to as username.
+  <Side Effects>
+    None
+
+  <Returns>
+    On failure, returns an HTTP response with a description of the error. On
+    success, redirects the user to download the installer.
   """
-  success, ret = _build_installer(username, 'm')
+
+  success, return_value = _build_installer(username, "mac")
+
   if not success:
-      return HttpResponse("Installer build failed.")
-  redir_url = ret + "seattle_mac.tgz"
-  return HttpResponseRedirect(redir_url)
+    error_response = return_value
+    return error_response
+
+  installer_url = return_value
+  return HttpResponseRedirect(installer_url)
 
 
 
 
 
-def _build_installer(username, dist_char):
+def _build_installer(username, platform):
   """
   <Purpose>
-     Builds an installer with distrubution char 'dist_char' that
-     describes the platform of the desired installer, that will
-     donate resources to user with username.
+    Builds an installer for the given platform that will donate resources to
+    the user with the given username.
   
   <Arguments>
-     username (string):
-        A string representing the GENI user's username into the GENI portal
-     dist_char (string):
-        Containing 'm' or 'l' or 'w' for each major distribution
-        (Mac/Linux/Windows) that this function will build/compose.
+    username:
+      A string representing the GENI user to which the installer will donate
+      resources.
+      
+    platform:
+      A string representing the platform for which to build the installer.
+      Options include 'windows', 'linux', or 'mac'.
   
   <Exceptions>
-     None?
+    None
   
   <Side Effects>
-     Creates a new installer file in a temporary directory that is
-     world readable via Apache. It also creates a variety of files in
-     this temporary directory that are relevant to the installer
-     build process.
+    None
   
   <Returns>
-     On success, returns (True, URL) where URL is the redirection url
-     to the request installer. On failure returns (False,
-     HttpResponse) where HttpResponse is an HTTP Response that
-     specifies what went wrong in attemptign to look up the user with
-     username.
+    On success, returns (True, installer_url) where installer_url is URL from
+    which the installer may be downloaded.
+    
+    On failure, returns (False, error_response) where error_repsponse is an
+    HttpResponse which specifies what went wrong.
   """
   try:
     user = interface.get_user_for_installers(username)
     username = user.username
   except DoesNotExistError:
-    # TODO: what happens if the username is invalid? render a "build failed, bad user" page?
-    ret = HttpResponse("Couldn't get user.")
-    return False, ret
-   
-  prefix = os.path.join(settings.USER_INSTALLERS_DIR, "%s_dist" % (username))
-  temp_installinfo_dir = os.path.join(prefix, "install_info")
+    error_response = HttpResponse("Couldn't get user.")
+    return False, error_response
 
-  user_pubkey = user.donor_pubkey
-
-  # remove and recreate the prefix dir
-  shutil.rmtree(prefix, True)
-  
-#  try:
-#    shutil.rmtree(prefix)
-#  except OSError, err:
-#    # directory didn't previously exist
-#    pass
-
-  os.mkdir(prefix)
- 
-  # create the install_info dir, a temporary directory where the vesselinfo
-  # will reside right before it gets added into the install package by customize_installer
-  os.mkdir(temp_installinfo_dir)
-
-  # prepare & write out the vesselinfo file 
-  vesselinfo = "Percent 80\n"
-  vesselinfo += "Owner " + user_pubkey + "\n"
-  vesselinfo += "User " + ACCEPTDONATIONS_STATE_PUBKEY + "\n"
-  vesselinfo += "Percent 20\n"
-  vesselinfo += "Owner " + SEATTLE_OWNER_PUBKEY + "\n"
-
-  f = open((temp_installinfo_dir + "/vesselinfo"), 'w')
-  f.write(vesselinfo)
-  f.close()
-
-  log.info("file preparation done. calling customize installer.")
-  #os.system("python %s %s %s %s"%(customize_installer_script, "l", temp_installinfo_dir, prefix))
   try:
-    subprocess.check_call([sys.executable, PATH_TO_CUSTOMIZE_INSTALLER_SCRIPT, dist_char,
-                           settings.BASE_INSTALLERS_DIR, temp_installinfo_dir, prefix])
-  except subprocess.CalledProcessError:
-    raise 
+    xmlrpc_proxy = xmlrpclib.ServerProxy(settings.INSTALLER_BUILDER_XMLRPC)
     
-  redir_url = settings.USER_INSTALLERS_URL + "/%s_dist/" % (username)
-  return True, redir_url
+    vessel_list = [{'percentage': 80, 'owner': 'owner', 'users': ['user']}]
+    
+    user_data = {
+      'owner': {'public_key': user.donor_pubkey},
+      'user': {'public_key': ACCEPTDONATIONS_STATE_PUBKEY},
+    }
+    
+    build_results = xmlrpc_proxy.build_installers(vessel_list, user_data)
+  except:
+    error_response = HttpResponse("Failed to build installer.")
+    return False, error_response
+
+  installer_url = build_results['installers'][platform]
+  return True, installer_url
 
 
 

@@ -37,6 +37,9 @@ WEBSITE_ROOT = os.path.dirname(__file__)
 # The directory where we keep the public keys of the node state keys.
 STATE_KEYS_DIR = os.path.join(WEBSITE_ROOT, '..', 'node_state_transitions', 'statekeys')
 
+# The XML-RPC interface to the Custom Installer Builder.
+INSTALLER_BUILDER_XMLRPC = "http://example.com/custominstallerbuilder/xmlrpc/"
+
 # The directory where the base installers named seattle_linux.tgz, seattle_mac.tgz,
 # and seattle_win.zip are located.
 BASE_INSTALLERS_DIR = "/var/www/dist"

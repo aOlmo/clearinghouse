@@ -140,6 +140,10 @@ code {
     color: #fff;
 }
 
+#tabs table tr td.active a {
+    color: #fff;
+}
+
 
 /***** Main *****/
 

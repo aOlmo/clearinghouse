@@ -15,7 +15,7 @@ My Vessels - SeattleGENI
 {% endblock script %}
 
 {% block nav_myvessels %}
-<td class="active">My Vessels</td>
+<td class="active"><a href="{% url myvessels %}">My Vessels</a></td>
 {% endblock nav_myvessels %}
 
 {% block content %}
@@ -61,8 +61,9 @@ My Vessels - SeattleGENI
 					  </form>
 					  </th>
 					{% endifnotequal %}
+					{% url help as help %}
 					<th>Vessel Location</th>
-					<th>Vessel Name</th>
+					<th>Vessel Name <a class="help" href="{{ help }}#myvessels">?</a></th>
 					<th>Expires In</th>
 					{% ifnotequal num_vessels 0 %}
 					  <th>
