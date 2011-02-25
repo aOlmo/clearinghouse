@@ -67,13 +67,6 @@ repyhelper.translate_and_import('rsa.repy')
 
 
 
-# The key used as the state key for new donations.
-ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonation.publickey")
-
-
-
-
-
 class LoggedInButFailedGetGeniUserError(Exception):
   """
   <Purpose>
@@ -96,6 +89,13 @@ def _state_key_file_to_publickey_string(key_file_name):
   """
   fullpath = os.path.join(settings.STATE_KEYS_DIR, key_file_name)
   return rsa_publickey_to_string(rsa_file_to_publickey(fullpath))
+
+
+
+
+
+# The key used as the state key for new donations.
+ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonation.publickey")
 
 
 
