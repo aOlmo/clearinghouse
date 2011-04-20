@@ -50,7 +50,7 @@ from seattle import repyhelper
 from seattle import repyportability
 
 repyhelper.translate_and_import("listops.repy")
-repyhelper.translate_and_import("nmclient.repy")
+repyhelper.translate_and_import("fastnmclient.mix")
 repyhelper.translate_and_import("time.repy")
 
 

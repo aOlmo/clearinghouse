@@ -68,7 +68,7 @@ from seattlegeni.website import settings
 
 # Import all the repy files.
 repyhelper.translate_and_import('advertise.repy')
-repyhelper.translate_and_import('nmclient.repy')
+repyhelper.translate_and_import('fastnmclient.mix')
 repyhelper.translate_and_import('rsa.repy')
 repyhelper.translate_and_import('listops.repy')
 repyhelper.translate_and_import('parallelize.repy')
