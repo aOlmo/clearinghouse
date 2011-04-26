@@ -49,8 +49,8 @@ from seattlegeni.common.util.decorators import log_function_call_without_first_a
 from seattle import repyhelper
 from seattle import repyportability
 
+from fastnmclient import *
 repyhelper.translate_and_import("listops.repy")
-repyhelper.translate_and_import("fastnmclient.mix")
 repyhelper.translate_and_import("time.repy")
 
 
