@@ -106,7 +106,7 @@ def main():
 
   # Some constant variables we will use to call node_transition_lib.
   sleeptime = 10
-  processname = "onepercentmanyevents_to_canonical"
+  process_name = "onepercentmanyevents_to_canonical"
   parallel_instances = 10
 
   # Call the process_node_and_change_state() function to attempt to 

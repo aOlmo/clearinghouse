@@ -129,12 +129,14 @@ def profile(request, info=""):
   
   username = user.username
   affiliation = user.affiliation
+  email = user.email
   port = user.usable_vessel_port
   has_privkey = user.user_privkey != None
   
   return direct_to_template(request, 'control/profile.html',
                             {'username' : username,
                              'affiliation' : affiliation,
+                             'email' : email,
                              'port' : port,
                              'has_privkey' : has_privkey,
                              'info' : info})
@@ -592,7 +594,7 @@ def change_key(request):
   
   if request.method == 'GET':
     return direct_to_template(request, 'control/change_key.html',
-                              {'geni_user' : user,
+                              {'username' : user.username,
                                'error_msg' : ""})
 
   # This is a POST, so figure out if a file was uploaded or if we are supposed
@@ -607,14 +609,14 @@ def change_key(request):
     if file is None:
       msg = "You didn't select a public key file to upload."
       return direct_to_template(request, 'control/change_key.html',
-                                {'geni_user' : user,
+                                {'username' : user.username,
                                  'error_msg' : msg})
     
     if file.size == 0 or file.size > forms.MAX_PUBKEY_UPLOAD_SIZE:
       msg = "Invalid file uploaded. The file size limit is " 
       msg += str(forms.MAX_PUBKEY_UPLOAD_SIZE) + " bytes."
       return direct_to_template(request, 'control/change_key.html',
-                                {'geni_user' : user,
+                                {'username' : user.username,
                                  'error_msg' : msg})
     
     pubkey = file.read()
@@ -624,7 +626,7 @@ def change_key(request):
     except ValidationError:
       msg = "Invalid public key uploaded."
       return direct_to_template(request, 'control/change_key.html',
-                                {'geni_user' : user,
+                                {'username' : user.username,
                                  'error_msg' : msg})
     
     # If we made it here, the uploaded key is good.
@@ -645,7 +647,7 @@ def api_info(request):
   
   if request.method == 'GET':
     return direct_to_template(request, 'control/api_info.html',
-                              {'geni_user' : user,
+                              {'username' : user.username,
                                'api_key' : user.api_key,
                                'msg' : ""})
 
@@ -653,7 +655,7 @@ def api_info(request):
   if not request.POST.get('generate_api_key', False):
     msg = "Sorry, we didn't understand your request."
     return direct_to_template(request, 'control/api_info.html',
-                              {'geni_user' : user,
+                              {'username' : user.username,
                                'api_key' : user.api_key,
                                'msg' : msg})
     
@@ -662,7 +664,7 @@ def api_info(request):
   msg += " You should update any places you are using the API key"
   msg += " (e.g. in programs using the XML-RPC client)."
   return direct_to_template(request, 'control/api_info.html',
-                            {'geni_user' : user,
+                            {'username' : user.username,
                              'api_key' : user.api_key,
                              'msg' : msg})
 

@@ -74,20 +74,25 @@ apache2ctl graceful
 
 echo "Starting check_active_db_nodes.py."
 $SUDO_CMD python $SEATTLEGENI_DIR/polling/check_active_db_nodes.py >>$LOG_DIR/check_active_db_nodes.log 2>&1 &
+sleep 1 # We need to wait for each process to start before beginning the next
+        # because repyhelper has an issue with concurrent file access.
 
 # Note: Don't put a ".py" on the end of the TRANSITION_NAME values.
 
 TRANSITION_NAME=transition_donation_to_canonical
 echo "Starting transition script $TRANSITION_NAME"
 $SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
+sleep 1
 
 TRANSITION_NAME=transition_canonical_to_twopercent
 echo "Starting transition script $TRANSITION_NAME"
 $SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
+sleep 1
 
 TRANSITION_NAME=transition_twopercent_to_twopercent
 echo "Starting transition script $TRANSITION_NAME"
 $SUDO_CMD python $SEATTLEGENI_DIR/node_state_transitions/$TRANSITION_NAME.py >>$LOG_DIR/$TRANSITION_NAME.log 2>&1 &
+sleep 1
 
 TRANSITION_NAME=transition_onepercentmanyevents_to_canonical
 echo "Starting transition script $TRANSITION_NAME"
