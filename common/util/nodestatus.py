@@ -72,7 +72,7 @@ log.loglevel = log.LOG_LEVEL_INFO
 statekeyfiles = {"acceptdonation" : "acceptdonation.publickey",
                  "canonical" : "canonical.publickey",
                  "onepercentmanyevents" : "onepercentmanyevents.publickey",
-                 "movingtoonepercent_manyevents" : "movingtoonepercent_manyevents.publickey",
+                 "movingto_onepercentmanyevents" : "movingto_onepercentmanyevents.publickey",
                  "twopercent" : "twopercent.publickey",
                  "movingto_twopercent" : "movingto_twopercent.publickey",
                  "movingto_canonical" : "movingto_canonical.publickey"

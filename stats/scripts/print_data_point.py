@@ -172,7 +172,7 @@ def get_advertise_line():
 
   state_keys = {"canonical" : _state_key_file_to_publickey("canonical.publickey"),
                 "acceptdonation" : _state_key_file_to_publickey("acceptdonation.publickey"),
-                "movingtoonepercent_manyevents" : _state_key_file_to_publickey("movingtoonepercent_manyevents.publickey"),
+                "movingto_onepercentmanyevents" : _state_key_file_to_publickey("movingto_onepercentmanyevents.publickey"),
                 "onepercent_manyevents" : _state_key_file_to_publickey("onepercentmanyevents.publickey")}
 
  
@@ -180,7 +180,7 @@ def get_advertise_line():
   parts.append(_datestr())
   parts.append(str(_lookup_nodes(state_keys["acceptdonation"])))
   parts.append(str(_lookup_nodes(state_keys["canonical"])))
-  parts.append(str(_lookup_nodes(state_keys["movingtoonepercent_manyevents"])))
+  parts.append(str(_lookup_nodes(state_keys["movingto_onepercentmanyevents"])))
   parts.append(str(_lookup_nodes(state_keys["onepercent_manyevents"])))
   parts.append(str(_lookup_nodes(v2key)))
   return ",".join(parts)
