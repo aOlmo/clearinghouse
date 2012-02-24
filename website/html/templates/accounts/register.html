@@ -10,7 +10,7 @@ Profile - GENI
 {% endblock script %}
 
 {% block nav_register %}
-<td class="active"><a href="{% url register %}">Register</a></td>
+<td class="active">Register</td>
 {% endblock nav_register %}
 
 {% block content %}
@@ -40,27 +40,27 @@ Profile - GENI
 		  {% endif %}
 
 		  <table class="login">
-		    <tr>
+		    <tr title=' Create a username at least 3 characters long'>
 		      <td class="key">{{ form.username.label_tag }}</td>
 		      <td class="value">{{ form.username }}</td>
 		      <td>{{ form.username.errors }}</td>
 		    </tr>
-		    <tr>
+		    <tr title=' Create a password at least 6 characters long '>
 		      <td class="key">{{ form.password1.label_tag }}</td>
 		      <td class="value">{{ form.password1 }}</td>
 		      <td>{{ form.password1.errors }}</td>
 		    </tr>
-		    <tr>
+		    <tr title='Reenter the password '>
 		      <td class="key">{{ form.password2.label_tag }}</td>
 		      <td class="value">{{ form.password2 }}</td>
 		      <td>{{ form.password2.errors }}</td>
 		    </tr>
-		    <tr>
+		    <tr title='Enter the university or company you are affilated with '>
 		      <td class="key">{{ form.affiliation.label_tag }}</td>
 		      <td class="value">{{ form.affiliation }}</td>
 		      <td>{{ form.affiliation.errors }}</td>
 		    </tr>
-		    <tr>
+		    <tr title='Enter the email address you would like associated with your username '>
 		      <td class="key">{{ form.email.label_tag }}</td>
 		      <td class="value">{{ form.email }}</td>
 		      <td>{{ form.email.errors }}</td>
