@@ -27,13 +27,24 @@ from seattlegeni.website.control.models import ActionLogEvent
 from seattlegeni.website.control.models import ActionLogVesselDetails
 
 from django.contrib import admin
-
+from django.contrib.auth.forms import AdminPasswordChangeForm
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied
+from django.http import HttpResponseRedirect, Http404
+from django.shortcuts import render_to_response, get_object_or_404
+from django.template import RequestContext
+from django.utils.html import escape
+from django.utils.translation import ugettext, ugettext_lazy as _
 
 
 
 
 class GeniUserAdmin(admin.ModelAdmin):
   """Customized admin view of the GeniUser model."""
+
+  # Use django's admin change password form
+  change_password_form = AdminPasswordChangeForm
+
   list_display = ["username", "affiliation", "email", "free_vessel_credits", 
                   "usable_vessel_port", "date_created", "is_staff",
                   "is_superuser"]
@@ -45,6 +56,60 @@ class GeniUserAdmin(admin.ModelAdmin):
                    "affiliation"]
   ordering = ["-date_created"]
   
+
+
+  def get_urls(self):
+    from django.conf.urls.defaults import patterns
+
+    # Assign handler for the password change url
+    return patterns('',
+      (r'^(\d+)/password/$',
+        self.admin_site.admin_view(self.user_change_password))
+    ) + super(GeniUserAdmin, self).get_urls()
+
+
+
+  def user_change_password(self, request, id):
+    if not self.has_change_permission(request):
+      raise PermissionDenied
+    user = get_object_or_404(self.model, pk=id)
+
+    if request.method == 'POST':
+      # Form was submitted, if form data is valid, update user password
+      form = self.change_password_form(user, request.POST)
+      if form.is_valid():
+        new_user = form.save()
+        msg = ugettext('Password changed successfully.')
+        messages.success(request, msg)
+        return HttpResponseRedirect('..')
+    else:
+      form = self.change_password_form(user)
+
+    # AdminPasswordChangeForm has 2 fields: Password and Password (again)
+    fieldsets = [(None, {'fields': form.base_fields.keys()})]
+    adminForm = admin.helpers.AdminForm(form, fieldsets, {})
+
+    # Escape html and js special chars and set strings according to locale
+    # See django/contrib/admin/templatetags/admin_modify.py for meanings of
+    # following tags. They are mostly used for deciding what elements are to be
+    # shown on the form.
+    return render_to_response('admin/auth/user/change_password.html', {
+        'title': _('Change password: %s') % escape(user.username),
+        'adminForm': adminForm,
+        'form': form,
+        'is_popup': '_popup' in request.REQUEST,
+        'add': True,
+        'change': False,
+        'has_delete_permission': False,
+        'has_change_permission': True,
+        'has_absolute_url': False,
+        'opts': self.model._meta,
+        'original': user,
+        'save_as': False,
+        'show_save': True,
+        'root_path': self.admin_site.root_path,
+    }, context_instance=RequestContext(request))
+
 
 
 
