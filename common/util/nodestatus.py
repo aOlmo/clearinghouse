@@ -68,7 +68,8 @@ log.loglevel = log.LOG_LEVEL_INFO
 
 # A dictionary where the names are names we use to refer to the keys and the
 # values are the names of the public key files. All public key files will be
-# considered relative to the directory specified in settings.STATE_KEYS_DIR.
+# considered relative to the directory specified in 
+# settings.SEATTLECLEARINGHOUSE_STATE_KEYS_DIR.
 statekeyfiles = {"acceptdonation" : "acceptdonation.publickey",
                  "canonical" : "canonical.publickey",
                  "onepercentmanyevents" : "onepercentmanyevents.publickey",
@@ -80,7 +81,7 @@ statekeyfiles = {"acceptdonation" : "acceptdonation.publickey",
 
 statekeys = {}
 for keyname in statekeyfiles:
-  keyfilefullpath = os.path.join(settings.STATE_KEYS_DIR, statekeyfiles[keyname])
+  keyfilefullpath = os.path.join(settings.SEATTLECLEARINGHOUSE_STATE_KEYS_DIR, statekeyfiles[keyname])
   statekeys[keyname] = rsa_string_to_publickey(_readfilecontents(keyfilefullpath))
 
 

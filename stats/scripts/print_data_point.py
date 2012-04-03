@@ -146,7 +146,7 @@ def _dirty_vessels():
 
 def _state_key_file_to_publickey(key_file_name):
   """ Retrieve pubkey from file and return the dictionary form of key"""
-  return rsa_file_to_publickey(os.path.join(settings.STATE_KEYS_DIR, key_file_name))
+  return rsa_file_to_publickey(os.path.join(settings.SEATTLECLEARINGHOUSE_STATE_KEYS_DIR, key_file_name))
 
 
 

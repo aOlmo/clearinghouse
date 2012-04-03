@@ -21,35 +21,35 @@ TEMPLATE_DEBUG = DEBUG
 
 # The log level used by the seattlegeni log module. All messages at this level
 # or more severe will be logged.
-LOG_LEVEL = log.LOG_LEVEL_DEBUG
+SEATTLECLEARINGHOUSE_LOG_LEVEL = log.LOG_LEVEL_DEBUG
 
 # Rather than make the log module have to import this settings file to set the
 # log level, just set it right here.
-log.set_log_level(LOG_LEVEL)
+log.set_log_level(SEATTLECLEARING_HOUSE_LOG_LEVEL)
 
 # This is needed to allow xmlrpc requests to work when they don't have a slash
 # on the end of the url.
 APPEND_SLASH = False
 
 # The directory the settings.py file is in is what we consider the root of the website. 
-WEBSITE_ROOT = os.path.dirname(__file__)
+SEATTLECLEARINGHOUSE_WEBSITE_ROOT = os.path.dirname(__file__)
 
 # The directory where we keep the public keys of the node state keys.
-STATE_KEYS_DIR = os.path.join(WEBSITE_ROOT, '..', 'node_state_transitions', 'statekeys')
+SEATTLECLEARINGHOUSE_STATE_KEYS_DIR = os.path.join(SEATTLECLEARINGHOUSE_WEBSITE_ROOT, '..', 'node_state_transitions', 'statekeys')
 
 # The XML-RPC interface to the Custom Installer Builder.
-INSTALLER_BUILDER_XMLRPC = "https://seattlegeni.cs.washington.edu/custom_install/xmlrpc/"
+SEATTLECLEARINGHOUSE_INSTALLER_BUILDER_XMLRPC = "https://seattlegeni.cs.washington.edu/custom_install/xmlrpc/"
 
 # The directory where the base installers named seattle_linux.tgz, seattle_mac.tgz,
 # and seattle_win.zip are located.
-BASE_INSTALLERS_DIR = "/var/www/dist"
+SEATTLECLEARINGHOUSE_BASE_INSTALLERS_DIR = "/var/www/dist"
 
 # The directory in which customized installers created by seattlegeni will be
 # stored. A directory within this directory will be created for each user.
-USER_INSTALLERS_DIR = os.path.join(BASE_INSTALLERS_DIR, "geni")
+SEATTLECLEARINGHOUSE_USER_INSTALLERS_DIR = os.path.join(SEATTLECLEARINGHOUSE_BASE_INSTALLERS_DIR, "geni")
 
-# The url that corresponds to USER_INSTALLERS_DIR
-USER_INSTALLERS_URL = "https://blackbox.cs.washington.edu/dist/geni"
+# The url that corresponds to SEATTLECLEARINGHOUSE_USER_INSTALLERS_DIR
+SEATTLECLEARINGHOUSE_USER_INSTALLERS_URL = "https://blackbox.cs.washington.edu/dist/geni"
 
 # Need to specify the LOGIN_URL, as our login page isn't at the default login
 # location (the default is /accounts/login).
@@ -111,7 +111,7 @@ USE_I18N = True
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = WEBSITE_ROOT + '/html/media/'
+MEDIA_ROOT = SEATTLECLEARINGHOUSE_WEBSITE_ROOT + '/html/media/'
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
@@ -149,7 +149,7 @@ TEMPLATE_DIRS = (
   # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
   # Always use forward slashes, even on Windows.
   # Don't forget to use absolute paths, not relative paths.
-  WEBSITE_ROOT + '/html/templates'
+  SEATTLECLEARINGHOUSE_WEBSITE_ROOT + '/html/templates'
 )
 
 INSTALLED_APPS = (

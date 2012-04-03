@@ -87,7 +87,7 @@ def _state_key_file_to_publickey_string(key_file_name):
   Read a public key file from the the state keys directory and return it in
   a key string format.
   """
-  fullpath = os.path.join(settings.STATE_KEYS_DIR, key_file_name)
+  fullpath = os.path.join(settings.SEATTLECLEARINGHOUSE_STATE_KEYS_DIR, key_file_name)
   return rsa_publickey_to_string(rsa_file_to_publickey(fullpath))
 
 
@@ -888,7 +888,7 @@ def _build_installer(username, platform):
     return False, error_response
 
   try:
-    xmlrpc_proxy = xmlrpclib.ServerProxy(settings.INSTALLER_BUILDER_XMLRPC)
+    xmlrpc_proxy = xmlrpclib.ServerProxy(settings.SEATTLECLEARINGHOUSE_INSTALLER_BUILDER_XMLRPC)
     
     vessel_list = [{'percentage': 80, 'owner': 'owner', 'users': ['user']}]
     

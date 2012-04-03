@@ -86,7 +86,7 @@ is_initialized = False
 
 def _retrieve_state_key(key_file_name):
   """ Retrieve pubkey from file and return the dictionary form of key"""
-  return rsa_file_to_publickey(os.path.join(settings.STATE_KEYS_DIR, key_file_name))  
+  return rsa_file_to_publickey(os.path.join(settings.SEATTLECLEARINGHOUSE_STATE_KEYS_DIR, key_file_name))  
 
 
 known_transition_states = ['canonical', 'acceptdonation', 

@@ -49,18 +49,18 @@
       TEMPLATE_DEBUG = DEBUG
       
       # The directory where we keep the public keys of the node state keys.
-      STATE_KEYS_DIR = "path/to/statekeys"
+      SEATTLECLEARINGHOUSE_STATE_KEYS_DIR = "path/to/statekeys"
       
       # The directory where the base installers named seattle_linux.tgz, seattle_mac.tgz,
       # and seattle_win.zip are located.
-      BASE_INSTALLERS_DIR = ""
+      SEATTLECLEARINGHOUSE_BASE_INSTALLERS_DIR = ""
       
       # The directory in which customized installers created by seattlegeni will be
       # stored. A directory within this directory will be created for each user.
-      USER_INSTALLERS_DIR = os.path.join(BASE_INSTALLERS_DIR, "geni")
+      SEATTLECLEARINGHOUSE_USER_INSTALLERS_DIR = os.path.join(SEATTLECLEARINGHOUSE_BASE_INSTALLERS_DIR, "geni")
 
-      # The url that corresponds to USER_INSTALLERS_DIR
-      USER_INSTALLERS_URL = "https://hostname/dist/geni"
+      # The url that corresponds to SEATTLECLEARINGHOUSE_USER_INSTALLERS_DIR
+      SEATTLECLEARINGHOUSE_USER_INSTALLERS_URL = "https://hostname/dist/geni"
       
       # Email addresses of people that should be emailed when a 500 error occurs on
       # the site when DEBUG = False (that is, in production). Leave this to be empty
