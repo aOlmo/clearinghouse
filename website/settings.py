@@ -25,7 +25,7 @@ SEATTLECLEARINGHOUSE_LOG_LEVEL = log.LOG_LEVEL_DEBUG
 
 # Rather than make the log module have to import this settings file to set the
 # log level, just set it right here.
-log.set_log_level(SEATTLECLEARING_HOUSE_LOG_LEVEL)
+log.set_log_level(SEATTLECLEARINGHOUSE_LOG_LEVEL)
 
 # This is needed to allow xmlrpc requests to work when they don't have a slash
 # on the end of the url.
