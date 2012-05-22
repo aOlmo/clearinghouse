@@ -87,10 +87,10 @@ def do_example_acquire_renew_release():
 def main():
   try:
     do_example_acquire_renew_release()
-  except seattleclearinghouse_xmlrpc.SeattleGENIError:
+  except seattleclearinghouse_xmlrpc.SeattleClearinghouseError:
     # In a real script, you'd want to handle this. Could be an authentication
     # error, communication error, etc. You can use the fine-grained exceptions
-    # rather than the base exception of SeattleGENIError to do different
+    # rather than the base exception of SeattleClearinghouseError to do different
     # things based on what the actual problem was.
     raise
 

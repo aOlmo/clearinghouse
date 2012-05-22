@@ -42,7 +42,7 @@
     InternalError
   The safest way to be certain to catch any of these errors  is to the catch
   their base class:
-    SeattleGENIError
+    SeattleClearinghouseError
     
 <Version>
   $Rev$ ($Date$)
@@ -134,7 +134,7 @@ class SeattleClearinghouseClient(object):
       import repyportability
       repyhelper.translate_and_import("rsa.repy")
     except ImportError, e:
-      raise SeattleGENIError("Unable to get API key from SeattleGENI " +
+      raise SeattleClearinghouseError("Unable to get API key from SeattleGENI " +
                              "because a required python or repy module " + 
                              "cannot be found:" + str(e))
     
@@ -532,7 +532,7 @@ def _get_ssl_transport(ca_certs_file):
   ctx.set_verify(M2Crypto.SSL.verify_peer | 
                  M2Crypto.SSL.verify_fail_if_no_peer_cert, depth=9)
   if ctx.load_verify_locations(ca_certs_file) != 1:
-    raise SeattleGENIError("No CA certs found in file: " + ca_certs_file)
+    raise SeattleClearinghouseError("No CA certs found in file: " + ca_certs_file)
 
   return M2CryptoSSLTransport(ctx)
 
@@ -540,43 +540,43 @@ def _get_ssl_transport(ca_certs_file):
 
 
 
-class SeattleGENIError(Exception):
-  """Base class for exceptions raised by the SeattleGENIClient."""
+class SeattleClearinghouseError(Exception):
+  """Base class for exceptions raised by the SeattleClearinghouseClient."""
   
 
-class CommunicationError(SeattleGENIError):
+class CommunicationError(SeattleClearinghouseError):
   """
   Indicates that XMLRPC communication failed.
   """
   
   
-class InternalError(SeattleGENIError):
+class InternalError(SeattleClearinghouseError):
   """
   Indicates an unexpected error occurred, probably either a bug in this
   client or a bug in SeattleGENI.
   """
 
 
-class AuthenticationError(SeattleGENIError):
+class AuthenticationError(SeattleClearinghouseError):
   """Indicates an authentication failure (invalid username and/or API key)."""
   def __init__(self, msg=None):
     if msg is None:
       msg = "Authentication failed. Invalid username and/or API key."
-    SeattleGENIError.__init__(self, msg)
+    SeattleClearinghouseError.__init__(self, msg)
 
 
-class InvalidRequestError(SeattleGENIError):
+class InvalidRequestError(SeattleClearinghouseError):
   """Indicates that the request is invalid."""
 
 
-class NotEnoughCreditsError(SeattleGENIError):
+class NotEnoughCreditsError(SeattleClearinghouseError):
   """
   Indicates that the requested operation requires more vessel credits to
   be available then the account currently has.
   """
   
   
-class UnableToAcquireResourcesError(SeattleGENIError):
+class UnableToAcquireResourcesError(SeattleClearinghouseError):
   """
   Indicates that the requested operation failed because SeattleGENI was unable
   to acquire the requested resources.
