@@ -1,5 +1,5 @@
 """
-Example of using the seattleclearinghouse_xmlrpc module's SeattleGENIClient.
+Example of using the seattleclearinghouse_xmlrpc module's SeattleClearinghouseClient.
 
 This script tries to acquire, renew, and release some vessels and prints out
 various information along the way.
@@ -13,7 +13,7 @@ import seattleclearinghouse_xmlrpc
 USERNAME = "your_username"
 
 # Only one of either the API key or the private key is needed. If providing
-# your API key, be sure to pass the API key to the SeattleGENIClient
+# your API key, be sure to pass the API key to the SeattleClearinghouseClient
 # constructor below.
 #API_KEY = "your_api_key"
 PRIVATE_KEY_STRING = open("your_username.privatekey").read()
@@ -24,7 +24,7 @@ ALLOW_SSL_INSECURE = False
 
 
 def do_example_acquire_renew_release():
-  client = seattleclearinghouse_xmlrpc.SeattleGENIClient(username=USERNAME,
+  client = seattleclearinghouse_xmlrpc.SeattleClearinghouseClient(username=USERNAME,
                                                 private_key_string=PRIVATE_KEY_STRING,
                                                 allow_ssl_insecure=ALLOW_SSL_INSECURE)
 
