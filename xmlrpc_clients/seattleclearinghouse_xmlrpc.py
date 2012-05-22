@@ -10,16 +10,16 @@
   Justin Samuel
 
 <Purpose>
-  A client library for communicating with the SeattleGENI XMLRPC Server.
+  A client library for communicating with the SeattleClearinghouse XMLRPC Server.
   
   Your Python scripts can import this library, create an instance of the
   SeattleClearinghouseClient class, then call methods on the object to perform XMLRPC
-  calls through the SeattleGENI XMLRPC API.
+  calls through the SeattleClearinghouse XMLRPC API.
 
   Full tutorials on using this library, see:
   https://seattle.cs.washington.edu/wiki/SeattleGeniClientLib
   
-  In order to perform secure SSL communication with SeattleGENI:
+  In order to perform secure SSL communication with SeattleClearinghouse:
     * You must have M2Crypto installed.
     * You must set the value of CA_CERTIFICATES_FILE to the location of a PEM
       file containing CA certificates that you trust. If you don't know where
@@ -59,10 +59,10 @@ import xmlrpclib
 # python module is in.
 DEFAULT_CA_CERTIFICATES_FILE = os.path.join(os.path.dirname(__file__), "cacert.pem")
 
-# The location of the SeattleGENI XMLRPC server to use.
+# The location of the SeattleClearinghouse XMLRPC server to use.
 DEFAULT_XMLRPC_URL = "https://seattlegeni.cs.washington.edu/xmlrpc/"
 
-# SeattleGENI XMLRPC Fault Code Constants
+# SeattleClearinghouse XMLRPC Fault Code Constants
 FAULTCODE_INTERNALERROR = 100
 FAULTCODE_AUTHERROR = 101
 FAULTCODE_INVALIDREQUEST = 102
@@ -73,7 +73,7 @@ FAULTCODE_UNABLETOACQUIRE = 105
 
 class SeattleClearinghouseClient(object):
   """
-  Implementation of an XMLRPC client for communicating with a SeattleGENI
+  Implementation of an XMLRPC client for communicating with a SeattleClearinghouse
   server. This uses the public API described at:
   https://seattle.cs.washington.edu/wiki/SeattleGeniAPI
   """
@@ -134,7 +134,7 @@ class SeattleClearinghouseClient(object):
       import repyportability
       repyhelper.translate_and_import("rsa.repy")
     except ImportError, e:
-      raise SeattleClearinghouseError("Unable to get API key from SeattleGENI " +
+      raise SeattleClearinghouseError("Unable to get API key from SeattleClearinghouse " +
                              "because a required python or repy module " + 
                              "cannot be found:" + str(e))
     
@@ -211,7 +211,7 @@ class SeattleClearinghouseClient(object):
         The number of vessels to acquire.
     <Exceptions>
       The common exceptions described in the module comments, as well as:
-      SeattleGENINotEnoughCredits
+      SeattleClearinghouseNotEnoughCredits
         If the account does not have enough available vessel credits to fulfill
         the request.
     <Side Effects>
@@ -232,7 +232,7 @@ class SeattleClearinghouseClient(object):
         The number of vessels to acquire.
     <Exceptions>
       The common exceptions described in the module comments, as well as:
-      SeattleGENINotEnoughCredits
+      SeattleClearinghouseNotEnoughCredits
         If the account does not have enough available vessel credits to fulfill
         the request.
     <Side Effects>
@@ -253,7 +253,7 @@ class SeattleClearinghouseClient(object):
         The number of vessels to acquire.
     <Exceptions>
       The common exceptions described in the module comments, as well as:
-      SeattleGENINotEnoughCredits
+      SeattleClearinghouseNotEnoughCredits
         If the account does not have enough available vessel credits to fulfill
         the request.
     <Side Effects>
@@ -274,7 +274,7 @@ class SeattleClearinghouseClient(object):
         The number of vessels to acquire.
     <Exceptions>
       The common exceptions described in the module comments, as well as:
-      SeattleGENINotEnoughCredits
+      SeattleClearinghouseNotEnoughCredits
         If the account does not have enough available vessel credits to fulfill
         the request.
     <Side Effects>
@@ -297,7 +297,7 @@ class SeattleClearinghouseClient(object):
         The number of vessels to acquire.
     <Exceptions>
       The common exceptions described in the module comments, as well as:
-      SeattleGENINotEnoughCredits
+      SeattleClearinghouseNotEnoughCredits
         If the account does not have enough available vessel credits to fulfill
         the request.
     <Side Effects>
@@ -324,7 +324,7 @@ class SeattleClearinghouseClient(object):
         A list of vessel handles.
     <Exceptions>
       The common exceptions described in the module comments, as well as:
-      SeattleGENINotEnoughCredits
+      SeattleClearinghouseNotEnoughCredits
         If the account does not have enough available vessel credits to fulfill
         the request.
     <Side Effects>
@@ -369,7 +369,7 @@ class SeattleClearinghouseClient(object):
         'handle' key of the dictionaries returned by get_resource_info().
     <Exceptions>
       The common exceptions described in the module comments, as well as:
-      SeattleGENINotEnoughCredits
+      SeattleClearinghouseNotEnoughCredits
         If the account is currently over its vessel credit limit, then vessels
         cannot be renewed until the account is no longer over its credit limit.
     <Side Effects>
@@ -515,7 +515,7 @@ def _get_ssl_transport(ca_certs_file):
   try:
     import M2Crypto
   except ImportError, err:
-    raise ImportError("In order to use the SeattleGENI XMLRPC client with " + 
+    raise ImportError("In order to use the SeattleClearinghouse XMLRPC client with " + 
                       "allow_ssl_insecure=False, you need M2Crypto " + 
                       "installed. " + str(err))
   
@@ -553,7 +553,7 @@ class CommunicationError(SeattleClearinghouseError):
 class InternalError(SeattleClearinghouseError):
   """
   Indicates an unexpected error occurred, probably either a bug in this
-  client or a bug in SeattleGENI.
+  client or a bug in SeattleClearinghouse.
   """
 
 
@@ -578,6 +578,6 @@ class NotEnoughCreditsError(SeattleClearinghouseError):
   
 class UnableToAcquireResourcesError(SeattleClearinghouseError):
   """
-  Indicates that the requested operation failed because SeattleGENI was unable
+  Indicates that the requested operation failed because SeattleClearinghouse was unable
   to acquire the requested resources.
   """
