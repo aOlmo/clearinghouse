@@ -27,7 +27,7 @@ from seattlegeni.website.xmlrpc.views import PublicXMLRPCFunctions
 
 # This is the url that will be displayed if the xmlrpc service is requested
 # directory through a web browser (that is, through a GET request).
-SEATTLEGENI_XMLRPC_API_DOC_URL = "https://seattle.cs.washington.edu/wiki/SeattleGeniAPI"
+SEATTLECLEARINGHOUSE_XMLRPC_API_DOC_URL = "https://seattle.cs.washington.edu/wiki/SeattleGeniAPI"
 
 # Create a Dispatcher. This handles the calls and translates info to function maps.
 # TODO: allow_none = True or False? Does using None in the api make the xmlrpc
@@ -56,7 +56,7 @@ def rpc_handler(request):
     response.write(dispatcher._marshaled_dispatch(request.raw_post_data))
   else:
     response.write("<b>This is the SeattleGeni XML-RPC Service.</b><br>")
-    response.write("Please see " + SEATTLEGENI_XMLRPC_API_DOC_URL + " for more information.")
+    response.write("Please see " + SEATTLECLEARINGHOUSE_XMLRPC_API_DOC_URL + " for more information.")
 
   response['Content-length'] = str(len(response.content))
   return response
