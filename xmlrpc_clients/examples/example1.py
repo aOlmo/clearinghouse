@@ -1,5 +1,5 @@
 """
-Example of using the seattlegeni_xmlrpc module's SeattleGENIClient.
+Example of using the seattleclearinghouse_xmlrpc module's SeattleGENIClient.
 
 This script tries to acquire, renew, and release some vessels and prints out
 various information along the way.
@@ -7,7 +7,7 @@ various information along the way.
 
 # This module must be in your python path (for example, in the same directory
 # as the current script is in).
-import seattlegeni_xmlrpc
+import seattleclearinghouse_xmlrpc
 
 
 USERNAME = "your_username"
@@ -19,12 +19,12 @@ USERNAME = "your_username"
 PRIVATE_KEY_STRING = open("your_username.privatekey").read()
 
 # Allowing SSL to be insecure means it will be susceptible to MITM attacks.
-# See the instructions in seattlegeni_xmlrpc.py for using SSL securely.
+# See the instructions in seattleclearinghouse_xmlrpc.py for using SSL securely.
 ALLOW_SSL_INSECURE = False
 
 
 def do_example_acquire_renew_release():
-  client = seattlegeni_xmlrpc.SeattleGENIClient(username=USERNAME,
+  client = seattleclearinghouse_xmlrpc.SeattleGENIClient(username=USERNAME,
                                                 private_key_string=PRIVATE_KEY_STRING,
                                                 allow_ssl_insecure=ALLOW_SSL_INSECURE)
 
@@ -46,11 +46,11 @@ def do_example_acquire_renew_release():
   try:
     # This is a list of dictionaries just like the one above.
     newly_acquired_vessels = client.acquire_wan_resources(2)
-  except seattlegeni_xmlrpc.NotEnoughCreditsError, err:
+  except seattleclearinghouse_xmlrpc.NotEnoughCreditsError, err:
     print("Couldn't acquire resources because we don't have enough vessel " +
           "credits: " + str(err))
     return
-  except seattlegeni_xmlrpc.UnableToAcquireResourcesError, err:
+  except seattleclearinghouse_xmlrpc.UnableToAcquireResourcesError, err:
     print("Couldn't acquire vessels because SeattleGENI doesn't have enough " +
           "of what we asked for: " + str(err))
     return
@@ -63,7 +63,7 @@ def do_example_acquire_renew_release():
   # Attempt to renew the two vessels we just acquired. 
   try:
     client.renew_resources(acquired_handle_list)
-  except seattlegeni_xmlrpc.NotEnoughCreditsError, err:
+  except seattleclearinghouse_xmlrpc.NotEnoughCreditsError, err:
     # This is probably not going to happen immediately after acquiring vessels.
     print("Couldn't renew vessels because we are over our vessel credit " +
           "limit: " + str(err))
@@ -87,7 +87,7 @@ def do_example_acquire_renew_release():
 def main():
   try:
     do_example_acquire_renew_release()
-  except seattlegeni_xmlrpc.SeattleGENIError:
+  except seattleclearinghouse_xmlrpc.SeattleGENIError:
     # In a real script, you'd want to handle this. Could be an authentication
     # error, communication error, etc. You can use the fine-grained exceptions
     # rather than the base exception of SeattleGENIError to do different

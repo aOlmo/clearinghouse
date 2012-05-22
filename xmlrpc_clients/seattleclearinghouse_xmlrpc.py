@@ -1,6 +1,6 @@
 """
 <Program>
-  seattlegeni_xmlrpc.py
+  seattleclearinghouse_xmlrpc.py
 
 <Started>
   6/28/2009
