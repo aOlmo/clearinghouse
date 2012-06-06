@@ -364,6 +364,7 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
       # We shouldn't ever get here, but just in case, let's handle it.
       vessel["expires_in"] = "Expired"
     else:
+      #is_active = vessel["is_active"]
       days = vessel["expires_in_seconds"] / (3600 * 24)
       hours = vessel["expires_in_seconds"] / 3600 % 24
       minutes = vessel["expires_in_seconds"] / 60 % 60

@@ -1009,6 +1009,8 @@ def get_vessel_infodict_list(vessel_list):
     
     vessel_info["handle"] = vessel_info["node_id"] + ":" + vessel.name
     
+    vessel_info["is_active"] = node.is_active
+    
     expires_in_timedelta = vessel.date_expires - datetime.datetime.now()
     # The timedelta object stores information in two parts: days and seconds.
     vessel_info["expires_in_seconds"] = (expires_in_timedelta.days * 3600 * 24) + expires_in_timedelta.seconds
