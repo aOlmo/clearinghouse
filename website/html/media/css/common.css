@@ -172,7 +172,15 @@ code {
 	background-color: #f2dbdb;
 	text-align: center;
 }
-
+.warning2 {
+	border: 1px solid red;
+        max-width : 60%;
+	margin: 20px 60px;
+	padding: 10px 20px;
+	color: red;
+	background-color: #f2dbdb;
+	text-align: center;
+}
 .message {
 	border: 1px solid green;
 	margin: 20px 60px;
@@ -202,7 +210,7 @@ ul.errorlist li {
 }
 
 #learn-about-seattle {
-    max-width : 800px;
+    max-width : 70%;
     text-align : center;
     background-color : #ded;
     border : 1px solid #0a0;
