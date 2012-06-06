@@ -16,8 +16,6 @@ urlpatterns = patterns('seattlegeni.website.html.views',
                        # Top level urls and functions:
                        # show the user info page for this user listing the public/private keys, and user information
                        (r'^profile$', 'profile', {}, 'profile'), # was user_info
-                       # show the current donation for this user
-                       (r'^mygeni$', 'mygeni', {}, 'mygeni'), # was donations
                        # show the used resources page (with all the currently acquired vessels)
                        (r'^myvessels$', 'myvessels', {}, 'myvessels'), # was used_resources
                        # show the help page
