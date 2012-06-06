@@ -78,7 +78,7 @@ My Vessels - Seattle Clearinghouse
   				<tr class="{% cycle 'odd' 'even' %}">
   					<td>
   					  <form method="POST" action="{% url del_resource %}">
-  					<input type="submit" value="remove" />
+  					<input type="image" src="{{ MEDIA_URL }}images/delete.png" alt="Remove" />
   					<input type="hidden" name="handle" value="{{ vessel.handle }}" />
   					  </form>
   					</td>
@@ -87,7 +87,7 @@ My Vessels - Seattle Clearinghouse
   					<td> {{ vessel.expires_in }} </td>
   					<td>
   					  <form method="POST" action="{% url renew_resource %}">
-  					<input type="submit" value="renew" />
+  					<input type="image" src="{{ MEDIA_URL }}images/reload.png" alt="Renew" />
   					<input type="hidden" name="handle" value="{{ vessel.handle }}" />
   					  </form>
   					</td>
