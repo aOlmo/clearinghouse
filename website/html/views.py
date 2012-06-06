@@ -359,12 +359,17 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
   my_vessels_raw = interface.get_acquired_vessels(user)
   my_vessels = interface.get_vessel_infodict_list(my_vessels_raw)
   
+  # this user's number of donations, max vessels, total vessels and free credits
+  my_donations = interface.get_donations(user)
+  my_max_vessels = interface.get_available_vessel_credits(user)	
+  my_free_vessel_credits = interface.get_free_vessel_credits_amount(user)
+  my_total_vessel_credits = interface.get_total_vessel_credits(user)
+
   for vessel in my_vessels:
     if vessel["expires_in_seconds"] <= 0:
       # We shouldn't ever get here, but just in case, let's handle it.
       vessel["expires_in"] = "Expired"
     else:
-      #is_active = vessel["is_active"]
       days = vessel["expires_in_seconds"] / (3600 * 24)
       hours = vessel["expires_in_seconds"] / 3600 % 24
       minutes = vessel["expires_in_seconds"] / 60 % 60
@@ -379,6 +384,10 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
                              'get_form' : get_form,
                              'action_summary' : action_summary,
                              'action_detail' : action_detail,
+                             'my_donations' : len(my_donations),
+                             'my_max_vessels' : my_max_vessels, 
+                             'free_vessel_credits' : my_free_vessel_credits,
+                             'total_vessel_credits' : my_total_vessel_credits,
                              'remove_summary' : remove_summary})
 
 

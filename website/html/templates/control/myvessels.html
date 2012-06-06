@@ -22,7 +22,13 @@ My Vessels - Seattle Clearinghouse
 	<div id="main">
 		<div id="middle">
 			<div id="getresources">
-			  {% ifnotequal get_form None %}
+			
+			<span style="position:relative;left:-129px;"> Total vessels available : {{ total_vessel_credits }}</span>
+			<span style="position:relative;left:-129px;" title="Each user is gifted {{ free_vessel_credits }} vessels. In addition to these, each donation on your behalf grants 10 vessels.
+			{{free_vessel_credits}} + ({{my_donations  }} * 10) ={{ total_vessel_credits }}">  <img src="{{ MEDIA_URL }}images/help-icon.png" ></img> </span>
+			<span style="position:relative;left:11px;"> Total<a href="{% url getdonations %}"> donations </a>: {{my_donations}}</span> 
+			<br>
+				{% ifnotequal get_form None %}
 				<form method="POST" action="{% url get_resources %}">
 				  <span id="caption">Get more resources</span>
 					<font color="red">	{{ get_form.num.errors }}</font>

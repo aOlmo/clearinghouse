@@ -146,7 +146,6 @@ def register_user(username, password, email, affiliation, pubkey=None):
 
 
 
-
 #def change_user_pubkey(geniuser, user_pubkey):
 #  """
 #  <Purpose>
@@ -1044,7 +1043,23 @@ def get_total_vessel_credits(geniuser):
   return maindb.get_user_total_vessel_credits(geniuser)
 
 
+def get_free_vessel_credits_amount(geniuser):
+  """
+  <Purpose>
+    Determine the total number of free vessel credits the user is given.
+  <Arguments>
+    geniuser
+      The GeniUser whose free vessel credits is wanted
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    The total number of vessels the user is given for free.
+  """
+  assert_geniuser(geniuser)
 
+  return maindb.get_user_free_vessel_credits(geniuser)
 
 
 def get_available_vessel_credits(geniuser):
