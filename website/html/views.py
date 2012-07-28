@@ -109,7 +109,8 @@ def profile(request, info=""):
     Display information about the user account.
     This method requires the request to represent a valid logged
     in user. See the top-level comment about the @login_required()
-    decorator to achieve this property.
+    decorator to achieve this property.  User account is editable through this 
+    method.
   <Arguments>
     request:
       An HTTP request object.  
@@ -126,19 +127,54 @@ def profile(request, info=""):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
+  msg = ''
+  email_form = forms.gen_edit_user_form(instance=user)
+  affiliation_form = forms.gen_edit_user_form(instance=user)
+  password_form = forms.EditUserPasswordForm()
+    
+  if request.method == 'POST':
+    if 'affiliation' in request.POST:
+       affiliation_form = forms.gen_edit_user_form(('affiliation',), request.POST, instance=user)
+       if affiliation_form.is_valid():
+         new_affiliation = affiliation_form.cleaned_data['affiliation']
+         interface.change_user_affiliation(user, new_affiliation)
+         msg ="Affiliation has been successfully changed to %s." % (user.affiliation)
+    elif 'email' in request.POST:
+       email_form = forms.gen_edit_user_form(('email',), request.POST, instance=user)
+       if email_form.is_valid():
+         new_email = email_form.cleaned_data['email']
+         interface.change_user_email(user, new_email)
+         msg ="Email has been successfully changed to %s." % (user.email)
+    elif 'password1' in request.POST:
+       password_form = forms.EditUserPasswordForm( request.POST, instance=user)
+       if password_form.is_valid():
+         new_password = password_form.cleaned_data['password1']
+         interface.change_user_password(user, new_password)
+         msg ="Password has been successfully changed"
   
   username = user.username
   affiliation = user.affiliation
   email = user.email
   port = user.usable_vessel_port
   has_privkey = user.user_privkey != None
+  #currently not used, needed if editing user port is allowed
+  #port_range = interface.get_useable_ports()
+  #port_range_min = port_range[0]
+  #port_range_max = port_range[-1]
   
   return direct_to_template(request, 'control/profile.html',
-                            {'username' : username,
+                            {'email_form' : email_form,
+                             'affiliation_form' : affiliation_form,
+                             'password_form' : password_form,
+                             'username' : username,
                              'affiliation' : affiliation,
                              'email' : email,
                              'port' : port,
+                             'api_key' : user.api_key,
                              'has_privkey' : has_privkey,
+                             #'port_range_min' : port_range_min,
+                             #'port_range_max' : port_range_max,
+                             'msg' : msg,
                              'info' : info})
 
 
@@ -252,7 +288,7 @@ def login(request):
     pass
   else:
     return HttpResponseRedirect(reverse("profile"))
-  
+
   ltemplate = 'accounts/login.html'
   if request.method == 'POST':
     form = AuthenticationForm(request.POST)
@@ -273,7 +309,7 @@ def login(request):
     request.session.delete_test_cookie()
     
     return HttpResponseRedirect(reverse("profile"))
-      
+    
   # request type is GET, show a fresh login page
   return _show_login(request, ltemplate, {})
 

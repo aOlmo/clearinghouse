@@ -3,43 +3,67 @@
 * STYLE FOR PROFILE PAGE
 *******************************/
 
-table.profile {
-    border-collapse: collapse;
-	border-spacing: 0;
-	width: 70%;
+h1 {  /* ADDED July 27, 2012 */
+  font-size: 1.8em; 
+  border-bottom: 1px solid #bbb; 
+  width: 70%; min-width: 688px;
+}
+
+table.profile {  
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 70%;
+    min-width: 688px; /* ADDED July 27, 2012 to fix the table collapsing on itself when the browser is below a certain size */
 }
 
 #info {
-    background-color : #ded;
-    border : 1px solid #0a0;
-    padding : 1em;
-    margin-bottom : 1em;
+  background-color : #ded;
+  border : 1px solid #0a0;
+  padding : 1em;
+  margin-bottom : 1em;
 }
 
 table.profile tr td.key {
-    text-align: right;
-    height: 30px;
-    width: 150px;
-    font-weight: bold;
+  text-align: right;
+  height: 30px;
+  font-weight: bold;
+    min-width: 150px; /* CHANGED July 27, 2012 (Prev. width 150px)*/
 }
 
 table.profile tr td.value {
-    padding-left: 15px;   
+  padding-left: 15px;   
+    min-width: 500px; /* ADDED July 27, 2012 */
+}
+
+table.profile button { 
+  width: 80px;
+  vertical-align: middle;
+  float: right;
+  margin-right: 15px;
+}
+
+table.profile span.hide_this{ 
+	display: inline;
+	display: none;
+}
+
+table.profile form{ 
+	display: inline;
 }
 
 #download {
-    float: right;
-    border: 2px solid #666;
-    background-color: #fff;
-    padding: 10px;
-    margin-right: 0px;
-    text-align: center;
-    font-weight: bold;
+  float: right;
+  border: 2px solid #666;
+  background-color: #fff;
+  padding: 10px;
+  margin-right: 0px;
+  text-align: center;
+  font-weight: bold;
 }
 
 #download a img {
-    display: block;
-    width: 150px;
+  display: block;
+  width: 150px;
 }
 
 #download a {
@@ -47,5 +71,5 @@ table.profile tr td.value {
 }
 
 #download_pubkey_form {
-    display : inline;	
+  display : inline;	
 }

@@ -17,6 +17,7 @@
   For more information on forms in django see:
   http://docs.djangoproject.com/en/dev/topics/forms/
 """
+from seattlegeni.website.control.models import GeniUser
 
 from django.contrib.auth.forms import UserCreationForm as DjangoUserCreationForm
 import django.forms as forms
@@ -91,6 +92,79 @@ class GeniUserCreationForm(DjangoUserCreationForm):
 
 
 
+
+
+def gen_edit_user_form(field_list=None, *args, **kwargs):
+  """
+  <Purpose>
+      Dynamically generates a EditUserForm depending on field_list.
+
+  <Arguments>
+      field_list:
+          The profile view passes in the desired field that will be edited by the
+          EditUserForm.
+
+  <Exceptions>
+      ValidationErrors raised by a incorrect field value.
+
+  <Side Effects>
+      None.
+
+  <Returns>
+      A EditUserForm object that is specific to the field list passed in.
+
+  """
+  class EditUserForm(forms.ModelForm):
+    class Meta:
+      model = GeniUser
+      fields = field_list
+      
+    def __init__(self):
+      super(EditUserForm, self).__init__(*args, **kwargs)
+      
+    def clean_affiliation(self):
+      value = self.cleaned_data['affiliation']
+      try:
+        validations.validate_affiliation(value)
+      except ValidationError, err:
+        raise forms.ValidationError, str(err)
+      return value
+      
+    def clean_email(self):
+      value = self.cleaned_data['email']
+      try:
+        validations.validate_email(value)
+      except ValidationError, err:
+        raise forms.ValidationError, str(err)
+      return value
+    
+  return EditUserForm()
+
+
+
+
+
+class EditUserPasswordForm(forms.ModelForm):
+  password1 = forms.CharField(label=("Password"), required=False, widget=forms.PasswordInput)
+  password2 = forms.CharField(label=("Password confirmation"), required=False, widget=forms.PasswordInput, help_text = ("Enter the same password as above, for verification."))
+  class Meta:
+    model = GeniUser
+    fields = ('password1','password2')
+    
+  def clean(self):
+    data = self.cleaned_data
+    if data['password1'] != data['password2']:
+      raise forms.ValidationError(("The two password fields didn't match."))
+    try:
+      validations.validate_password(data['password1'])
+    except ValidationError, err:
+      raise forms.ValidationError, str(err)
+    return data
+    
+    
+    
+    
+    
 def gen_get_form(geni_user, req_post=None):
   """
   <Purpose>

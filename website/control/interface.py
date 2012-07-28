@@ -441,6 +441,207 @@ def change_user_keys(geniuser, pubkey=None):
 
 
 
+	
+def get_useable_ports():
+  """
+  <Purpose>
+     Gets the allowed user port range
+  <Arguments>
+	None
+  <Exceptions>
+   None
+  <Side Effects>
+    None
+  <Returns>
+    The allowed user port range which is globally defined in maindb.
+  """
+  return maindb.get_allowed_user_ports()
+
+
+
+
+
+@log_function_call
+def change_user_email(geniuser, new_email):
+  """
+  <Purpose>
+     Sets a new email for the user 
+  <Arguments>
+    geniuser
+      A GeniUser object of the user whose email is to be updated.
+    new_email
+      the new email value
+  <Exceptions>
+    ValidationError
+      If the email is provided and is invalid.
+  <Side Effects>
+    The geniuser email gets changed to the new value(in the db).
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+  #validate its a real email.  The frontend should already
+  #checks for this but we validate again just in case.
+  validations.validate_email(new_email)
+ 
+  # Lock the user.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  lockserver.lock_user(lockserver_handle, geniuser.username)
+  try:
+    # Make sure the user still exists now that we hold the lock. Also makes
+    # sure that we see any changes made to the user before we obtained the lock.
+    # We don't use the user object we retrieve because we want the
+    # object passed in to the function to reflect changes we make to the object.
+    try:
+      maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
+
+    maindb.set_user_email(geniuser, new_email)
+  finally:
+    # Unlock the user.
+    lockserver.unlock_user(lockserver_handle, geniuser.username)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+
+
+
+
+
+@log_function_call
+def change_user_affiliation(geniuser, new_affiliation):
+  """
+  <Purpose>
+     Sets a new affiliation for the user 
+  <Arguments>
+    geniuser
+      A GeniUser object of the user whose affiliation is to be updated.
+    new_affiliation
+      the new affiliation value
+  <Exceptions>
+    ValidationError
+      If the affiliation is provided and is invalid.
+  <Side Effects>
+    The geniuser affiliation gets changed to the new value(in the db).
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+  #Determines if the new affiliation is valid.  The frontend should already
+  #checks for this but we validate again here just in case.
+  validations.validate_affiliation(new_affiliation)
+ 
+  
+  # Lock the user.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  lockserver.lock_user(lockserver_handle, geniuser.username)
+  try:
+    # Make sure the user still exists now that we hold the lock. Also makes
+    # sure that we see any changes made to the user before we obtained the lock.
+    # We don't use the user object we retrieve because we want the
+    # object passed in to the function to reflect changes we make to the object.
+    try:
+      maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
+
+    maindb.set_user_affiliation(geniuser, new_affiliation)
+  finally:
+    # Unlock the user.
+    lockserver.unlock_user(lockserver_handle, geniuser.username)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+
+
+
+
+
+@log_function_call
+def change_user_port(geniuser, new_port):
+  """
+  <Purpose>
+     Sets a new port for the user 
+  <Arguments>
+    geniuser
+      A GeniUser object of the user whose port is to be changed.
+    new_port
+      the new port value
+  <Exceptions>
+    ValidationError
+      If the port is provided and it is not in the allowed range.
+  <Side Effects>
+    the geniuser port gets changed to the new value(in the db).
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+
+  # Lock the user.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  lockserver.lock_user(lockserver_handle, geniuser.username)
+  try:
+    # Make sure the user still exists now that we hold the lock. Also makes
+    # sure that we see any changes made to the user before we obtained the lock.
+    # We don't use the user object we retrieve because we want the
+    # object passed in to the function to reflect changes we make to the object.
+    try:
+      maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
+
+    maindb.set_user_port(geniuser, new_port)
+  finally:
+    # Unlock the user.
+    lockserver.unlock_user(lockserver_handle, geniuser.username)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+
+
+
+
+	
+@log_function_call_and_only_first_argument
+def change_user_password(geniuser, new_password):
+  """
+  <Purpose>
+     Sets a new password for the geniuser. 
+  <Arguments>
+    geniuser
+      A GeniUser object of the user whose password is to be changed.
+    new_password
+      the user specificed new password value.
+  <Exceptions>
+    ValidationError
+      If the password is provided and is invalid.
+  <Side Effects>
+    The geniuser password gets changed to the new value (in the db).
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+  #Determines if the new password is strong enough.  The frontend should already
+  #check for this but we validate again here just in case.
+  validations.validate_password(new_password)
+  
+  # Lock the user.
+  lockserver_handle = lockserver.create_lockserver_handle()
+  lockserver.lock_user(lockserver_handle, geniuser.username)
+  try:
+    # Make sure the user still exists now that we hold the lock. Also makes
+    # sure that we see any changes made to the user before we obtained the lock.
+    # We don't use the user object we retrieve because we want the
+    # object passed in to the function to reflect changes we make to the object.
+    try:
+      maindb.get_user(geniuser.username)
+    except DoesNotExistError:
+      raise InternalError(traceback.format_exc())
+
+    maindb.set_user_password(geniuser, new_password)
+  finally:
+    # Unlock the user.
+    lockserver.unlock_user(lockserver_handle, geniuser.username)
+    lockserver.destroy_lockserver_handle(lockserver_handle)
+
+
+
+
 
 @log_function_call
 def regenerate_api_key(geniuser):

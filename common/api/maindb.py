@@ -319,6 +319,116 @@ def set_user_keys(geniuser, pubkey, privkey):
 
 
 @log_function_call
+def set_user_email(geniuser, new_email):
+  """
+  <Purpose>
+    Sets the email for the geniuser.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose email is to be changed.
+    new_email  
+      The new email value.
+  <Exceptions>
+    None
+  <Side Effects>
+    Updates the database as well as the geniuser object passed in with the
+    provided email.
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+  
+  geniuser.email = new_email
+  geniuser.save()
+
+
+
+
+
+@log_function_call
+def set_user_affiliation(geniuser, new_affiliation):
+  """
+  <Purpose>
+    Sets the affiliation for the geniuser.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose affiliation is to be changed.
+    new_affiliation  
+      The new affiliation value.
+  <Exceptions>
+    None
+  <Side Effects>
+    Updates the database as well as the geniuser object passed in with the
+    provided affiliation.
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+  
+  geniuser.affiliation = new_affiliation
+  geniuser.save()
+
+
+
+
+
+@log_function_call
+def set_user_port(geniuser, new_port): # currently not in use 
+  """
+  <Purpose>
+    Sets the port for the geniuser.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose port is to be changed.
+    new_port  
+      The new port value.
+  <Exceptions>
+    None
+  <Side Effects>
+    Updates the database as well as the geniuser object passed in with the
+    provided port.
+  <Returns>
+    None
+  """
+  # if new_port in ALLOWED_USER_PORTS:
+  assert_geniuser(geniuser)
+  
+  geniuser.usable_vessel_port = new_port
+  geniuser.save()
+
+
+
+
+
+@log_function_call_and_only_first_argument
+def set_user_password(geniuser, new_password):
+  """
+  <Purpose>
+    Sets the password for the geniuser.
+  <Arguments>
+    geniuser
+      The GeniUser object of the user whose password is to be changed.
+    new_password  
+      The new password value.
+  <Exceptions>
+    None
+  <Side Effects>
+    Updates the database as well as the geniuser object passed in with the
+    provided password.
+  <Returns>
+    None
+  """
+  assert_geniuser(geniuser)
+
+  # Set the password using this function so that it gets hashed by django.
+  geniuser.set_password(new_password)
+  geniuser.save()
+
+
+
+
+
+@log_function_call
 def create_node(node_identifier, last_known_ip, last_known_port, last_known_version, is_active, owner_pubkey, extra_vessel_name):
   """
   <Purpose>
@@ -372,6 +482,25 @@ def create_node(node_identifier, last_known_ip, last_known_port, last_known_vers
   node.save()
 
   return node
+
+
+
+
+
+def get_allowed_user_ports():
+  """
+  <Purpose>
+    Gets the allowed user ports defined globally in this file.
+  <Arguments>
+    None
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    The allowed user ports which are a list.
+  """
+  return ALLOWED_USER_PORTS
 
 
 

@@ -5,6 +5,11 @@
 <link href="{{ MEDIA_URL }}css/profile.css" rel="stylesheet" type="text/css" />
 {% endblock style %}
 
+{% block script %}
+{{ block.super }}
+<script type="text/javascript" src="{{ MEDIA_URL }}scripts/edit_profile.js" charset="utf-8"></script>
+{% endblock script %}
+
 {% block title %}
 Profile - Seattle Clearinghouse
 {% endblock title %}
@@ -16,81 +21,124 @@ Profile - Seattle Clearinghouse
 {% block content %}
 	<div id="main">
 		<div id="middle">
-			
+		
 			<div id="download">
-				<a href="http://seattlegeni.cs.washington.edu/dist/demokit.zip"><img src="{{ MEDIA_URL }}images/download_demokit.jpg" alt="Download demokit" />Download demokit</a>
+				<a href="http://seattlegeni.cs.washington.edu/dist/demokit.zip"><img src="{{ MEDIA_URL }}images/download_demokit.jpg" alt="Download demokit"/>Download demokit</a>
 			</div>
 			
-			<table class="profile">
-			  {% if info %}
-			  <tr class="even">
-			    <td colspan="2">
-			      <div id="info">{{ info }}</div>
-			    </td>
-			  </tr>
-			  {% endif %}
-				<tr class="odd">
+		   <table class="profile">          
+				{% if info or msg %}
+				<tr class="even">
+					<td colspan="2">
+						<div id="info">{{ info }} {{ msg }}</div>
+					</td>
+				</tr>
+				{% endif %}
+				{% if password_form.non_field_errors or email_form.errors or affiliation_form.errors %}
+				<tr class="even">
+					<td colspan="2">
+						<div class="warning">
+							{{ password_form.non_field_errors }}
+							{{ email_form.email.errors }}
+							{{ affiliation_form.affiliation.errors }}
+						</div>
+					</td>
+				</tr>
+				{% endif %}
+			    <tr class="odd">
 					<td class="key">Username</td>
 					<td class="value">{{ username }}</td>
+			    </tr>
+			    <tr class="even">
+					<td class="key">Password</td>
+					<td class="value">
+						<span class="value">********</span>
+						<span class="hide_this">
+							<form action="{% url profile %}" method="POST">
+								1. {{ password_form.password1 }} <br/>
+								2. {{ password_form.password2 }}
+								<input type="submit" value="Save"/>
+							</form>
+						</span>
+						<button class="edit" type="button" title="Password">Edit</button>
+					</td>
+			    </tr>
+			    <tr class="odd">
+					<td class="key">Affiliation</td>
+					<td class="value">
+						<span class="value">{{ affiliation }}</span>
+						<span class="hide_this">
+							<form  action="{% url profile %}" method="POST">
+								{{ affiliation_form.affiliation }}
+								<input type="submit" value="Save"/>
+							</form>
+						</span>
+						<button class="edit" type="button" title="Affiliation">Edit</button>
+					</td>
 				</tr>
 				<tr class="even">
-					<td class="key">Affiliation</td>
-					<td class="value">{{ affiliation }}</td>
+					<td class="key">E-mail Address</td>
+					<td class="value">
+						<span class="value">{{ email }} </span>
+						<span class="hide_this">
+							<form action="{% url profile %}" method="POST">
+								{{ email_form.email }}
+								<input type="submit" value="Save"/>
+							</form>
+						</span>
+						<button class="edit" type="button"title="E-mail">Edit</button>
+					</td>
 				</tr>
 				<tr class="odd">
-					<td class="key">E-mail Address</td>
-					<td class="value">{{ email }}</td>
-				</tr>
-				<tr class="even">
 					<td class="key">Port</td>
 					<td class="value">{{ port }}</td>
 				</tr>
-				<tr class="odd">
+				<tr class="even">
 					<td class="key">API Key</td>
 					<td class="value"><a href="{% url api_info %}">View or change your API key</a></td>
 				</tr>
-				<tr class="even">
+				<tr class="odd">
 					<td class="key">Public Key</td>
 					<td class="value">
-					  <form method="POST" action="{% url pub_key %}" id="download_pubkey_form"> 
-						<input type="submit" value="Download" />
-					  </form>
-					  <a href="{% url change_key %}">Generate or upload a new key</a>
+						<form method="POST" action="{% url pub_key %}" id="download_pubkey_form">
+							<input type="submit" value="Download"/>
+						</form>
+						<a href="{% url change_key %}">Generate or upload a new key</a>
 					</td>
 				</tr>
 				{% if has_privkey %}
+				<tr class="even">
+					<td class="key">Private Key</td>
+					<td class="value"><a href="#"/>
+						<form class="inline" method="POST" action="{% url priv_key %}">
+							<input type="submit" value="Download"/>
+						</form>
+					</td>
+				</tr>
 				<tr class="odd">
-				  <td class="key">Private Key</td>
-				  <td class="value"><a href="#">
-				      <form class="inline" method="POST" action="{% url priv_key %}"> 
-					<input type="submit" value="Download" /></p>
-				    </form>
-				  </td>
+					<td class="key">Delete your private key</td>
+					<td class="value">
+						<form class="inline" method="POST" action="{% url del_priv %}">
+							<input type="hidden" name="keyToDelete" value={{ username }}> </input>
+							<input id="delete" type="submit" value="Delete"> </input>
+						</form>
+					</td>
 				</tr>
 				<tr class="even">
-				  <td class="key">Delete your private key</td>
-				  <td class="value">
-				    <form class="inline" method="POST" action="{% url del_priv %}"> 
-				      <input type="hidden" name="keyToDelete" value={{ username }}> </input>
-				      <input id="delete" type="submit" value="Delete"> </input>
-				    </form>
-				  </td>
-				</tr>
-				<tr class="odd">
 					<td colspan="2">
-					    <p class="warning"> For better
-					      security we recommend that you
-					      download and delete your
-					      private key from the
-					      server. Always store your
-					      private key in a secure
-					      location.</p>
+						<p class="warning"> For better
+						security we recommend that you
+						download and delete your 
+						private key from the 
+						server. Always store your 
+						private key in a secure 
+						location. </p>
 					</td>
 				</tr>
 				{% endif %}
 			</table>
 		</div>
 	</div>
-
+	
 {% endblock content %}
 
