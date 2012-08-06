@@ -51,7 +51,7 @@ My Vessels - Seattle Clearinghouse
 			  {% endifnotequal %}
 			  
 			  {% ifnotequal action_detail "" %}
-				<div id="action_summary"> Details: {{ action_detail }} </div>
+				<div id="action_summary"> Details:  {% autoescape off %} {{ action_detail }} {% endautoescape %} </div>
 			  {% endifnotequal %}
 				
 				{% ifnotequal remove_summary "" %}
