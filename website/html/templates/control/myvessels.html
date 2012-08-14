@@ -22,12 +22,14 @@ My Vessels - Seattle Clearinghouse
 	<div id="main">
 		<div id="middle">
 			<div id="getresources">
-			
-			<span style="position:relative;left:-129px;"> Total vessels available : {{ total_vessel_credits }}</span>
-			<span style="position:relative;left:-129px;" title="Each user is gifted {{ free_vessel_credits }} vessels. In addition to these, each donation on your behalf grants 10 vessels.
-			{{free_vessel_credits}} + ({{my_donations  }} * 10) ={{ total_vessel_credits }}">  <img src="{{ MEDIA_URL }}images/help-icon.png" ></img> </span>
-			<span style="position:relative;left:11px;"> Total<a href="{% url getdonations %}"> donations </a>: {{my_donations}}</span> 
-			<br>
+				<span id="user_vessel_info">
+				<span id="total_vessels"> Total vessels available : {{ total_vessel_credits }}
+				<img src="{{ MEDIA_URL }}images/help-icon.png" title="Each user is gifted {{ free_vessel_credits }} vessels. In addition to these, each 
+donation on your behalf grants 10 vessels. 
+{{free_vessel_credits}} + ({{my_donations  }} * 10) = {{ total_vessel_credits }}"></img> </span>
+				<span id="total_donations"> Total<a href="{% url getdonations %}"> donations </a>: {{my_donations}}</span> 
+				</span>
+			<br/>
 				{% ifnotequal get_form None %}
 				<form method="POST" action="{% url get_resources %}">
 				  <span id="caption">Get more resources</span>
@@ -69,7 +71,7 @@ My Vessels - Seattle Clearinghouse
 					{% endifnotequal %}
 					{% url help as help %}
 					<th>Vessel Location</th>
-					<th>Vessel Name <a class="help" href="{{ help }}#myvessels" title="For each vessel that you acquire, you will see an entry in the table with the vessel location (denoted by its IP address) and vessel name. This is the name that seash will display when you browse your vessels.">?</a></th>
+					<th>Vessel Name <a class="help" href="{{ help }}#myvessels" title="For each vessel that you acquire, you will see an entry in the table with the vessel location (denoted by its IP address) and vessel name. This is the name that seash will display when you browse your vessels."><img src="{{ MEDIA_URL }}images/help-icon.png" ></img></a></th>
 					<th>Expires In</th>
 					{% ifnotequal num_vessels 0 %}
 					  <th>
@@ -84,8 +86,8 @@ My Vessels - Seattle Clearinghouse
   				<tr class="{% cycle 'odd' 'even' %}">
   					<td>
   					  <form method="POST" action="{% url del_resource %}">
-  					<input type="image" src="{{ MEDIA_URL }}images/delete.png" alt="Remove" />
-  					<input type="hidden" name="handle" value="{{ vessel.handle }}" />
+  				    	<input type="image" src="{{ MEDIA_URL }}images/delete.png" alt="Remove" />
+  				    	<input type="hidden" name="handle" value="{{ vessel.handle }}" />
   					  </form>
   					</td>
   					{% if vessel.is_active %}
@@ -98,8 +100,8 @@ My Vessels - Seattle Clearinghouse
   					<td> {{ vessel.expires_in }} </td>
   					<td>
   					  <form method="POST" action="{% url renew_resource %}">
-  					<input type="image" src="{{ MEDIA_URL }}images/reload.png" alt="Renew" />
-  					<input type="hidden" name="handle" value="{{ vessel.handle }}" />
+  				    	<input type="image" src="{{ MEDIA_URL }}images/reload.png" alt="Renew" />
+  				    	<input type="hidden" name="handle" value="{{ vessel.handle }}" />
   					  </form>
   					</td>
   				</tr>

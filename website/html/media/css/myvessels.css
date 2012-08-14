@@ -20,12 +20,29 @@
     margin: 0 15px 0 0;
 }
 
-#getresources form {
-    display : inline;
+#getresources #user_vessel_info { /* ADDED Aug 2012 */
+    display:inline-block;
+		margin-bottom: 5px;
 }
 
-#getresources form input, #getresources form select {
-    margin-right: 10px;
+#getresources #total_vessels { /* ADDED Aug 2012 */
+    position:relative;
+		left:-129px; 
+		padding: 0px 0px 5px 0px;
+		margin: 0px 0px 0px 0px;
+
+}
+
+#getresources #total_donations { /* ADDED Aug 2012 */
+    position:relative;
+		left: 11px; 
+		padding: 0px 0px 5px 0px;
+		margin: 0px 0px 0px 0px;
+}
+
+#getresources form {
+    display : inline;
+		margin-top: 5px; /* ADDED Aug 2012 */
 }
 
 #getresources form input, #getresources form select {
