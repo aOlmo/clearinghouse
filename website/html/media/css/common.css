@@ -42,6 +42,8 @@ body {
 	background-color: #fff;
 	font-family: "Segoe UI", "Lucida Grande", "Helvetica" , sans-serif;
 	font-size: 12pt;
+	  min-width: 1000px; /* ADDED July 2012 */
+	  margin: 0px auto; /* ADDED Aug 14, 2012 */
 }
 
 ol {
@@ -73,7 +75,7 @@ code {
 /***** Header *****/
 
 #header {
-    width: 70%;
+    width: 900px;   /* Edited Aug 14, 2012  prev width:70%*/
     margin: 30px auto 20px auto;
 }
 
@@ -99,13 +101,14 @@ code {
 /***** Navigator *****/
 
 #navigator {
-    width: 100%;
     border-bottom: 3px solid #222;
+    width: 100%;
+    margin: 0 auto;  /* ADDED Aug 14, 2012 */
 }
 
 #tabs {
-    width: 70%;
-    margin: 0 auto;
+    margin: 0 auto; 
+    width: 900px; /* Editied Aug 14, 2012 prev width: 70% */
 }
 
 #meta {
@@ -156,9 +159,9 @@ code {
 }
 
 #middle {
-    margin: 0 auto;
-    width: 70%;
-	padding-bottom: 60px;
+   margin: 0 auto;
+   width: 900px;  /* Edited Aug 14, 2012 prev width:70% */
+  padding-bottom: 60px;
 }
 
 
@@ -174,7 +177,6 @@ code {
 }
 .warning2 {
 	border: 1px solid red;
-        max-width : 60%;
 	margin: 20px 60px;
 	padding: 10px 20px;
 	color: red;
@@ -183,6 +185,7 @@ code {
 }
 .message {
 	border: 1px solid green;
+	   max-width : 682px;  /* ADDED July 2012 */
 	margin: 20px 60px;
 	padding: 10px 20px;
 	color: green;
@@ -210,7 +213,7 @@ ul.errorlist li {
 }
 
 #learn-about-seattle {
-    max-width : 70%;
+   /* max-width : 70%;*/
     text-align : center;
     background-color : #ded;
     border : 1px solid #0a0;

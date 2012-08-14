@@ -103,7 +103,7 @@ ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonati
 
 @log_function_call_without_return
 @login_required
-def profile(request, info=""):
+def profile(request, info="", error_msg=""):
   """
   <Purpose>
     Display information about the user account.
@@ -115,7 +115,9 @@ def profile(request, info=""):
     request:
       An HTTP request object.  
     info:
-      Additional message to display at the top of the page.
+      Additional message to display at the top of the page in a green box.
+    error_msg:
+      Additional message to display at top of the page in a red box.
   <Exceptions>
     None
   <Side Effects>
@@ -127,7 +129,7 @@ def profile(request, info=""):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  msg = ''
+  
   email_form = forms.gen_edit_user_form(instance=user)
   affiliation_form = forms.gen_edit_user_form(instance=user)
   password_form = forms.EditUserPasswordForm()
@@ -138,19 +140,19 @@ def profile(request, info=""):
        if affiliation_form.is_valid():
          new_affiliation = affiliation_form.cleaned_data['affiliation']
          interface.change_user_affiliation(user, new_affiliation)
-         msg ="Affiliation has been successfully changed to %s." % (user.affiliation)
+         info ="Affiliation has been successfully changed to %s." % (user.affiliation)
     elif 'email' in request.POST:
        email_form = forms.gen_edit_user_form(('email',), request.POST, instance=user)
        if email_form.is_valid():
          new_email = email_form.cleaned_data['email']
          interface.change_user_email(user, new_email)
-         msg ="Email has been successfully changed to %s." % (user.email)
+         info ="Email has been successfully changed to %s." % (user.email)
     elif 'password1' in request.POST:
        password_form = forms.EditUserPasswordForm( request.POST, instance=user)
        if password_form.is_valid():
          new_password = password_form.cleaned_data['password1']
          interface.change_user_password(user, new_password)
-         msg ="Password has been successfully changed"
+         info ="Password has been successfully changed"
   
   username = user.username
   affiliation = user.affiliation
@@ -174,8 +176,8 @@ def profile(request, info=""):
                              'has_privkey' : has_privkey,
                              #'port_range_min' : port_range_min,
                              #'port_range_max' : port_range_max,
-                             'msg' : msg,
-                             'info' : info})
+                             'info' : info,
+                             'error_msg' : error_msg})
 
 
 
@@ -637,7 +639,7 @@ def change_key(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+  info = ""
   if request.method == 'GET':
     return direct_to_template(request, 'control/change_key.html',
                               {'username' : user.username,
@@ -653,17 +655,19 @@ def change_key(request):
   else:
     file = request.FILES.get('pubkey', None)
     if file is None:
-      msg = "You didn't select a public key file to upload."
-      return direct_to_template(request, 'control/change_key.html',
-                                {'username' : user.username,
-                                 'error_msg' : msg})
+      msg = "You didn't select a public key file to upload." 
+      return profile(request, info, msg)
+      #return direct_to_template(request, 'control/change_key.html',
+      #                          {'username' : user.username,
+      #                           'error_msg' : msg})
     
     if file.size == 0 or file.size > forms.MAX_PUBKEY_UPLOAD_SIZE:
       msg = "Invalid file uploaded. The file size limit is " 
       msg += str(forms.MAX_PUBKEY_UPLOAD_SIZE) + " bytes."
-      return direct_to_template(request, 'control/change_key.html',
-                                {'username' : user.username,
-                                 'error_msg' : msg})
+      return profile(request, info, msg) 
+      #direct_to_template(request, 'control/change_key.html',
+      #                          {'username' : user.username,
+      #                           'error_msg' : msg})
     
     pubkey = file.read()
     
@@ -671,9 +675,10 @@ def change_key(request):
       validations.validate_pubkey_string(pubkey)
     except ValidationError:
       msg = "Invalid public key uploaded."
-      return direct_to_template(request, 'control/change_key.html',
-                                {'username' : user.username,
-                                 'error_msg' : msg})
+      return profile(request, info, msg)
+      #direct_to_template(request, 'control/change_key.html',
+      #                          {'username' : user.username,
+      #                           'error_msg' : msg})
     
     # If we made it here, the uploaded key is good.
     interface.change_user_keys(user, pubkey=pubkey)
@@ -700,19 +705,21 @@ def api_info(request):
   # This is a POST, so it should be generation of an API key.
   if not request.POST.get('generate_api_key', False):
     msg = "Sorry, we didn't understand your request."
-    return direct_to_template(request, 'control/api_info.html',
-                              {'username' : user.username,
-                               'api_key' : user.api_key,
-                               'msg' : msg})
+    return profile(request, info, msg) 
+    #direct_to_template(request, 'control/api_info.html',
+    #                          {'username' : user.username,
+    #                           'api_key' : user.api_key,
+    #                           'msg' : msg})
     
   interface.regenerate_api_key(user)
   msg = "Your API key has been regenerated. Your old one will no longer work."
   msg += " You should update any places you are using the API key"
   msg += " (e.g. in programs using the XML-RPC client)."
-  return direct_to_template(request, 'control/api_info.html',
-                            {'username' : user.username,
-                             'api_key' : user.api_key,
-                             'msg' : msg})
+  return profile(request,msg)
+  #direct_to_template(request, 'control/api_info.html',
+  #                         {'username' : user.username,
+  #                           'api_key' : user.api_key,
+  #                           'msg' : msg})
 
 
 

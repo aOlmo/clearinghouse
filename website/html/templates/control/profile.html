@@ -27,20 +27,21 @@ Profile - Seattle Clearinghouse
 			</div>
 			
 		   <table class="profile">          
-				{% if info or msg %}
+				{% if info %}
 				<tr class="even">
 					<td colspan="2">
-						<div id="info">{{ info }} {{ msg }}</div>
+						<div id="info">{{ info }}</div>
 					</td>
 				</tr>
 				{% endif %}
-				{% if password_form.non_field_errors or email_form.errors or affiliation_form.errors %}
+				{% if password_form.non_field_errors or email_form.errors or affiliation_form.errors or error_msg %}
 				<tr class="even">
 					<td colspan="2">
-						<div class="warning">
+						<div id="error_msg">
 							{{ password_form.non_field_errors }}
 							{{ email_form.email.errors }}
 							{{ affiliation_form.affiliation.errors }}
+							{{ error_msg }}
 						</div>
 					</td>
 				</tr>
@@ -51,16 +52,22 @@ Profile - Seattle Clearinghouse
 			    </tr>
 			    <tr class="even">
 					<td class="key">Password</td>
-					<td class="value">
+					<td class="value"> <button class="edit" type="button" title="Password">Edit</button>
 						<span class="value">********</span>
 						<span class="hide_this">
 							<form action="{% url profile %}" method="POST">
-								1. {{ password_form.password1 }} <br/>
-								2. {{ password_form.password2 }}
-								<input type="submit" value="Save"/>
+								<table id="edit_password">
+									<tr>
+										<td>Enter password: </td>
+										<td class="field"> {{ password_form.password1 }}</td>
+									</tr>
+									<tr>
+										<td>Confirm password: </td>
+										<td class="field"> {{ password_form.password2 }} <input type="submit" value="Save"/> </td>
+									</tr>
+								</table>
 							</form>
-						</span>
-						<button class="edit" type="button" title="Password">Edit</button>
+						</span>	
 					</td>
 			    </tr>
 			    <tr class="odd">
@@ -77,9 +84,9 @@ Profile - Seattle Clearinghouse
 					</td>
 				</tr>
 				<tr class="even">
-					<td class="key">E-mail Address</td>
+					<td class="key">E-mail Address<img class="help" src="{{ MEDIA_URL }}images/help-icon.png"title="If you forget your password this email will be used to recover your account."/></td>
 					<td class="value">
-						<span class="value">{{ email }} </span>
+						<span class="value" >{{ email }} </span>
 						<span class="hide_this">
 							<form action="{% url profile %}" method="POST">
 								{{ email_form.email }}
@@ -90,42 +97,70 @@ Profile - Seattle Clearinghouse
 					</td>
 				</tr>
 				<tr class="odd">
-					<td class="key">Port</td>
+					<td class="key">API Key
+						<img class="help" src="{{ MEDIA_URL }}images/help-icon.png"title="The Clearinghouse offers an API key that allows applications to perform actions on your behalf, such as acquiring, releasing, and renewing vessels.  If this key is lost or stolen, you can reset it at any time."/></td>
+					<td class="value api_cell"> 
+							<span class="api_cell" title="Click to show"><i>click to show</i></span>
+							<span id="api_key" class="hide_this" title="Click to hide"> {{ api_key }} 
+							</span>
+							<form action="{% url api_info %}" method="post">
+							<input type="hidden" name="generate_api_key" value="yes"/>
+							<button id="generate_api" type="submit"title="In some cases you may want to generate a new API key (for example, if you accidentally left your old one in a file that you shared publicly). Generating a new API key will make your old API key no longer work.">Generate new API Key</button>
+							</form>
+					</td>
+				</tr>
+				<tr class="even">
+					<td class="key">Port <img class="help" src="{{ MEDIA_URL }}images/help-icon.png"title="This indicates a port number that by default will be available for TCP / UDP on all of your acquired vessels."/></td>
 					<td class="value">{{ port }}</td>
 				</tr>
-				<tr class="even">
-					<td class="key">API Key</td>
-					<td class="value"><a href="{% url api_info %}">View or change your API key</a></td>
-				</tr>
-				<tr class="odd">
-					<td class="key">Public Key</td>
-					<td class="value">
-						<form method="POST" action="{% url pub_key %}" id="download_pubkey_form">
-							<input type="submit" value="Download"/>
+				
+			</table> <br/>
+		<table class="profile">
+			<tr>
+				<td><h3>Your Keys</h3></td>
+				<td> <form id="change_key" action="{% url change_key %}" method="post"style="display:inline;">
+					<input type="hidden" name="generate" value="yes"/>
+					<button id="generate_keypair" type="submit" title="The Clearinghouse can generate a new key pair for you. After it is generated, you will need to download your public and private keys again." style=""> Generate new Key Pair</button>
 						</form>
-						<a href="{% url change_key %}">Generate or upload a new key</a>
-					</td>
-				</tr>
+			</td> 
+			</tr>
+		</table>
+	<h1></h1>
+		<table class="profile">
+			<tr class="odd">
+				<td class="key">Public Key
+					<img class="help" src="{{ MEDIA_URL }}images/help-icon.png"
+								title="If you have generated a key pair on your own computer(for example, using Seash), you can upload your public key here. Do not upload your private key."/></td>
+				<td class="value">
+					<span class="value">********</span>
+					<span class="hide_this">
+						<button type="button" class="cancel" title="Cancel"> Cancel </button>
+						<form action="{% url change_key %}" method="post" enctype="multipart/form-data">
+							<input type="file" name="pubkey"/> <button type="submit" title="Upload a public key">Upload</button>
+						</form>
+					</span>
+					<form method="POST" action="{% url pub_key %}" id="download_pubkey_form"> 
+						<button type="submit" class="download" title="Download your public key"> Download </button>
+					 </form>
+						<button id="show_keyform" type="button" title="Upload a public key"> Upload </button>
+				</td>
+			</tr>
 				{% if has_privkey %}
 				<tr class="even">
-					<td class="key">Private Key</td>
-					<td class="value"><a href="#"/>
+					<td class="key">Private Key <img class="help" src="{{ MEDIA_URL }}images/red-help-icon.png"title="The Clearinghouse does not need your private key to provide you access to vessels.  You may wish to download this key and then delete it from the server."/></td>
+					<td class="value">********<a href="#">
 						<form class="inline" method="POST" action="{% url priv_key %}">
-							<input type="submit" value="Download"/>
+							<button type="submit" title="Download your private key">Download </button>
+						</form>
+						<form class="inline" method="POST" action="{% url del_priv %}">
+							<input type="hidden" name="keyToDelete" value={{ username }}/>
+							<button id="delete" type="submit" title="Delete your private key">Delete </button>
 						</form>
 					</td>
 				</tr>
 				<tr class="odd">
-					<td class="key">Delete your private key</td>
-					<td class="value">
-						<form class="inline" method="POST" action="{% url del_priv %}">
-							<input type="hidden" name="keyToDelete" value={{ username }}> </input>
-							<input id="delete" type="submit" value="Delete"> </input>
-						</form>
-					</td>
-				</tr>
-				<tr class="even">
 					<td colspan="2">
+            <img id="up_arrow" src="{{ MEDIA_URL }}/images/red-up-arrow.png" />
 						<p class="warning"> For better
 						security we recommend that you
 						download and delete your 
@@ -139,6 +174,4 @@ Profile - Seattle Clearinghouse
 			</table>
 		</div>
 	</div>
-	
 {% endblock content %}
-
