@@ -23,6 +23,9 @@ import shutil
 import subprocess
 import xmlrpclib
 
+# Needed to escape characters for the Android referrer...
+import urllib
+
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.auth.forms import AuthenticationForm
@@ -784,8 +787,18 @@ def download(request, username):
     user = interface.get_user_for_installers(username)
   except DoesNotExistError:
     validuser = False
-  return direct_to_template(request, 'download/installers.html', {'username' : username,
-                                                                 'validuser' : validuser})
+
+  templatedict = {}
+  templatedict['username'] = username
+  templatedict['validuser'] = validuser
+
+  # I need to build a URL for android to download the installer from.   (The
+  # same installer is downloaded from the Google Play store for all users.) 
+  # The URL is escaped twice (ask Akos why) and inserted in the referrer 
+  # information in the URL.   
+  templatedict['android_installer_link'] = urllib.quote(urllib.quote(request.build_absolute_uri(),safe=''),safe='')
+
+  return direct_to_template(request, 'download/installers.html', templatedict)
 
 
 
