@@ -3,7 +3,12 @@ $(document).ready(function() {
 });
 
 function detectOs() {
-	var os = $.browser.OS();
+	var os;
+	if ((navigator.userAgent.match(/(android)/i))) {
+		os = "Android";
+	} else {
+		os = $.browser.OS();
+	}
 	switch (os) {
 		case "Windows":
 			$("#downloads").prepend($("#win"));
@@ -13,6 +18,9 @@ function detectOs() {
 			break;
 		case "Linux":
 			$("#downloads").prepend($("#linux"));
+			break;
+		case "Android":
+			$("#downloads").prepend($("#android"));
 			break;
 		default:
 			break;
