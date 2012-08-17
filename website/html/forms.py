@@ -199,11 +199,15 @@ def gen_get_form(geni_user, req_post=None):
   # on their number of available vessel credits.
   if avail_vessel_credits == 0:
     step = [0]
-  elif avail_vessel_credits < 100:
+  elif avail_vessel_credits < 10:
     step = range(1, avail_vessel_credits+1)
+  elif avail_vessel_credits < 100:
+    step = range(1, 10)
+    step.extend(range(10, avail_vessel_credits+1,10))
   else:
-    step = range(1, 100)
-    step.extend(range(100, avail_vessel_credits+1, 10))
+    step = range(1, 10)
+    step.extend(range(10, 101,10))
+    step.extend(range(200, avail_vessel_credits+1, 100))
     
   if avail_vessel_credits not in step:
     step.append(avail_vessel_credits)
