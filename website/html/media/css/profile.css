@@ -150,6 +150,12 @@ img.help {
   width: 200px;
 }
 
+/*Added Sept 2012 to fix long api keys creating a new line*/
+#api_key {
+  color: red;
+  font-family: courier;
+}
+
 #up_arrow {
   height: 36px;
   width: 36px;
