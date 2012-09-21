@@ -34,7 +34,7 @@ table.profile {
   border-collapse: collapse;
   border-spacing: 0;
   width: 70%;
-  min-width: 688px; 
+  min-width: 703px; 
 }
 
 table.profile tr td.key {
@@ -42,7 +42,7 @@ table.profile tr td.key {
   height: 30px;
 	font-size: 16px;
   font-weight: bold;
-  width: 145px;
+  width: 160px;
 }
 
 table.profile tr td.value {
@@ -134,7 +134,7 @@ table.profile form{
 img.help {
   position: relative;
   float: left;
-  left: 147px;
+  left: 162px;
   display: none;
   /* when a negative margin is applied to right or bottom
   it allows the element to overlap
