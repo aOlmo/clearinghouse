@@ -61,8 +61,9 @@ SOCIAL_AUTH_LOGIN_ERROR_URL ='error'
 SOCIAL_AUTH_BACKEND_ERROR_URL = 'error'
 # When a user logs in with OpenID/OAuth send them to the profile page
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'profile'
-# A new user created through OpenID/OAuth gets sent here upon creation.
-SOCIAL_AUTH_NEW_USER_REDIRECT_URL = 'new_auto_register_user'
+# A new user created through OpenID/OAuth gets sent here upon creation. 
+# currently not used
+#SOCIAL_AUTH_NEW_USER_REDIRECT_URL = 'new_auto_register_user'
 
 # fields specificed here will not be automatically changed/updated by social_auth
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]

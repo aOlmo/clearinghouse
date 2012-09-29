@@ -23,7 +23,7 @@ urlpatterns = patterns('',
     url(r'^complete/(?P<backend>[^/]+)/error', RedirectView.as_view(url='/html/error')),
     url(r'^complete/(?P<backend>[^/]+)/associate_error', RedirectView.as_view(url='/html/associate_error')),
     url(r'^complete/(?P<backend>[^/]+)/profile', RedirectView.as_view(url='/html/profile')),
-    url(r'^complete/(?P<backend>[^/]+)/new_auto_register_user', RedirectView.as_view(url='/html/new_auto_register_user')),
+    #url(r'^complete/(?P<backend>[^/]+)/new_auto_register_user', RedirectView.as_view(url='/html/new_auto_register_user')),
     #Currently unused, we've disabled disconnected social accounts
     #url(r'^disconnect/(?P<backend>[^/]+)/profile', RedirectView.as_view(url='/html/profile')),
     (r'', include('social_auth.urls')),

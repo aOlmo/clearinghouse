@@ -22,7 +22,7 @@ urlpatterns = patterns('seattlegeni.website.html.views',
                        # show the user info page for this user listing the public/private keys, and user information
                        (r'^profile$', 'profile', {}, 'profile'), # was user_info
                        # OpenID/OAuth auto registered users get sent here after creation
-                       (r'^new_auto_register_user$', 'new_auto_register_user', {}, 'new_auto_register_user'),
+                       #(r'^new_auto_register_user$', 'new_auto_register_user', {}, 'new_auto_register_user'), #currently not used
                        # show the used resources page (with all the currently acquired vessels)
                        (r'^myvessels$', 'myvessels', {}, 'myvessels'), # was used_resources
                        # show the help page
