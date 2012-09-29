@@ -80,7 +80,7 @@ code {
 }
 
 #header #logo {
-    font-size: 36pt;
+    font-size: 42px;  /* Edited Sept 28, 2012  prev value :36pt*/
     font-weight: bold;
 }
 
