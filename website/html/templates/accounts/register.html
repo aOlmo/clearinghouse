@@ -1,7 +1,47 @@
 {% extends "accounts/accounts_base.html" %}
 
+{% comment %}
+<Program>
+  register.html
+
+<Author>
+  Originally by?:
+  Justin Samuel 2009
+
+  Modified:
+  Gaetano Pressimone 2012
+  
+<Purpose>
+  Django template file for Seattle Clearinghouse's 'register' page.  The page 
+  allows a visitor to create a new account.
+
+<Extends>
+  accounts/accounts_base.html
+
+<Stylesheet>
+  common.css
+  account.css
+
+<Scripts>
+  register.js
+
+<Template Variables>
+  page_top_errors:
+		Error messages to display.
+	
+  form: 
+		New user registration form.  See GeniUserCreationForm in forms.py for more info.
+    .username:
+		.password1: 
+		.password2: 
+    .affiliation:  
+		.email:  
+    .pubkey:  
+    .gen_upload_choice: 
+
+{% endcomment %}
 {% block title %}
-Profile - Clearinghouse
+Register - Clearinghouse
 {% endblock title %}
 
 {% block script %}
@@ -20,7 +60,7 @@ Profile - Clearinghouse
 		  <div id="learn-about-seattle">
 		    SeattleGENI is now the Seattle Clearinghouse. New to Seattle? We suggest you first
 		    <a href="https://seattle.cs.washington.edu/">learn about Seattle</a>
-		    before using Seattle Clearinghouse, a resource sharing website.
+		    before using the Clearinghouse, a resource sharing website.
 		  </div>
 		
 		  <form action="{% url register %}" method="POST" enctype="multipart/form-data">
@@ -76,9 +116,8 @@ Profile - Clearinghouse
 			  </tr>
 		    <tr>
 		      <td class="key"></td>
-		      <td class="value"><input type="submit" value="Register" />
-				<div id="loading_indicator">
-				 <img src="{{ MEDIA_URL }}images/loading_indicator.gif"/>
+		      <td class="value"><input type="submit" value="Register"/> <div id="loading_indicator">
+				  <img src="{{ MEDIA_URL }}images/loading_indicator.gif"/>
 				</div></td>
 		    </tr>
 		  </table>

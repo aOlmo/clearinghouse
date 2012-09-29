@@ -1,5 +1,76 @@
 {% extends "control/control_base.html" %}
 
+{% comment %}
+<Program>
+  profile.html
+  
+<Author>
+  Originally by?:
+  Justin Samuel 2009
+
+  Modified:
+  Gaetano Pressimone Aug 2012
+  
+<Purpose>
+  Django template file for Seattle Clearinghouse's 'Profile' page.  The page 
+  shows user information and also allows editing of certain user fields.
+
+<extends>
+  control/control_base.html
+
+<Stylesheet>
+  common.css
+  profile.css
+
+<Scripts>
+  edit_profile.js
+
+<Template Variables>
+  email_form:
+    The form to change a user's email address.
+
+  affiliation_form:
+    The form to change a user's affiliation.
+
+  password_form:
+    The form to change a user's password.
+
+  username:
+		The currently logged in user.
+
+  affiliation: 
+		The logged in user's affiliation.
+
+  email: 
+		The logged in user's email address.
+
+  port:
+		The logged in user's port number.
+
+  api_key: 
+		The logged in user's api key.
+
+  has_privkey: 
+		Boolean value regarding if a user has deleted his private key or not.
+
+  info:
+		Message related to profile actions example-changing password.
+
+  error_msg:
+		Error message related to profile actions.
+
+  social_auth
+    Object containing info related to the logged in user's OpenID/OAuth
+    assocations.
+    .not_associated
+      All openid/oauth providers not associated with the logged in user.
+    .backends
+      All associated backends(facebook etc.) from the logged in user.
+    .associated
+      All associated backends organized by type (.oauth, .openid, .oauth2).
+
+{% endcomment %}
+
 {% block style %}
 {{ block.super }}
 <link href="{{ MEDIA_URL }}css/profile.css" rel="stylesheet" type="text/css" />
@@ -84,7 +155,7 @@ Profile - Seattle Clearinghouse
 					</td>
 				</tr>
 				<tr class="even">
-					<td class="key">E-mail Address<img class="help" src="{{ MEDIA_URL }}images/help-icon.png"title="If you forget your password this email will be used to recover your account."/></td>
+					<td class="key">E-mail Address<img class="help" src="{{ MEDIA_URL }}images/help-icon.png"title="If you forget your password this email will be used to recover your account. The Clearinghouse does not use your email for anything else."/></td>
 					<td class="value">
 						<span class="value" >{{ email }} </span>
 						<span class="hide_this">
@@ -113,8 +184,57 @@ Profile - Seattle Clearinghouse
 					<td class="key">Port <img class="help" src="{{ MEDIA_URL }}images/help-icon.png"title="This indicates a port number that by default will be available for TCP / UDP on all of your acquired vessels."/></td>
 					<td class="value">{{ port }}</td>
 				</tr>
-				
-			</table> <br/>
+				<tr class="odd">
+					<td class="key">Linked Accounts<img class="help" src="{{ MEDIA_URL }}images/help-icon.png"title="When you link a account you may than use it to login to the Clearinghouse."/></td>
+					<td class="value">
+					      
+        	  {% for type, accounts in social_auth.associated.items %}
+  					  {% for account in accounts %}
+								{% if account.provider == "facebook"%}
+									<img src="{{ MEDIA_URL }}images/Facebook-icon.png" title="Facebook account linked" />
+								{% endif %}
+								{% if account.provider == "google"%}
+									<img src="{{ MEDIA_URL }}images/google-icon.png" title="Gmail account linked" />
+								{% endif %}
+								{% if account.provider == "github"%}
+									<img src="{{ MEDIA_URL }}images/github-icon.png" title="Github account linked" />
+								{% endif %}
+								{% if account.provider == "live"%}
+									<img src="{{ MEDIA_URL }}images/windows-icon.png" title="Windows Live account linked" />
+								{% endif %}
+								{% if account.provider == "yahoo"%}
+									<img src="{{ MEDIA_URL }}images/yahoo-icon.png" title="Yahoo account linked" />
+								{% endif %}
+     						 {% comment %}  <span class="disconnect">
+											<a href={% url socialauth_disconnect_individual account.provider account.id %}>
+												{{ account.provider|title }} (ID {{ account.id }})<br/></a></span> 
+								 {% endcomment %}
+   					 {% endfor %}
+ 					 {% endfor %}
+					
+				{% for name, accounts in social_auth.not_associated.items %}
+					{% for name in accounts %}
+				  	<a rel="nofollow" href="{% url socialauth_begin name %}">
+				    	{% if name == "facebook"%}
+				  		 <img src="{{ MEDIA_URL }}images/bw-Facebook-icon.png" title="A Facebook account is not yet associated, click to link it!"/>
+					    {% endif %}
+				    	{% if name == "google"%}
+					    	<img src="{{ MEDIA_URL }}images/bw-google-icon.png" title="A Google account is not yet associated, click to link it!"/>
+				    	{% endif %}
+				    	{% if name == "github"%}
+				    		<img src="{{ MEDIA_URL }}images/bw-github-icon.png" title="A Github account is not yet associated, click to link it!"/>
+			    		{% endif %}
+			    		{% if name == "live"%}
+			    			<img src="{{ MEDIA_URL }}images/bw-windows-icon.png" title="A Windows Live account is not yet associated, click to link it!"/>
+			    		{% endif %}
+			    		{% if name == "yahoo"%}
+				    		<img src="{{ MEDIA_URL }}images/bw-yahoo-icon.png" title="A Yahoo account is not yet associated, click to link it!"/>
+				    	{% endif %}
+			  		</a>
+			  	{% endfor %}
+  	  	{% endfor %}
+				  </td>
+		    	</table> <br/>
 		<table class="profile">
 			<tr>
 				<td><h3>Your Keys</h3></td>

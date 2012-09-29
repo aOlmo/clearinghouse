@@ -160,11 +160,40 @@ class EditUserPasswordForm(forms.ModelForm):
     except ValidationError, err:
       raise forms.ValidationError, str(err)
     return data
-    
-    
-    
-    
-    
+
+
+
+
+
+
+class AutoRegisterForm(forms.ModelForm):
+  username = forms.CharField(label="Username", error_messages={'required': 'Enter a username'}, max_length=validations.USERNAME_MAX_LENGTH)
+  class Meta:
+    model = GeniUser
+    fields = ('username',)
+
+  def clean_username(self):
+    value = self.cleaned_data['username']
+    try:
+      validations.validate_username(value)
+    except ValidationError, err:
+      raise forms.ValidationError, str(err)
+    return value
+  
+  '''    
+  def clean(self):
+    data = self.cleaned_data
+    try:
+      validations.validate_username(data['username'])
+    except ValidationError, err:
+      raise forms.ValidationError, str(err)
+    return data    
+  '''    
+
+
+
+
+
 def gen_get_form(geni_user, req_post=None):
   """
   <Purpose>

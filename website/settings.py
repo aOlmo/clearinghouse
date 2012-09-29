@@ -1,5 +1,5 @@
 """
-These are the django settings for the seattlegeni project. See the README.txt
+These are the django settings for the Seattle Clearinghouse project. See the README.txt
 file for details on what needs to be set in this file. At a minimum for
 development, it will be the database connection info and the SECRET_KEY value.
 
@@ -8,6 +8,7 @@ additional changes you'll need to make to this file.
 """
 
 import os
+
 
 from seattlegeni.common.util import log
 
@@ -54,6 +55,17 @@ SEATTLECLEARINGHOUSE_USER_INSTALLERS_URL = "https://blackbox.cs.washington.edu/d
 # Need to specify the LOGIN_URL, as our login page isn't at the default login
 # location (the default is /accounts/login).
 LOGIN_URL = 'login'
+# Users will be redirected to SOCIAL_AUTH_LOGIN_ERROR_URL in case of backend error/user cancellation
+# during login or association (account linking).
+SOCIAL_AUTH_LOGIN_ERROR_URL ='error'
+SOCIAL_AUTH_BACKEND_ERROR_URL = 'error'
+# When a user logs in with OpenID/OAuth send them to the profile page
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'profile'
+# A new user created through OpenID/OAuth gets sent here upon creation.
+SOCIAL_AUTH_NEW_USER_REDIRECT_URL = 'new_auto_register_user'
+
+# fields specificed here will not be automatically changed/updated by social_auth
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
 # Email addresses of people that should be emailed when a 500 error occurs on
 # the site when DEBUG = False (that is, in production). Leave this to be empty
@@ -136,6 +148,9 @@ MIDDLEWARE_CLASSES = (
   'django.contrib.csrf.middleware.CsrfResponseMiddleware',
   'django.contrib.sessions.middleware.SessionMiddleware',
   'django.contrib.auth.middleware.AuthenticationMiddleware',
+  'django.contrib.messages.middleware.MessageMiddleware',
+  #'django.middleware.doc.XViewMiddleware',
+
   # Our own middleware that logs when a request is initially received and
   # sets up the logger to log other messages with per-request unique ids.
   'seattlegeni.website.middleware.logrequest.LogRequestMiddleware',
@@ -159,10 +174,82 @@ INSTALLED_APPS = (
   'django.contrib.csrf',
   'django.contrib.sessions',
   'django.contrib.sites',
-  
+  'django.contrib.messages',
+  # Needed for OpenID/OAuth login so must be listed. 
+  'social_auth',
+
   # We have our maindb model defined here, so it must be listed.
   'seattlegeni.website.control',
 )
+  # Seattle Clearinghouse uses a django plugin called "django social auth" to handle
+  # OpenID and OAuth.  The desired OpenID/OAuth providers must be listed here 
+  # in order to be used.  Seattle Clearinghouse uses Facebook, Github, Windows Live
+  # Google and Yahoo.  For more info visit https://github.com/omab/django-social-auth       
+  # Google and Yahoo work without keys so they are enabled by default
+AUTHENTICATION_BACKENDS = (
+  
+  #'social_auth.backends.facebook.FacebookBackend',
+  'social_auth.backends.google.GoogleBackend',
+  'social_auth.backends.yahoo.YahooBackend',
+  #'social_auth.backends.contrib.github.GithubBackend',
+  #'social_auth.backends.OpenIDBackend',
+  #'social_auth.backends.browserid.BrowserIDBackend',
+  #'social_auth.backends.contrib.live.LiveBackend',
+  # Django default this is always needed and must always be last.
+  'django.contrib.auth.backends.ModelBackend',	    
+)
+# Social_Auth needs OAuth keys in order to function.  Each backend provider has its
+# own method to acquire keys usually requireing registering the web app with them.
+# Yahoo and Google are OpenID and as such we do not need OAuth keys for them
+
+#FACEBOOK_APP_ID                   = ''
+#FACEBOOK_API_SECRET               = ''
+#LIVE_CLIENT_ID                    = ''
+#LIVE_CLIENT_SECRET                = ''
+SOCIAL_AUTH_ERROR_KEY             = 'socialauth_error'
+#GITHUB_APP_ID                     = ''
+#GITHUB_API_SECRET                 = ''
+# define what extra facebook permissions you would like from a user
+#FACEBOOK_EXTENDED_PERMISSIONS = ['email']
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+  'django.contrib.auth.context_processors.auth',
+  'django.core.context_processors.debug',
+  'django.core.context_processors.i18n',
+  'django.core.context_processors.media',
+  'django.contrib.messages.context_processors.messages',
+  # Adds a social_auth dict with keys: are associated, not_associated and backends.
+  # associated key is a list of UserSocialAuth instances associated with current user.
+  # not_associated is a list of providers names that the current user doesn't have any association yet.
+  # backends holds the list of backend names supported.  Each value is grouped by backend type openid, oauth2 and oauth
+  'social_auth.context_processors.social_auth_by_type_backends',
+)
+#  Social_auth follows each of these in order and passes along a object with
+#  information gathered to each function.
+#  Custom fns can be written and passed in here we define them in seattlegeni.website.pipeline.
+#  To use a custom fn you must call .save_status_to_session before your custom fn.
+SOCIAL_AUTH_PIPELINE = (
+  'seattlegeni.website.pipeline.custom_social_auth_user', 
+  #'social_auth.backends.pipeline.associate.associate_by_email', 
+  'social_auth.backends.pipeline.misc.save_status_to_session',
+  'seattlegeni.website.pipeline.redirect_to_auto_register',
+  'seattlegeni.website.pipeline.username',
+  'seattlegeni.website.pipeline.custom_create_user',
+  'social_auth.backends.pipeline.social.associate_user',
+  'social_auth.backends.pipeline.social.load_extra_data',
+  'social_auth.backends.pipeline.user.update_user_details',
+)
+
+# This is important for the partial pipeline, anytime it is broken with a custom
+# function, it must be redirected back to SOCIAL_AUTH_COMPLETE_URL_NAME in order
+# for the pipeline to continue.
+SOCIAL_AUTH_COMPLETE_URL_NAME  = 'socialauth_complete'
+#SOCIAL_AUTH_PROCESS_EXCEPTIONS = 'social_auth.utils.process_exceptions'
+
+# DEBUG should be false for production. Useful for debugging social_auth problems.
+SOCIAL_AUTH_RAISE_EXCEPTIONS = DEBUG
+SOCIAL_AUTH_LAST_LOGIN = 'social_auth_last_login_backend'
+#SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
 
 # The number of seconds sessions are valid for. Django uses this for the
 # session expiration in the database in addition to the cookie expiration,

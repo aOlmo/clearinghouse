@@ -3,7 +3,8 @@ from django.conf.urls.defaults import *
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
-
+# the format for urlpatterns is
+# (regular exp, function, optional dictionary, optional name)
 urlpatterns = patterns('seattlegeni.website.html.views',
 
                        # Previously defined in accounts/urls.py.                       
@@ -12,10 +13,16 @@ urlpatterns = patterns('seattlegeni.website.html.views',
                        (r'^logout$', 'logout',{},'logout'),
                        (r'^accounts_help$', 'accounts_help',{},'accounts_help'),
                        #(r'^simplelogin$', 'simplelogin',{},'simplelogin'), 
-                       
+                       # OpenID/OAuth error pages
+                       (r'^error$', 'error',{}, 'error'),
+                       (r'^associate_error$', 'associate_error',{}, 'associate_error'),
+                       # OpenID/OAuth auto register page
+                       (r'^auto_register$', 'auto_register',{},'auto_register'),
                        # Top level urls and functions:
                        # show the user info page for this user listing the public/private keys, and user information
                        (r'^profile$', 'profile', {}, 'profile'), # was user_info
+                       # OpenID/OAuth auto registered users get sent here after creation
+                       (r'^new_auto_register_user$', 'new_auto_register_user', {}, 'new_auto_register_user'),
                        # show the used resources page (with all the currently acquired vessels)
                        (r'^myvessels$', 'myvessels', {}, 'myvessels'), # was used_resources
                        # show the help page
@@ -51,6 +58,7 @@ urlpatterns = patterns('seattlegeni.website.html.views',
                        # download the user's public key (from form)
                        (r'^pub_key$', 'pub_key', {}, 'pub_key'),
                        
+#                       (r'^private/$', 'home.views.private'),
 #                      # create a new share with another use (from form)
 #                      (r'^new_share$', 'new_share', {}, 'new_share'),
 #                      # delete an existing share with another user (from form)

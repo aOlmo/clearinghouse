@@ -32,6 +32,11 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 
+#Used to display meaningful OpenID/OAuth error messages to the user
+from django.contrib.messages.api import get_messages
+from django.shortcuts import render_to_response, redirect
+from social_auth.utils import setting
+from django.template import RequestContext
 # Any requests that change state on the server side (e.g. result in database
 # modifications) need to be POST requests. This is for protecting against
 # CSRF attacks (part, but not all, of that is our use of the CSRF middleware
@@ -99,6 +104,103 @@ def _state_key_file_to_publickey_string(key_file_name):
 
 # The key used as the state key for new donations.
 ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonation.publickey")
+
+
+
+
+
+def error(request):
+  """
+  <Purpose>
+    If a OpenID/OAuth backend itself has an error(not a user or Seattle Clearinghouse's fault) 
+    a user will get redirected here.  This can happen if the backend rejects the user or from
+    user cancelation.
+
+  <Arguments>
+    request:
+      An HTTP request object.
+
+  <Exceptions>
+    None
+
+  <Side Effects>
+    None
+
+  <Returns>
+    An HTTP response object that represents the error page.
+  """
+  #Retrieve information which caused an error 
+  messages = get_messages(request)
+  return _show_login(request, 'accounts/login.html', {'messages' : messages})
+
+
+
+
+
+@login_required
+def associate_error(request):
+  """
+  <Purpose>
+    If an error occured during the OpenId/OAuth association process a user will get
+    redirected here.
+  <Arguments>
+    request:
+      An HTTP request object.
+    backend:
+      An OpenID/OAuth backend ex google,facebook etc.
+  <Exceptions>
+    None
+  <Side Effects>
+    None
+  <Returns>
+    An HTTP response object that represents the associate_error page.
+  """
+  info=''
+  error_msg = "Whoops, this account is already linked to another Seattle Clearninghouse user."
+  return profile(request, info, error_msg)
+
+
+
+
+
+def auto_register(request,backend=None,error_msgs=''):
+  """
+  <Purpose>
+  Part of the SOCIAL_AUTH_PIPELINE whose order is mapped in settings.py.  If
+  a user logs in with a OpenID/OAuth account and that account is not yet linked
+  with a Clearinghouse account, he gets redirected here.
+  If a valid username is entered then a new Seattle Clearinghouse user is created.
+
+  <Arguments>
+    request:
+      An HTTP request object.
+    backend:
+      An OpenID/OAuth backend ex google,facebook etc.
+  <Exceptions>
+
+  <Side Effects>
+    A new Seattle Clearinghouse user is created.
+  <Returns>
+    If a user passes in a valid username he continues the pipeline and moves
+    forward in the auto register process.
+  """
+  # Check if a username is provided 
+  username_form = forms.AutoRegisterForm()
+  if request.method == 'POST' and request.POST.get('username'):
+    name = setting('SOCIAL_AUTH_PARTIAL_PIPELINE_KEY', 'partial_pipeline')
+    username_form = forms.AutoRegisterForm(request.POST)
+    if username_form.is_valid():
+      username = username_form.cleaned_data['username']
+      try:
+        interface.get_user_without_password(username)
+        error_msgs ='That username is already in use.'
+      except DoesNotExistError:
+        request.session['saved_username'] = request.POST['username']
+        backend = request.session[name]['backend']
+        return redirect('socialauth_complete', backend=backend)  
+  name = setting('SOCIAL_AUTH_PARTIAL_PIPELINE_KEY', 'partial_pipeline')
+  backend=request.session[name]['backend']
+  return render_to_response('accounts/auto_register.html', {'backend' : backend, 'error_msgs' : error_msgs, 'username_form' : username_form}, RequestContext(request))
 
 
 
@@ -200,7 +302,6 @@ def register(request):
     
     #TODO: what if the form data isn't in the POST request? we need to check for this.
     form = forms.GeniUserCreationForm(request.POST, request.FILES)
-    
     # Calling the form's is_valid() function causes all form "clean_..." methods to be checked.
     # If this succeeds, then the form input data is validated per field-specific cleaning checks. (see forms.py)
     # However, we still need to do some checks which aren't doable from inside the form class.
@@ -791,12 +892,12 @@ def download(request, username):
   templatedict = {}
   templatedict['username'] = username
   templatedict['validuser'] = validuser
-
+  templatedict['domain'] = "http://" + request.get_host()
   # I need to build a URL for android to download the installer from.   (The
   # same installer is downloaded from the Google Play store for all users.) 
   # The URL is escaped twice (ask Akos why) and inserted in the referrer 
   # information in the URL.   
-  templatedict['android_installer_link'] = urllib.quote(urllib.quote(request.build_absolute_uri(),safe=''),safe='')
+  #templatedict['android_installer_link'] = urllib.quote(urllib.quote(domain,safe=''),safe='')
 
   return direct_to_template(request, 'download/installers.html', templatedict)
 
@@ -991,8 +1092,22 @@ def _validate_and_get_geniuser(request):
   return user
 
 
+
+
+
+@log_function_call_without_return
+@login_required
+def new_auto_register_user(request):
+  msg = "Your account has been succesfully created. "
+  msg += "If you would like to login without OpenID/OAuth please change your password now."
+  return profile(request,msg)
+
+
+
+
+
 def _show_failed_get_geniuser_page(request):
   err = "Sorry, we can't display the page you requested. "
-  err += "If you are logged in as an administrator, you'll need to logout, and login with a SeattleGENI account. "
+  err += "If you are logged in as an administrator, you'll need to logout, and login with a Seattle Clearinghouse account. "
   err += "If you aren't logged in as an administrator, then this is a bug. Please contact us!"
   return _show_login(request, 'accounts/login.html', {'err' : err})
