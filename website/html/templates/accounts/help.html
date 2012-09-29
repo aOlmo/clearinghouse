@@ -1,5 +1,36 @@
 {% extends "accounts/accounts_base.html" %}
 
+{% comment %}
+<Program>
+  accounts/help.html
+
+<Author>
+  Originally by?:
+  Justin Samuel 2009
+
+  Modified:
+  Gaetano Pressimone 2012
+  
+<Purpose>
+  Django template file for Seattle Clearinghouse's 'help' page.  This help page
+  is for non-logged in users only.
+
+<Extends>
+  accounts/accounts_base.html
+
+<Stylesheet>
+  common.css
+  account.css
+  help.css
+
+<Scripts>
+  jquery.js
+
+<Template Variables>
+  None
+
+{% endcomment %}
+
 {% block style %}
 {{ block.super }}
 <link href="{{ MEDIA_URL }}css/help.css" rel="stylesheet" type="text/css" />

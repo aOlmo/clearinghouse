@@ -1,5 +1,80 @@
 {% extends "control/control_base.html" %}
 
+{% comment %}
+<Program>
+  myvessels.html
+
+<Author>
+  Originally by?:
+  Justin Samuel 2009
+
+  Modified:
+  Gaetano Pressimone Aug 14 2012
+  
+<Purpose>
+  Django template file for Seattle Clearinghouse's 'My Vessels' page.  The page 
+  allows a logged in user to acquire, renew or remove vessels.
+
+<Extends>
+  control/control_base.html
+
+<Stylesheet>
+  common.css
+  myvessels.css
+
+<Scripts>
+  myvessels.js
+
+<Template Variables>
+  username:
+		The currently logged in user.
+	
+  my_vessels: 
+		list of infodicts of the user's currently acquired vessels.
+    .node_ip:  last known ip
+		.node_port:  last known port
+		.vessel_id:  vessel name
+    .node_id:  identifer for the node that the vessel is on
+		.handle:  node id + ":" + vessel name
+    .is_active:  whether the node is active
+    .expires_in_seconds: expiration time, in seconds, for the vessel
+
+  num_vessels: 
+		Length of my_vessels list.
+
+  sh_vessels: 
+		List of shared vessels that are used by other but which belong to this user.
+
+  get_form:
+		The form to acquire vessels.  See forms.py for more info.
+    .num: Number of acquirable vessels.
+    .env: Environmental variables (example WAN, LAN, NAT, Random).
+
+  action_summary: 
+		Generic error message.
+
+  action_detail: 
+		Detailed error message. 
+
+  my_donations:
+		The number of donations the user has.
+
+  my_max_vessels:
+		The remaining number of vessels a user may acquire
+    (the total amount - currently acquired = my_max_vessels)
+
+  free_vessel_credits:
+		The number of free credits granted to the user.
+
+  total_vessel_credits: 
+		The total number of vessels the user is allowed to acquire,
+    regardless of how many they currently have.
+
+  remove_summary:
+  	Error message related to removing vessels.
+
+{% endcomment %}
+
 {% block title %}
 My Vessels - Seattle Clearinghouse
 {% endblock title %}
