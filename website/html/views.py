@@ -131,7 +131,12 @@ def error(request):
   """
   #Retrieve information which caused an error 
   messages = get_messages(request)
-  return _show_login(request, 'accounts/login.html', {'messages' : messages})
+  info =''
+  try:
+    user = _validate_and_get_geniuser(request)
+    return profile(request, info, info, messages)
+  except:
+    return _show_login(request, 'accounts/login.html', {'messages' : messages}) 
 
 
 
@@ -208,7 +213,7 @@ def auto_register(request,backend=None,error_msgs=''):
 
 @log_function_call_without_return
 @login_required
-def profile(request, info="", error_msg=""):
+def profile(request, info="", error_msg="", messages=""):
   """
   <Purpose>
     Display information about the user account.
@@ -223,6 +228,8 @@ def profile(request, info="", error_msg=""):
       Additional message to display at the top of the page in a green box.
     error_msg:
       Additional message to display at top of the page in a red box.
+    messages
+      Django social auth error message
   <Exceptions>
     None
   <Side Effects>
@@ -282,7 +289,8 @@ def profile(request, info="", error_msg=""):
                              #'port_range_min' : port_range_min,
                              #'port_range_max' : port_range_max,
                              'info' : info,
-                             'error_msg' : error_msg})
+                             'error_msg' : error_msg,
+                             'messages' : messages})
 
 
 

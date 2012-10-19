@@ -59,6 +59,9 @@
   error_msg:
 		Error message related to profile actions.
 
+  messages:
+    Django Social Auth error msg.
+
   social_auth
     Object containing info related to the logged in user's OpenID/OAuth
     assocations.
@@ -105,7 +108,7 @@ Profile - Seattle Clearinghouse
 					</td>
 				</tr>
 				{% endif %}
-				{% if password_form.non_field_errors or email_form.errors or affiliation_form.errors or error_msg %}
+				{% if password_form.non_field_errors or email_form.errors or affiliation_form.errors or error_msg or messages %}
 				<tr class="even">
 					<td colspan="2">
 						<div id="error_msg">
@@ -113,6 +116,11 @@ Profile - Seattle Clearinghouse
 							{{ email_form.email.errors }}
 							{{ affiliation_form.affiliation.errors }}
 							{{ error_msg }}
+							{% for msg in messages %}
+								{% if msg.message %}
+									{{ msg.message }} ({{ msg.extra_tags }})
+								{% endif %}
+							{% endfor %}
 						</div>
 					</td>
 				</tr>
