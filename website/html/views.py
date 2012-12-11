@@ -900,7 +900,7 @@ def download(request, username):
   templatedict = {}
   templatedict['username'] = username
   templatedict['validuser'] = validuser
-  templatedict['domain'] = "http://" + request.get_host()
+  templatedict['domain'] = "https://" + request.get_host()
   # I need to build a URL for android to download the installer from.   (The
   # same installer is downloaded from the Google Play store for all users.) 
   # The URL is escaped twice (ask Akos why) and inserted in the referrer 
@@ -908,6 +908,44 @@ def download(request, username):
   #templatedict['android_installer_link'] = urllib.quote(urllib.quote(domain,safe=''),safe='')
 
   return direct_to_template(request, 'download/installers.html', templatedict)
+
+
+
+
+
+def build_android_installer(request, username):
+  """
+  <Purpose>
+    Allows the user to download a Android distribution of Seattle that will
+    donate resources to user with 'username'.
+  
+  <Arguments>
+    request:
+      Django HttpRequest object
+       
+    username:
+      A string representing the GENI user to which the installer will donate
+      resources.
+  
+  <Exceptions>
+    None
+  
+  <Side Effects>
+    None
+  
+  <Returns>
+    On failure, returns an HTTP response with a description of the error. On
+    success, redirects the user to download the installer.
+  """
+  
+  success, return_value = _build_installer(username, "android")
+  
+  if not success:
+    error_response = return_value
+    return error_response
+  
+  installer_url = return_value
+  return HttpResponseRedirect(installer_url)
 
 
 
