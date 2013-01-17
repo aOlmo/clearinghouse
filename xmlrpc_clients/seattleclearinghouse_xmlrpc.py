@@ -60,7 +60,7 @@ import xmlrpclib
 DEFAULT_CA_CERTIFICATES_FILE = os.path.join(os.path.dirname(__file__), "cacert.pem")
 
 # The location of the SeattleClearinghouse XMLRPC server to use.
-DEFAULT_XMLRPC_URL = "https://seattlegeni.cs.washington.edu/xmlrpc/"
+DEFAULT_XMLRPC_URL = "https://seattleclearinghouse.poly.edu/xmlrpc/"
 
 # SeattleClearinghouse XMLRPC Fault Code Constants
 FAULTCODE_INTERNALERROR = 100
@@ -75,7 +75,7 @@ class SeattleClearinghouseClient(object):
   """
   Implementation of an XMLRPC client for communicating with a SeattleClearinghouse
   server. This uses the public API described at:
-  https://seattle.cs.washington.edu/wiki/SeattleGeniAPI
+  https://seattle.cs.washington.edu/wiki/SeattleGeniApi
   """
   
   def __init__(self, username, api_key=None, private_key_string=None,
