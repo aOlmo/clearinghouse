@@ -39,18 +39,21 @@ SEATTLECLEARINGHOUSE_WEBSITE_ROOT = os.path.dirname(__file__)
 SEATTLECLEARINGHOUSE_STATE_KEYS_DIR = os.path.join(SEATTLECLEARINGHOUSE_WEBSITE_ROOT, '..', 'node_state_transitions', 'statekeys')
 
 # The XML-RPC interface to the Custom Installer Builder.
-SEATTLECLEARINGHOUSE_INSTALLER_BUILDER_XMLRPC = "https://seattlegeni.cs.washington.edu/custom_install/xmlrpc/"
+SEATTLECLEARINGHOUSE_INSTALLER_BUILDER_XMLRPC = "https://custombuilder.poly.edu/custom_install/xmlrpc/"
 
+# Not currently used. This is left in for legacy installs
 # The directory where the base installers named seattle_linux.tgz, seattle_mac.tgz,
 # and seattle_win.zip are located.
-SEATTLECLEARINGHOUSE_BASE_INSTALLERS_DIR = "/var/www/dist"
+#SEATTLECLEARINGHOUSE_BASE_INSTALLERS_DIR = "/var/www/dist"
 
+# Not currently used. This is left in for legacy installs
 # The directory in which customized installers created by seattlegeni will be
 # stored. A directory within this directory will be created for each user.
-SEATTLECLEARINGHOUSE_USER_INSTALLERS_DIR = os.path.join(SEATTLECLEARINGHOUSE_BASE_INSTALLERS_DIR, "geni")
+#SEATTLECLEARINGHOUSE_USER_INSTALLERS_DIR = os.path.join(SEATTLECLEARINGHOUSE_BASE_INSTALLERS_DIR, "geni")
 
-# The url that corresponds to SEATTLECLEARINGHOUSE_USER_INSTALLERS_DIR
-SEATTLECLEARINGHOUSE_USER_INSTALLERS_URL = "https://blackbox.cs.washington.edu/dist/geni"
+# Not currently used. This is left in for legacy installs
+#The url that corresponds to SEATTLECLEARINGHOUSE_USER_INSTALLERS_DIR
+#SEATTLECLEARINGHOUSE_USER_INSTALLERS_URL = "https://blackbox.cs.washington.edu/dist/geni"
 
 # Need to specify the LOGIN_URL, as our login page isn't at the default login
 # location (the default is /accounts/login).
