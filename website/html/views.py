@@ -589,8 +589,9 @@ def get_resources(request):
       action_summary = "Unable to acquire vessels at this time."
       if str(err) == 'Acquiring NAT vessels is currently disabled. ':
         link = """<a href="https://seattle.cs.washington.edu/blog">blog</a>"""
-        err += 'Please check our '+ link  +' to see when we have re-enabled NAT vessels.'
-      action_detail += str(err)
+        action_detail += str(err) + 'Please check our '+ link  +' to see when we have re-enabled NAT vessels.'
+      else:
+        action_detail += str(err)
       keep_get_form = True
     except InsufficientUserResourcesError:
       action_summary = "Unable to acquire vessels: you do not have enough vessel credits to fulfill this request."
