@@ -1466,11 +1466,9 @@ def get_available_nat_vessels(geniuser, vesselcount):
   natvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port_only_nat_nodes(geniuser.usable_vessel_port)
    
   if natvesselsqueryset.count() < vesselcount:
-    #COMMENT this out this when NAT acquistion feature is re-enabled  /* ADDED Aug 06, 2012 by GP */
+    #COMMENT this out when NAT acquistion feature is re-enabled  /* ADDED Aug 06, 2012 by GP */
     message = 'Acquiring NAT vessels is currently disabled. '
-    link = """<a href="https://seattle.cs.washington.edu/blog">blog</a>"""
-    message += 'Please check our '+ link  +' to see when we have re-enabled NAT vessels.'
-	#UNCOMMENT this when NAT acquistion feature is re-enabled
+    #UNCOMMENT this when NAT acquistion feature is re-enabled
     #message = "Requested " + str(vesselcount) + " nat vessels, but we only have " + str(natvesselsqueryset.count())
     #message += " vessels with port " + str(geniuser.usable_vessel_port) + " available." 
     raise UnableToAcquireResourcesError(message)

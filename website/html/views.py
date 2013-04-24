@@ -587,6 +587,9 @@ def get_resources(request):
       acquired_vessels = interface.acquire_vessels(user, vessel_num, vessel_type)
     except UnableToAcquireResourcesError, err:
       action_summary = "Unable to acquire vessels at this time."
+      if str(err) == 'Acquiring NAT vessels is currently disabled. ':
+        link = """<a href="https://seattle.cs.washington.edu/blog">blog</a>"""
+        err += 'Please check our '+ link  +' to see when we have re-enabled NAT vessels.'
       action_detail += str(err)
       keep_get_form = True
     except InsufficientUserResourcesError:
