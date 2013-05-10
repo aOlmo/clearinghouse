@@ -337,6 +337,9 @@ def cleanup_vessels():
   
   log.info("[cleanup_vessels] cleanup thread started.")
 
+  # Start a transaction management.
+  django.db.transaction.enter_transaction_management()
+
   # Run forever.
   while True:
     
@@ -407,6 +410,9 @@ def cleanup_vessels():
         # Sleep for ten minutes to make sure we don't flood the admins with error
         # report emails.
         time.sleep(600)
+    finally:
+      # Manually commit the transaction to prevent caching.
+      django.db.transaction.commit()
       
 
 
