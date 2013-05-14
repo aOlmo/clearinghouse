@@ -55,14 +55,14 @@ function show_keyform(){
 	});
 }
 /*
-show/hide the api key when clicked 
+show/hide the api key when double clicked 
 */
 function show_api_key(){
-	$("span.api_cell").click(function(){
+	$("span.api_cell").dblclick(function(){
 		$("#api_key").show();
 		$(this).hide();
 	});				   
-	$("span#api_key").click(function(){
+	$("span#api_key").dblclick(function(){
 		$("span.api_cell").show();
 		$(this).hide();
 	});

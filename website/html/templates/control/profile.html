@@ -179,8 +179,8 @@ Profile - Seattle Clearinghouse
 					<td class="key">API Key
 						<img class="help" src="{{ MEDIA_URL }}images/help-icon.png"title="The Clearinghouse offers an API key that allows applications to perform actions on your behalf, such as acquiring, releasing, and renewing vessels.  If this key is lost or stolen, you can reset it at any time."/></td>
 					<td class="value api_cell"> 
-							<span class="api_cell" title="Click to show"><i>click to show</i></span>
-							<span id="api_key" class="hide_this" title="Click to hide"> {{ api_key }}</span>
+							<span class="api_cell" title="double click to show"><i>double click to show</i></span>
+							<span id="api_key" class="hide_this" title="double click to hide">{{ api_key }}</span>
 							<form action="{% url api_info %}" method="post">
 							<input type="hidden" name="generate_api_key" value="yes"/>
 							<button id="generate_api" type="submit"title="In some cases you may want to generate a new API key (for example, if you accidentally left your old one in a file that you shared publicly). Generating a new API key will make your old API key no longer work.">Generate new API Key</button>
