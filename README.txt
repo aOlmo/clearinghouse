@@ -255,8 +255,8 @@ Lines added to an insecure http vhost:
 
     # Redirect requests for the server index page or that are geni-related
     # to the https site.
-    RedirectMatch ^/$ https://blackbox.cs.washington.edu/geni/html/register
-    RedirectMatch ^/geni https://blackbox.cs.washington.edu/geni/html/register
+    RedirectMatch ^/$ https://blackbox.poly.edu/geni/html/register 
+    RedirectMatch ^/geni https://blackbox.poly.edu/geni/html/register 
 
 Lines added to a secure https vhost that users are redirected to:
 
@@ -283,12 +283,12 @@ Lines added to a secure https vhost that users are redirected to:
     </Location>
 
     # Make sure various locations people might request redirect somewhere that works.
-    RedirectMatch ^/$ https://blackbox.cs.washington.edu/geni/html/register
-    RedirectMatch ^/geni/?$ https://blackbox.cs.washington.edu/geni/html/register
-    RedirectMatch ^/geni/html/?$ https://blackbox.cs.washington.edu/geni/html/register
+    RedirectMatch ^/$ https://blackbox.poly.edu/geni/html/register
+    RedirectMatch ^/geni/?$ https://blackbox.poly.edu/geni/html/register
+    RedirectMatch ^/geni/html/?$ https://blackbox.poly.edu/geni/html/register
 
     # Don't require a slash on the end of the admin url.
-    RedirectMatch ^/geni/admin$ https://blackbox.cs.washington.edu/geni/admin/
+    RedirectMatch ^/geni/admin$ https://blackbox.poly.edu/geni/admin/
       
 ------------------------------------------------------------------------------
 
