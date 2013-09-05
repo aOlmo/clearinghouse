@@ -244,6 +244,11 @@ class PublicXMLRPCFunctions(object):
     if not isinstance(vesselhandle_list, list):
       raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, "Invalid data type for handle list.")
     
+    # Remove duplicates to avoid race condition where the database is
+    # updated simultaneously for the same vessel, raising a duplicate
+    # key error.
+    vesselhandle_list = list(set(vesselhandle_list))
+
     # since we're given a list of vessel 'handles', we need to convert them to a 
     # list of actual Vessel objects; as release_vessels_of_user expects Vessel objs.
     try:
@@ -339,7 +344,7 @@ class PublicXMLRPCFunctions(object):
       if not isinstance(handle, str):
         raise xmlrpclib.Fault(FAULTCODE_INVALIDREQUEST, 
                               "Invalid data type for handle. Expected str, received " + str(type(handle)))
-    
+
     # since we're given a list of vessel 'handles', we need to convert them to a 
     # list of actual Vessel objects.
     try:
