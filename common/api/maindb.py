@@ -59,7 +59,15 @@ from clearinghouse.website.control.models import VesselUserAccessMap
 from clearinghouse.website.control.models import ActionLogEvent
 from clearinghouse.website.control.models import ActionLogVesselDetails
 
-
+from clearinghouse.website.control.models import Experiment
+from clearinghouse.website.control.models import Battery
+from clearinghouse.website.control.models import Bluetooth
+from clearinghouse.website.control.models import Cellular
+from clearinghouse.website.control.models import Location
+from clearinghouse.website.control.models import Settings
+from clearinghouse.website.control.models import ConcretSensor
+from clearinghouse.website.control.models import Signal_strengths
+from clearinghouse.website.control.models import Wifi
 
 
 
@@ -244,6 +252,57 @@ def create_user(username, password, email, affiliation, user_pubkey, user_privke
 
 
 
+def create_experiment(geni_user,experiment_name,researcher_name,researcher_address ,researcher_email, irb_name,irb_email, experiment_goal):
+  """
+  <Purpose>
+    Create a new experiment in the database.
+    
+  <Arguments>
+    geni_user
+    experiment_name
+    researcher_name
+    researcher_address
+    researcher_email
+    irb_name
+    irb_email
+    experiment_goal  
+      
+    <Exceptions>
+      None
+      
+    <Side Effects>
+      Creates a experiment record in the django experiment table.
+      Does not change the database if creation of either record fails.
+      
+    <Returns>
+      A GeniUser object of the newly created user.
+  """
+  assert_str(experiment_name)
+  assert_str(researcher_name)
+  assert_str(researcher_address)
+  assert_str(researcher_email)
+  assert_str(irb_name)
+  assert_str(irb_email)
+  assert_str(experiment_goal)
+
+  # We're committing manually to make sure the multiple database writes are
+  # atomic. (That is, regenerate_api_key() will do a database write.)
+  try:
+      with transaction.atomic():
+          # Create the Experiment
+          experiment = Experiment(expe_name=experiment_name, geni_user=geni_user, 
+                              researcher_name=researcher_name, researcher_institution_name = irb_name,
+                              researcher_email=researcher_email, researcher_address=researcher_address,
+                              irb_officer_email=irb_email, goal=experiment_goal)   
+          experiment.save()
+  except:
+    transaction.rollback()
+    raise
+  
+  else:
+    transaction.commit()
+
+  return experiment
 
 
 @log_function_call

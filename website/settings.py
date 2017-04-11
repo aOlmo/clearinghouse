@@ -47,8 +47,8 @@ SEATTLECLEARINGHOUSE_STATE_KEYS_DIR = os.path.join(SEATTLECLEARINGHOUSE_WEBSITE_
 # Custom Installer Builder instance, or that provided for the SensibilityTestbed.
 # For a guide to setting up your own CIB instance, see:
 #   https://seattle.poly.edu/wiki/CustomInstallerBuilderInstallation
-SEATTLECLEARINGHOUSE_INSTALLER_BUILDER_XMLRPC = "https://custombuilder.poly.edu/custom_install/xmlrpc/" # Default, currently no repy_v2 support
-#SEATTLECLEARINGHOUSE_INSTALLER_BUILDER_XMLRPC = "https://sensibilityclearinghouse.poly.edu/custominstallerbuilder/xmlrpc/" # SensibilityTestbed's CIB, which supports repy_v2 and thereby NAT traversal.
+# SEATTLECLEARINGHOUSE_INSTALLER_BUILDER_XMLRPC = "https://custombuilder.poly.edu/custom_install/xmlrpc/" # Default, currently no repy_v2 support
+SEATTLECLEARINGHOUSE_INSTALLER_BUILDER_XMLRPC = "https://sensibilityclearinghouse.poly.edu/custominstallerbuilder/xmlrpc/" # SensibilityTestbed's CIB, which supports repy_v2 and thereby NAT traversal.
 
 # Not currently used. This is left in for legacy installs
 # The directory where the base installers named seattle_linux.tgz, seattle_mac.tgz,
@@ -205,7 +205,7 @@ INSTALLED_APPS = (
   'clearinghouse.website.control',
 
   # We have our maindb model defined here, so it must be listed.
-  # 'clearinghouse.website.control.models',
+  'clearinghouse.website.control.models',
 )
   # Seattle Clearinghouse uses a django plugin called "django social auth" to handle
   # OpenID and OAuth.  The desired OpenID/OAuth providers must be listed here 

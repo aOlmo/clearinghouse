@@ -144,27 +144,89 @@ def register_user(username, password, email, affiliation, pubkey=None):
   return geniuser
   
 
+def register_experiment(geni_user,experiment_name,researcher_name,researcher_address ,researcher_email, irb_name,irb_email, experiment_goal):
+  """
+  <Purpose>
+    Creates a experiment record with the specified information.
+  <Arguments>
+    geni_user
+    experiment_name
+    researcher_name
+    researcher_address
+    researcher_email
+    irb_name
+    irb_email
+    experiment_goal
+  <Exceptions>
+    ValidationError
+      If any of the arguments contains invalid values or if the username is the
+      same as the password.
+  <Returns>
+    Experiment instance (our Experiment model) corresponding to the
+    new
+    """
+    # If the frontend code that called this function wants to know which field
+    # is invalid, it must call the validation functions itself before making the
+    # call to register_experiment().
+    # These will raise a ValidationError if any of the fields are invalid.
+    # These ensure that the data is of the correct type (e.g. a string) as well as
+    # that we like the content of the variable.
+    
+  validations.validate_register_experiment_field(experiment_name)
+  validations.validate_register_experiment_field(researcher_name)
+  validations.validate_register_experiment_field(researcher_address)
+  validations.validate_email(researcher_email)
+  validations.validate_register_experiment_field(irb_name)
+  validations.validate_email(irb_email)
+  validations.validate_register_experiment_field(experiment_goal)
+
+  experiment = maindb.create_experiment(geni_user, experiment_name,researcher_name,researcher_address ,researcher_email, irb_name,irb_email, experiment_goal)
+
+  return experiment
 
 
-#def change_user_pubkey(geniuser, user_pubkey):
-#  """
-#  <Purpose>
-#    Assigns a new key pair to this user.
-#  <Arguments>
-#    geniuser
-#    user_pubkey
-#  <Exceptions>
-#    ProgrammerError
-#      If the user is not a valid GeniUser object or if user_pubkey is not a
-#      valid pubkey.
-#  <Side Effects>
-#    The user's public key is replaced with the provided one. If they had a
-#    private key still stored in our database, that private key is deleted.
-#  <Returns>
-#    None
-#  """
-#  raise NotImplementedError
+def register_sensor(sensor_name,experiment,frequency,frequency_unit,frequency_other,precision,truncation, precision_other,goal,list_of_attributes):
+  """
+  <Purpose>
+    Creates a sensor record with the specified information.
+  <Arguments>
+    experiment,
+    frequency,
+    frequency_unit,
+    frequency_other,
+    precision,
+    truncation,
+    precision_other,
+    goal,
+    list of attributes of each sensor.
+  <Exceptions>
+    ValidationError
+      If any of the arguments contains invalid values or if the username is the
+      same as the password.
+  <Returns>
+    Batter instance 
+  """
+    # If the frontend code that called this function wants to know which field
+    # is invalid, it must call the validation functions itself before making the
+    # call to register_battery().
+    # These will raise a ValidationError if any of the fields are invalid.
+    # These ensure that the data is of the correct type (e.g. a string) as well as
+    # that we like the content of the variable.
 
+    #There's no need of validation with the Boolean fields.
+    #Neither integer fields need it
+
+  validations.validate_register_experiment_field(frequency_unit)
+  validations.validate_register_experiment_field(frequency_other)
+  validations.validate_register_experiment_field(precision)
+  validations.validate_register_experiment_field(precision_other)
+  validations.validate_register_experiment_field(goal)
+
+  sensor = maindb.create_sensor(sensor_name,experiment,frequency,frequency_unit,frequency_other,precision,truncation, precision_other,goal,list_of_attributes)
+
+  return sensor
+
+    
 
 
 

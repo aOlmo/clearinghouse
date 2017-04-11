@@ -70,6 +70,14 @@ from clearinghouse.website.control import interface
 
 from clearinghouse.website.html import forms
 
+from django.shortcuts import render
+
+# import the logging library
+import logging
+
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
+
 from seattle.repyportability import *
 add_dy_support(locals())
 
@@ -88,7 +96,7 @@ class LoggedInButFailedGetGeniUserError(Exception):
   Indicates that a function tried to get a GeniUser record, and failed;
   while having passed the @login_required decorator. This means that a
   DjangoUser is logged in, but there is no corresponding GeniUser record.
-  
+
   This exception should only be thrown from _validate_and_get_geniuser,
   and caught by methods with @login_required decorators.
   """
@@ -119,7 +127,7 @@ ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonati
 def error(request):
   """
   <Purpose>
-    If a OpenID/OAuth backend itself has an error(not a user or Seattle Clearinghouse's fault) 
+    If a OpenID/OAuth backend itself has an error(not a user or Seattle Clearinghouse's fault)
     a user will get redirected here.  This can happen if the backend rejects the user or from
     user cancelation.
 
@@ -136,14 +144,14 @@ def error(request):
   <Returns>
     An HTTP response object that represents the error page.
   """
-  #Retrieve information which caused an error 
+  #Retrieve information which caused an error
   messages = get_messages(request)
   info =''
   try:
     user = _validate_and_get_geniuser(request)
     return profile(request, info, info, messages)
   except:
-    return _show_login(request, 'accounts/login.html', {'messages' : messages}) 
+    return _show_login(request, 'accounts/login.html', {'messages' : messages})
 
 
 
@@ -196,7 +204,7 @@ def auto_register(request,backend=None,error_msgs=''):
     If a user passes in a valid username he continues the pipeline and moves
     forward in the auto register process.
   """
-  # Check if a username is provided 
+  # Check if a username is provided
   username_form = forms.AutoRegisterForm()
   if request.method == 'POST' and request.POST.get('username'):
     name = setting('SOCIAL_AUTH_PARTIAL_PIPELINE_KEY', 'partial_pipeline')
@@ -209,7 +217,7 @@ def auto_register(request,backend=None,error_msgs=''):
       except DoesNotExistError:
         request.session['saved_username'] = request.POST['username']
         backend = request.session[name]['backend']
-        return redirect('socialauth_complete', backend=backend)  
+        return redirect('socialauth_complete', backend=backend)
   name = setting('SOCIAL_AUTH_PARTIAL_PIPELINE_KEY', 'partial_pipeline')
   backend=request.session[name]['backend']
   return render_to_response('accounts/auto_register.html', {'backend' : backend, 'error_msgs' : error_msgs, 'username_form' : username_form}, RequestContext(request))
@@ -226,11 +234,11 @@ def profile(request, info="", error_msg="", messages=""):
     Display information about the user account.
     This method requires the request to represent a valid logged
     in user. See the top-level comment about the @login_required()
-    decorator to achieve this property.  User account is editable through this 
+    decorator to achieve this property.  User account is editable through this
     method.
   <Arguments>
     request:
-      An HTTP request object.  
+      An HTTP request object.
     info:
       Additional message to display at the top of the page in a green box.
     error_msg:
@@ -248,11 +256,11 @@ def profile(request, info="", error_msg="", messages=""):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   email_form = forms.gen_edit_user_form(instance=user)
   affiliation_form = forms.gen_edit_user_form(instance=user)
   password_form = forms.EditUserPasswordForm()
-    
+
   if request.method == 'POST':
     if 'affiliation' in request.POST:
        affiliation_form = forms.gen_edit_user_form(('affiliation',), request.POST, instance=user)
@@ -272,7 +280,7 @@ def profile(request, info="", error_msg="", messages=""):
          new_password = password_form.cleaned_data['password1']
          interface.change_user_password(user, new_password)
          info ="Password has been successfully changed"
-  
+
   username = user.username
   affiliation = user.affiliation
   email = user.email
@@ -282,7 +290,7 @@ def profile(request, info="", error_msg="", messages=""):
   #port_range = interface.get_useable_ports()
   #port_range_min = port_range[0]
   #port_range_max = port_range[-1]
-  
+
   return render_to_response('control/profile.html',
                             {'email_form' : email_form,
                              'affiliation_form' : affiliation_form,
@@ -301,9 +309,6 @@ def profile(request, info="", error_msg="", messages=""):
                             context_instance=RequestContext(request))
 
 
-
-
-
 def register(request):
   try:
     # check to see if a user is already logged in. if so, redirect them to profile.
@@ -312,10 +317,10 @@ def register(request):
     pass
   else:
     return HttpResponseRedirect(reverse("profile"))
-  
+
   page_top_errors = []
   if request.method == 'POST':
-    
+
     #TODO: what if the form data isn't in the POST request? we need to check for this.
     form = forms.GeniUserCreationForm(request.POST, request.FILES)
     # Calling the form's is_valid() function causes all form "clean_..." methods to be checked.
@@ -327,16 +332,16 @@ def register(request):
       affiliation = form.cleaned_data['affiliation']
       email = form.cleaned_data['email']
       pubkey = form.cleaned_data['pubkey']
-      
+
       try:
         validations.validate_username_and_password_different(username, password)
       except ValidationError, err:
         page_top_errors.append(str(err))
-      
+
       # NOTE: gen_upload_choice turns out to be a *string* when retrieved, hence '2'
       if form.cleaned_data['gen_upload_choice'] == '2' and pubkey == None:
         page_top_errors.append("Please select a public key to upload.")
-      
+
       # only proceed with registration if there are no validation errors
       if page_top_errors == []:
         try:
@@ -350,10 +355,10 @@ def register(request):
                              {'msg' : "Username %s has been successfully registered." % (user.username)})
   else:
     form = forms.GeniUserCreationForm()
-  return render_to_response('accounts/register.html', 
+  return render_to_response('accounts/register.html',
           {'form' : form, 'page_top_errors' : page_top_errors},
           context_instance=RequestContext(request))
-  
+
 
 
 
@@ -366,7 +371,7 @@ def _show_login(request, ltemplate, template_dict, form=None):
     <Arguments>
         request:
             An HTTP request object to use to populate the form
-            
+
         ltemplate:
            The login template name to use for the login form. Right now
            this can be one of 'accounts/simplelogin.html' and
@@ -385,7 +390,7 @@ def _show_login(request, ltemplate, template_dict, form=None):
         None.
 
     <Side Effects>
-        None. 
+        None.
 
     <Returns>
         An HTTP response object that represents the login page on
@@ -398,12 +403,12 @@ def _show_login(request, ltemplate, template_dict, form=None):
         #if not request.session.test_cookie_worked():
         request.session.set_test_cookie()
     template_dict['form'] = form
-    return render_to_response(ltemplate, template_dict, 
+    return render_to_response(ltemplate, template_dict,
             context_instance=RequestContext(request))
-  
-  
-  
-  
+
+
+
+
 
 def login(request):
   try:
@@ -417,7 +422,7 @@ def login(request):
   ltemplate = 'accounts/login.html'
   if request.method == 'POST':
     form = AuthenticationForm(request.POST)
-    
+
     if not request.session.test_cookie_worked():
       request.session.set_test_cookie()
       return _show_login(request, ltemplate, {'err' : "Please enable your cookies and try again."}, form)
@@ -429,12 +434,12 @@ def login(request):
       interface.login_user(request, request.POST['username'], request.POST['password'])
     except DoesNotExistError:
       return _show_login(request, ltemplate, {'err' : "Wrong username or password."}, form)
-      
+
     # only clear out the cookie if we actually authenticate and login ok
     request.session.delete_test_cookie()
-    
+
     return HttpResponseRedirect(reverse("profile"))
-    
+
   # request type is GET, show a fresh login page
   return _show_login(request, ltemplate, {})
 
@@ -457,7 +462,7 @@ def help(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   return render_to_response('control/help.html', {'username': user.username},
           context_instance=RequestContext(request))
 
@@ -466,7 +471,7 @@ def help(request):
 
 
 def accounts_help(request):
-  return render_to_response('accounts/help.html', {}, 
+  return render_to_response('accounts/help.html', {},
           context_instance=RequestContext(request))
 
 
@@ -479,18 +484,18 @@ def mygeni(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   total_vessel_credits = interface.get_total_vessel_credits(user)
   num_acquired_vessels = len(interface.get_acquired_vessels(user))
   avail_vessel_credits = interface.get_available_vessel_credits(user)
-  
+
   if num_acquired_vessels > total_vessel_credits:
     percent_total_used = 100
     over_vessel_credits = num_acquired_vessels - total_vessel_credits
   else:
     percent_total_used = int((num_acquired_vessels * 1.0 / total_vessel_credits * 1.0) * 100.0)
     over_vessel_credits = 0
-  
+
   # total_vessel_credits, percent_total_used, avail_vessel_credits
   return request_ro_response('control/mygeni.html',
                             {'username' : user.username,
@@ -511,7 +516,7 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   # get_form of None means don't show the form to acquire vessels.
   if interface.get_available_vessel_credits(user) == 0:
     get_form = None
@@ -524,7 +529,7 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
   # this user's used vessels
   my_vessels_raw = interface.get_acquired_vessels(user)
   my_vessels = interface.get_vessel_infodict_list(my_vessels_raw)
-  
+
   # this user's number of donations, max vessels, total vessels and free credits
   my_donations = interface.get_donations(user)
   my_max_vessels = interface.get_available_vessel_credits(user)
@@ -551,7 +556,7 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
                              'action_summary' : action_summary,
                              'action_detail' : action_detail,
                              'my_donations' : len(my_donations),
-                             'my_max_vessels' : my_max_vessels, 
+                             'my_max_vessels' : my_max_vessels,
                              'free_vessel_credits' : my_free_vessel_credits,
                              'total_vessel_credits' : my_total_vessel_credits,
                              'remove_summary' : remove_summary},
@@ -567,9 +572,9 @@ def getdonations(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   domain = "https://" + request.get_host()
-  
+
   return render_to_response('control/getdonations.html',
                             {'username' : user.username,
                              'domain' : domain},
@@ -585,22 +590,22 @@ def get_resources(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   # the request must be via POST. if not, bounce user back to My Vessels page
   if not request.method == 'POST':
     return myvessels(request)
-  
+
   # try and grab form from POST. if it can't, bounce user back to My Vessels page
   get_form = forms.gen_get_form(user, request.POST)
-  
+
   action_summary = ""
   action_detail = ""
   keep_get_form = False
-  
+
   if get_form.is_valid():
     vessel_num = get_form.cleaned_data['num']
     vessel_type = get_form.cleaned_data['env']
-    
+
     try:
       acquired_vessels = interface.acquire_vessels(user, vessel_num, vessel_type)
     except UnableToAcquireResourcesError, err:
@@ -616,17 +621,17 @@ def get_resources(request):
       keep_get_form = True
   else:
     keep_get_form = True
-  
+
   if keep_get_form == True:
     # return the original get_form, since the form wasn't valid (or there were errors)
     return myvessels(request, get_form, action_summary=action_summary, action_detail=action_detail)
   else:
     # return a My Vessels page with the updated vessels/vessel acquire details/errors
     return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
-  
-  
-  
-  
+
+
+
+
 
 @login_required
 def del_resource(request):
@@ -634,20 +639,20 @@ def del_resource(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   # the request must be via POST. if not, bounce user back to My Vessels page
   if not request.method == 'POST':
     return myvessels(request)
 
   if not request.POST['handle']:
     return myvessels(request)
-  
-  # vessel_handle needs to be a list (even though we only add one handle), 
+
+  # vessel_handle needs to be a list (even though we only add one handle),
   # since get_vessel_list expects a list.
   vessel_handle = []
   vessel_handle.append(request.POST['handle'])
   remove_summary = ""
-  
+
   try:
     # convert handle to vessel
     vessel_to_release = interface.get_vessel_list(vessel_handle)
@@ -661,7 +666,7 @@ def del_resource(request):
     except InvalidRequestError, err:
       remove_summary = "Unable to remove vessel. The vessel does not belong"
       remove_summary += " to you any more (maybe it expired?). " + str(err)
-  
+
   return myvessels(request, remove_summary=remove_summary)
 
 
@@ -675,18 +680,18 @@ def del_all_resources(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   # the request must be via POST. if not, bounce user back to My Vessels page
   if not request.method == 'POST':
     return myvessels(request)
-  
+
   remove_summary = ""
 
   try:
     interface.release_all_vessels(user)
   except InvalidRequestError, err:
     remove_summary = "Unable to release all vessels: " + str(err)
-  
+
   return myvessels(request, remove_summary=remove_summary)
 
 
@@ -700,17 +705,17 @@ def renew_resource(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   # The request must be via POST. If not, bounce user back to My Vessels page.
   if not request.method == 'POST':
     return myvessels(request)
-  
+
   if not request.POST.get('handle', ''):
     return myvessels(request)
-  
+
   action_summary = ""
   action_detail = ""
-  
+
   try:
     # Convert handle to vessel object.
     # Raises a DoesNotExistError if the vessel does not exist. This is more
@@ -731,7 +736,7 @@ def renew_resource(request):
       action_summary = "Unable to renew vessel: you are currently over your"
       action_summary += " vessel credit limit."
       action_detail += str(err)
-  
+
   return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
 
 
@@ -744,14 +749,14 @@ def renew_all_resources(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   # The request must be via POST. If not, bounce user back to My Vessels page.
   if not request.method == 'POST':
     return myvessels(request)
-  
+
   action_summary = ""
   action_detail = ""
-  
+
   try:
     interface.renew_all_vessels(user)
   except InvalidRequestError, err:
@@ -760,7 +765,7 @@ def renew_all_resources(request):
     action_summary = "Unable to renew vessels: you are currently over your"
     action_summary += " vessel credit limit."
     action_detail += str(err)
-  
+
   return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
 
 
@@ -786,27 +791,27 @@ def change_key(request):
     interface.change_user_keys(user, pubkey=None)
     msg = "Your new keys have been generated. You should download them now."
     return profile(request, msg)
-    
+
   else:
     file = request.FILES.get('pubkey', None)
     if file is None:
-      msg = "You didn't select a public key file to upload." 
+      msg = "You didn't select a public key file to upload."
       return profile(request, info, msg)
 
-    
+
     if file.size == 0 or file.size > forms.MAX_PUBKEY_UPLOAD_SIZE:
-      msg = "Invalid file uploaded. The file size limit is " 
+      msg = "Invalid file uploaded. The file size limit is "
       msg += str(forms.MAX_PUBKEY_UPLOAD_SIZE) + " bytes."
-      return profile(request, info, msg) 
-          
+      return profile(request, info, msg)
+
     pubkey = file.read()
-    
+
     try:
       validations.validate_pubkey_string(pubkey)
     except ValidationError:
       msg = "Invalid public key uploaded."
       return profile(request, info, msg)
-    
+
     # If we made it here, the uploaded key is good.
     interface.change_user_keys(user, pubkey=pubkey)
     msg = "Your public key has been successfully changed."
@@ -822,7 +827,7 @@ def api_info(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   if request.method == 'GET':
     return render_to_response('control/api_info.html',
                               {'username' : user.username,
@@ -833,8 +838,8 @@ def api_info(request):
   # This is a POST, so it should be generation of an API key.
   if not request.POST.get('generate_api_key', False):
     msg = "Sorry, we didn't understand your request."
-    return profile(request, info, msg) 
-    
+    return profile(request, info, msg)
+
   interface.regenerate_api_key(user)
   msg = "Your API key has been regenerated. Your old one will no longer work."
   msg += " You should update any places you are using the API key"
@@ -853,7 +858,7 @@ def del_priv(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   if user.user_privkey == "":
     msg = "Your private key has already been deleted."
   else:
@@ -872,7 +877,7 @@ def priv_key(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   response = HttpResponse(user.user_privkey, content_type='text/plain')
   response['Content-Disposition'] = 'attachment; filename=' + \
           str(user.username) + '.privatekey'
@@ -889,7 +894,7 @@ def pub_key(request):
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
-  
+
   response = HttpResponse(user.user_pubkey, content_type='text/plain')
   response['Content-Disposition'] = 'attachment; filename=' + \
             str(user.username) + '.publickey'
@@ -912,9 +917,9 @@ def download(request, username):
   templatedict['validuser'] = validuser
   templatedict['domain'] = "https://" + request.get_host()
   # I need to build a URL for android to download the installer from.   (The
-  # same installer is downloaded from the Google Play store for all users.) 
-  # The URL is escaped twice (ask Akos why) and inserted in the referrer 
-  # information in the URL.   
+  # same installer is downloaded from the Google Play store for all users.)
+  # The URL is escaped twice (ask Akos why) and inserted in the referrer
+  # information in the URL.
   #templatedict['android_installer_link'] = urllib.quote(urllib.quote(domain,safe=''),safe='')
 
   return render_to_response('download/installers.html', templatedict,
@@ -929,32 +934,32 @@ def build_android_installer(request, username):
   <Purpose>
     Allows the user to download a Android distribution of Seattle that will
     donate resources to user with 'username'.
-  
+
   <Arguments>
     request:
       Django HttpRequest object
-       
+
     username:
       A string representing the GENI user to which the installer will donate
       resources.
-  
+
   <Exceptions>
     None
-  
+
   <Side Effects>
     None
-  
+
   <Returns>
     On failure, returns an HTTP response with a description of the error. On
     success, redirects the user to download the installer.
   """
-  
+
   success, return_value = _build_installer(username, "android")
-  
+
   if not success:
     error_response = return_value
     return error_response
-  
+
   installer_url = return_value
   return HttpResponseRedirect(installer_url)
 
@@ -967,32 +972,32 @@ def build_win_installer(request, username):
   <Purpose>
     Allows the user to download a Windows distribution of Seattle that will
     donate resources to user with 'username'.
-  
+
   <Arguments>
     request:
       Django HttpRequest object
-       
+
     username:
       A string representing the GENI user to which the installer will donate
       resources.
-  
+
   <Exceptions>
     None
-  
+
   <Side Effects>
     None
-  
+
   <Returns>
     On failure, returns an HTTP response with a description of the error. On
     success, redirects the user to download the installer.
   """
-  
+
   success, return_value = _build_installer(username, "windows")
-  
+
   if not success:
     error_response = return_value
     return error_response
-  
+
   installer_url = return_value
   return HttpResponseRedirect(installer_url)
 
@@ -1072,6 +1077,373 @@ def build_mac_installer(request, username):
   installer_url = return_value
   return HttpResponseRedirect(installer_url)
 
+@login_required
+def registerexperiment(request):
+  """
+  <Purpose>
+      Show the Experiment Registration Form
+  <Returns>
+      An HTTP response object that represents the experiment registration page on
+      success.
+  """
+  # Obtain the context from the HTTP request.
+
+  context_instance = RequestContext(request)
+
+  try:
+    user = _validate_and_get_geniuser(request)
+  except LoggedInButFailedGetGeniUserError:
+    return _show_failed_get_geniuser_page(request)
+
+
+  page_top_errors = []
+  username = user.username
+  ret =['aaaaa'] #test list
+  from django.db import connection
+  from django.apps import apps
+
+  
+  tables = connection.introspection.table_names()
+  seen_models = connection.introspection.installed_models(tables)
+  for model in apps.get_models():
+      if model._meta.proxy:
+          continue
+
+      table = model._meta.db_table
+      if table not in tables:
+          continue
+
+      columns = [field.column for field in model._meta.fields]
+      ret.append((table, columns))
+      
+  if request.method == 'POST':
+
+      # create a form instance and populate it with data from the request:
+      
+    r_form = forms.RegisterExperimentForm(request.POST)#glabal data form
+    battery_form = forms.BatteryForm(request.POST, prefix = 'battery') #form for each sensor.
+    bluetooth_form = forms.BluetoothForm(request.POST, prefix = 'bluetooth') #form for each sensor.
+    cellular_form = forms.CellularForm(request.POST, prefix = 'cellular') #form for each sensor.
+    location_form = forms.LocationForm(request.POST, prefix = 'location') #form for each sensor.
+    settings_form = forms.SettingsForm(request.POST, prefix = 'settings') #form for each sensor.
+    sensor_form = forms.SensorForm(request.POST, prefix = 'sensor') #form for each sensor.
+    signalstrength_form = forms.SignalStrengthForm(request.POST, prefix = 'signalstrength') #form for each sensor.
+    wifi_form = forms.WifiForm(request.POST, prefix = 'wifi') #form for each sensor.
+
+
+    if r_form.is_valid(): #if r_form is valid save the data
+      ret.append("valid1")
+      
+      geni_user = user #foreign key of the experiment
+      expe_name = r_form.cleaned_data['expe_name']
+      res_name = r_form.cleaned_data['researcher_name']
+      res_address = r_form.cleaned_data['researcher_address']
+      res_email = r_form.cleaned_data['researcher_email']
+      irb = r_form.cleaned_data['researcher_institution_name']
+      irb_email = r_form.cleaned_data['irb_officer_email']
+      goal = r_form.cleaned_data['goal']
+
+      try:
+        # we should never error here, since we've already finished validation at this point.
+        # but, just to be safe...
+        experiment = interface.register_experiment(geni_user,expe_name,res_name,res_address,res_email,irb, irb_email, goal)
+      except ValidationError, err:
+        page_top_errors.append(str(err))
+      else:
+        #Evreything went good so far
+        #check every sensor form.
+        
+        if battery_form.is_valid():
+          if battery_form.is_required('battery'):#check if the researcher wants to use this sensor
+          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+            if_battery_present = battery_form.is_required('if_battery_present')
+            battery_health = battery_form.is_required('battery_health')
+            battery_level = battery_form.is_required('battery_level')
+            battery_plug_type = battery_form.is_required('battery_plug_type')
+            battery_status = battery_form.is_required('battery_status')
+            battery_technology = battery_form.is_required('battery_technology')
+            
+            #CHECK GENERAL ATRIBUTES
+            battery_frequency = battery_form.cleaned_data['frequency']
+            battery_frequency_unit = battery_form.cleaned_data['frequency_unit']
+            battery_frequency_other = battery_form.cleaned_data['frequency_other']
+            battery_precision = battery_form.cleaned_data['precision']
+            battery_truncation = battery_form.cleaned_data['truncation']
+            battery_precision_other = battery_form.cleaned_data['precision_other']
+            battery_goal = battery_form.cleaned_data['goal']
+
+            if battery_frequency == None: #if the user doesnt set frequency
+              battery_frequency = 0 #we set it to 0
+              if battery_frequency_other == '':#if he doesnt provide any other informatio either
+                page_top_errors.append("Please select the frequency in the battery sensor")#We set an error
+
+            if battery_truncation == None:
+              if  battery_precision == 'truncate':
+                page_top_errors.append("Please select the truncation decimals in the battery sensor")
+              else:
+                battery_truncation = 0
+
+            if battery_goal == '':
+              page_top_errors.append("Please explain the goal of using the battery sensor")
+
+            if if_battery_present == False and battery_health == False and battery_level == False and battery_plug_type == False and battery_status == False and battery_technology == False:
+              ret.append(battery_form.show_data())
+              page_top_errors.append("Please select any battery attribute")
+
+            if page_top_errors == []:
+              try:
+                battery = interface.register_sensor('battery',experiment,battery_frequency,battery_frequency_unit,battery_frequency_other,battery_precision,battery_truncation, battery_precision_other,battery_goal,[if_battery_present,battery_health,battery_level,battery_plug_type,battery_status,battery_technology])
+              except ValidationError, err:
+                page_top_errors.append(str(err))
+
+
+
+
+        else:
+          page_top_errors.append("Battery form is not valid")
+
+      
+        #save data into bluetooth model
+        if bluetooth_form.is_valid():
+          if bluetooth_form.is_required('bluetooth'):#check if the researcher wants to use this sensor
+          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+            bluetooth_state = bluetooth_form.is_required('bluetooth_state')
+            bluetooth_is_discovering = bluetooth_form.is_required('bluetooth_is_discovering')
+            scan_mode = bluetooth_form.is_required('scan_mode')
+            local_address = bluetooth_form.is_required('local_address')
+            local_name = bluetooth_form.is_required('local_name')
+            
+            #CHECK GENERAL ATRIBUTES
+            bluetooth_frequency = bluetooth_form.cleaned_data['frequency']
+            bluetooth_frequency_unit = bluetooth_form.cleaned_data['frequency_unit']
+            bluetooth_frequency_other = bluetooth_form.cleaned_data['frequency_other']
+            bluetooth_precision = bluetooth_form.cleaned_data['precision']
+            bluetooth_truncation = bluetooth_form.cleaned_data['truncation']
+            bluetooth_precision_other = bluetooth_form.cleaned_data['precision_other']
+
+            if bluetooth_frequency == None:
+              bluetooth_frequency = 0
+              if bluetooth_frequency_other == '':
+                page_top_errors.append("Please select the frequency in the bluetooth sensor")
+            if bluetooth_precision == 'truncate'and bluetooth_truncation == None:
+              page_top_errors.append("Please select the truncation decimals in the bluetooth sensor")
+
+
+        else:
+          page_top_errors.append("Bluetooth form is not valid")
+
+        #save data into cellular model
+        if cellular_form.is_valid():
+          if cellular_form.is_required('cellular'):#check if the researcher wants to use this sensor
+          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+            network_roaming = cellular_form.is_required('network_roaming')
+            cellID = cellular_form.is_required('cellID')
+            location_area_code = cellular_form.is_required('location_area_code')
+            mobile_country_code = cellular_form.is_required('mobile_country_code')
+            mobile_network_code = cellular_form.is_required('mobile_network_code')
+            network_operator = cellular_form.is_required('network_operator')
+            network_operator_name = cellular_form.is_required('network_operator_name')
+            network_type = cellular_form.is_required('network_type')
+            service_state = cellular_form.is_required('service_state')
+            signal_strengths = cellular_form.is_required('signal_strengths')
+            
+            #CHECK GENERAL ATRIBUTES
+            cellular_frequency = cellular_form.cleaned_data['frequency']
+            cellular_frequency_unit = cellular_form.cleaned_data['frequency_unit']
+            cellular_frequency_other = cellular_form.cleaned_data['frequency_other']
+            cellular_precision = cellular_form.cleaned_data['precision']
+            cellular_truncation = cellular_form.cleaned_data['truncation']
+            cellular_precision_other = cellular_form.cleaned_data['precision_other']
+
+            if cellular_frequency == None:
+              cellular_frequency = 0
+              if cellular_frequency_other == '':
+                page_top_errors.append("Please select the frequency in the cellular sensor")
+            if cellular_precision == 'truncate'and cellular_truncation == None:
+              page_top_errors.append("Please select the truncation decimals in the cellular sensor")
+
+
+        else:
+          page_top_errors.append("Cellular form is not valid")
+
+      
+        #save data into location model
+        if location_form.is_valid():
+          if location_form.is_required('location'):#check if the researcher wants to use this sensor
+          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+            location_providers = location_form.is_required('location_providers')
+            location_provider_enabled = location_form.is_required('location_provider_enabled')
+            location_data = location_form.is_required('location_data')
+            last_known_location = location_form.is_required('last_known_location')
+            geocode = location_form.is_required('geocode')
+            
+            #CHECK GENERAL ATRIBUTES
+            location_frequency = location_form.cleaned_data['frequency']
+            location_frequency_unit = location_form.cleaned_data['frequency_unit']
+            location_frequency_other = location_form.cleaned_data['frequency_other']
+            location_precision = location_form.cleaned_data['precision']
+            location_truncation = location_form.cleaned_data['truncation']
+            location_precision_other = location_form.cleaned_data['precision_other']
+
+            if location_frequency == None:
+              location_frequency = 0
+              if location_frequency_other == '':
+                page_top_errors.append("Please select the frequency in the location sensor")
+            if location_precision == 'truncate'and location_truncation == None:
+              page_top_errors.append("Please select the truncation decimals in the location sensor")
+
+
+        else:
+          page_top_errors.append("Location form is not valid")
+
+
+        #save data into settings model
+        if settings_form.is_valid():
+          if settings_form.is_required('settings'):#check if the researcher wants to use this sensor
+          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+            airplane_mode = settings_form.is_required('airplane_mode')
+            ringer_silent_mode = settings_form.is_required('ringer_silent_mode')
+            screen_on = settings_form.is_required('screen_on')
+            max_media_volume = settings_form.is_required('max_media_volume')
+            max_ringer_volume = settings_form.is_required('max_ringer_volume')
+            media_volume = settings_form.is_required('media_volume')
+            ringer_volume = settings_form.is_required('ringer_volume')
+            screen_brightness = settings_form.is_required('screen_brightness')
+            screen_timeout = settings_form.is_required('screen_timeout')
+            
+            #CHECK GENERAL ATRIBUTES
+            settings_frequency = settings_form.cleaned_data['frequency']
+            settings_frequency_unit = settings_form.cleaned_data['frequency_unit']
+            settings_frequency_other = settings_form.cleaned_data['frequency_other']
+            settings_precision = settings_form.cleaned_data['precision']
+            settings_truncation = settings_form.cleaned_data['truncation']
+            settings_precision_other = settings_form.cleaned_data['precision_other']
+
+            if settings_frequency == None:
+              settings_frequency = 0
+              if settings_frequency_other == '':
+                page_top_errors.append("Please select the frequency in the settings sensor")
+            if settings_precision == 'truncate'and settings_truncation == None:
+              page_top_errors.append("Please select the truncation decimals in the settings sensor")
+
+
+        else:
+          page_top_errors.append("Settings form is not valid")
+
+      
+        #save data into sensor model
+        if sensor_form.is_valid():
+          if sensor_form.is_required('sensor'):#check if the researcher wants to use this sensor
+          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+            sensor_data = sensor_form.is_required('sensor_data')
+            sensors_accuracy = sensor_form.is_required('sensors_accuracy')
+            light = sensor_form.is_required('light')
+            accelerometer = sensor_form.is_required('accelerometer')
+            magnetometer = sensor_form.is_required('magnetometer')
+            orientation = sensor_form.is_required('orientation') 
+            
+            #CHECK GENERAL ATRIBUTES
+            sensor_frequency = sensor_form.cleaned_data['frequency']
+            sensor_frequency_unit = sensor_form.cleaned_data['frequency_unit']
+            sensor_frequency_other = sensor_form.cleaned_data['frequency_other']
+            sensor_precision = sensor_form.cleaned_data['precision']
+            sensor_truncation = sensor_form.cleaned_data['truncation']
+            sensor_precision_other = sensor_form.cleaned_data['precision_other']
+
+            if sensor_frequency == None:
+              sensor_frequency = 0
+              if sensor_frequency_other == '':
+                page_top_errors.append("Please select the frequency in the sensor sensor")
+            if sensor_precision == 'truncate'and sensor_truncation == None:
+              page_top_errors.append("Please select the truncation decimals in the sensor sensor")
+
+
+        else:
+          page_top_errors.append("Sensor form is not valid")
+
+      
+        #save data into signalstrenght model
+        if signalstrength_form.is_valid():
+          if signalstrength_form.is_required('signalstrength'):#check if the researcher wants to use this sensor
+          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+            signal_strengths = signalstrength_form.is_required('signal_strengths')
+            
+            #CHECK GENERAL ATRIBUTES
+            signalstrength_frequency = signalstrength_form.cleaned_data['frequency']
+            signalstrength_frequency_unit = signalstrength_form.cleaned_data['frequency_unit']
+            signalstrength_frequency_other = signalstrength_form.cleaned_data['frequency_other']
+            signalstrength_precision = signalstrength_form.cleaned_data['precision']
+            signalstrength_truncation = signalstrength_form.cleaned_data['truncation']
+            signalstrength_precision_other = signalstrength_form.cleaned_data['precision_other']
+
+            if signalstrength_frequency == None:
+              signalstrength_frequency = 0
+              if signalstrength_frequency_other == '':
+                page_top_errors.append("Please select the frequency in the signalstrength sensor")
+            if signalstrength_precision == 'truncate'and signalstrength_truncation == None:
+              page_top_errors.append("Please select the truncation decimals in the signalstrength sensor")
+
+
+        else:
+          page_top_errors.append("Signalstrength form is not valid")
+
+      
+        #save data into wifi model
+        if wifi_form.is_valid():
+          if wifi_form.is_required('wifi'):#check if the researcher wants to use this sensor
+          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+            wifi_state = wifi_form.is_required('wifi_state')
+            ip_address = wifi_form.is_required('ip_address')
+            link_speed = wifi_form.is_required('link_speed')
+            supplicant_state = wifi_form.is_required('supplicant_state')
+            ssid = wifi_form.is_required('ssid')
+            rssi = wifi_form.is_required('rssi')
+            
+            #CHECK GENERAL ATRIBUTES
+            wifi_frequency = wifi_form.cleaned_data['frequency']
+            wifi_frequency_unit = wifi_form.cleaned_data['frequency_unit']
+            wifi_frequency_other = wifi_form.cleaned_data['frequency_other']
+            wifi_precision = wifi_form.cleaned_data['precision']
+            wifi_truncation = wifi_form.cleaned_data['truncation']
+            wifi_precision_other = wifi_form.cleaned_data['precision_other']
+
+            if wifi_frequency == None:
+              wifi_frequency = 0
+              if wifi_frequency_other == '':
+                page_top_errors.append("Please select the frequency in the wifi sensor")
+            if wifi_precision == 'truncate'and wifi_truncation == None:
+              page_top_errors.append("Please select the truncation decimals in the wifi sensor")
+                
+
+        else:
+          page_top_errors.append("Wifi form is not valid")
+
+        if page_top_errors == []: #all data have been saved succesfully
+          return HttpResponseRedirect(reverse("help"))
+        
+        
+    else: #if r_form is not valid
+      page_top_errors.append("Basic information of the experiment is not valid")
+      
+    
+   
+   
+  # if a GET (or any other method) we'll create a blank form
+  else:
+      r_form = forms.RegisterExperimentForm()
+      battery_form = forms.BatteryForm(prefix = 'battery') #form for each sensor
+      bluetooth_form = forms.BluetoothForm(prefix = 'bluetooth') #form for each sensor
+      cellular_form = forms.CellularForm(prefix = 'cellular') #form for each sensor
+      location_form = forms.LocationForm(prefix = 'location') #form for each sensor
+      settings_form = forms.SettingsForm(prefix = 'settings') #form for each sensor
+      sensor_form = forms.SensorForm(prefix = 'sensor') #form for each sensor
+      signalstrength_form = forms.SignalStrengthForm(prefix = 'signalstrength') #form for each sensor
+      wifi_form = forms.WifiForm(prefix = 'wifi') #form for each sensor
+
+
+
+  return render(request, 'control/registerexperiment.html', {'username' : username,'battery_form': battery_form, 'bluetooth_form': bluetooth_form, 'cellular_form': cellular_form, 'location_form': location_form, 'settings_form': settings_form, 'sensor_form': sensor_form, 'signalstrength_form': signalstrength_form, 'wifi_form': wifi_form, 'r_form': r_form, 'ret': ret, 'page_top_errors':page_top_errors})
+ 
 
 
 
@@ -1081,26 +1453,26 @@ def _build_installer(username, platform):
   <Purpose>
     Builds an installer for the given platform that will donate resources to
     the user with the given username.
-  
+
   <Arguments>
     username:
       A string representing the GENI user to which the installer will donate
       resources.
-      
+
     platform:
       A string representing the platform for which to build the installer.
       Options include 'windows', 'linux', or 'mac'.
-  
+
   <Exceptions>
     None
-  
+
   <Side Effects>
     None
-  
+
   <Returns>
     On success, returns (True, installer_url) where installer_url is URL from
     which the installer may be downloaded.
-    
+
     On failure, returns (False, error_response) where error_repsponse is an
     HttpResponse which specifies what went wrong.
   """
@@ -1113,14 +1485,14 @@ def _build_installer(username, platform):
 
   try:
     xmlrpc_proxy = xmlrpclib.ServerProxy(settings.SEATTLECLEARINGHOUSE_INSTALLER_BUILDER_XMLRPC)
-    
+
     vessel_list = [{'percentage': 80, 'owner': 'owner', 'users': ['user']}]
-    
+
     user_data = {
       'owner': {'public_key': user.donor_pubkey},
       'user': {'public_key': ACCEPTDONATIONS_STATE_PUBKEY},
     }
-    
+
     build_results = xmlrpc_proxy.build_installers(vessel_list, user_data)
   except:
     error_response = HttpResponse("Failed to build installer.")
