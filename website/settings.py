@@ -135,11 +135,11 @@ DATABASES = {
 if DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
     DATABASES['default']['OPTIONS'] = {}
     DATABASES['default']['OPTIONS']['init_command'] = \
-            'SET storage_engine=INNODB'
+            'SET default_storage_engine=INNODB'
 
 # Make this unique, and don't share it with anybody.
 # Fill this in!
-SECRET_KEY = 'clearinghouse'
+SECRET_KEY = 'TkGSWouqGI1FXUd'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

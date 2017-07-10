@@ -8,4 +8,4 @@ basically it's that we want the backend to be the place where all node-
 """
 
 # Change this for production usage.
-authcode = "backend"
+authcode = "authcode"
