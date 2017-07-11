@@ -71,23 +71,35 @@ class RegisterExperimentForm(forms.ModelForm):
     model = Experiment
     exclude = ['geni_user']
     
-  expe_name = forms.CharField(label="Experiment name", 
-    error_messages={'required': 'Enter a experiment name'}, required = True)
+  expe_name = forms.CharField(label="Experiment name",
+                              error_messages={'required': 'Enter a experiment name'}, required = True)
+
   researcher_name = forms.CharField(label="Researcher name",
-   error_messages={'required': 'Enter a researcher name'}, required = True)
-  researcher_address = forms.CharField(label="Name and address of researcher's home institution", 
-    error_messages={'required': 'Enter a Name and address of researchers home institution'}, required = True)
+                                    error_messages={'required': 'Enter a researcher name'}, required = True)
+
+  researcher_address = forms.CharField(label="Name and address of researcher's home institution",
+                                       error_messages={'required': 'Enter a Name and address of '
+                                                                   'researchers home institution'},
+                                       required = True)
+
   researcher_email = forms.CharField(label="Researcher's email address",
-   widget=forms.EmailInput(attrs={'class': 'form-control','pattern': "(?!(^[.-].*|[^@]*[.-]@|.*\.{2,}.*)|^.{254}.)([a-zA-Z0-9!#$%&'*+\/=?^_`{|}~.-]+@)(?!-.*|.*-\.)([a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,15}"}), 
-   error_messages={'required': 'Enter an E-mail Address'}, required = True)
-  researcher_institution_name = forms.CharField(label="Name of home institution's IRB officer or contact person", 
-    error_messages={'required': 'Name of home institutions IRB officer or contact person'}, required = True)
-  irb_officer_email = forms.CharField(label="Email address of home institution's IRB officer or contact person", 
-    widget=forms.EmailInput(attrs={'class': 'form-control','pattern': "(?!(^[.-].*|[^@]*[.-]@|.*\.{2,}.*)|^.{254}.)([a-zA-Z0-9!#$%&'*+\/=?^_`{|}~.-]+@)(?!-.*|.*-\.)([a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,15}"}), 
-    error_messages={'required': 'Enter an E-mail Address'}, required = True)
+                                     widget=forms.EmailInput(attrs={'class': 'form-control', 'type': 'email'}),
+                                     error_messages={'required': 'Enter an E-mail Address'}, required = True)
+
+  researcher_institution_name = forms.CharField(label="Name of home institution's IRB officer or contact person",
+                                                error_messages={'required': 'Name of home institutions IRB officer '
+                                                                            'or contact person'},
+                                                required = True)
+
+  irb_officer_email = forms.CharField(label="Email address of home institution's IRB officer or contact person",
+                                      widget=forms.EmailInput(attrs={'class': 'form-control', 'type' : 'email'}),
+                                      error_messages={'required': 'Enter an E-mail Address'},
+                                      required = True)
+
   goal = forms.CharField(label="A. What is the goal of your research experiment? What do you want to find out?",
     widget=forms.Textarea(attrs={'class': 'form-control', 'rows':1,'placeholder': 'Enter the goal of your Experiment'}),
     error_messages={'required': 'Enter the goal of your research experiment'}, max_length=256, required = True)
+
   terms_of_use = forms.BooleanField(label="accept", required=False)
   generate_irb_text = forms.BooleanField(label="Generate basic text for my IRB application", required=False)
   
