@@ -211,8 +211,9 @@ INSTALLED_APPS = (
   'django.contrib.sessions',
   'django.contrib.sites',
   'django.contrib.messages',
-  # Needed for OpenID/OAuth login so must be listed. 
-  'social_auth',
+  # Needed for OpenID/OAuth login so must be listed.
+  # TODO: social_auth temporarily commented out so as to be able to make migrations
+  #'social_auth',
   'clearinghouse.website.control',
 
   # We have our maindb model defined here, so it must be listed.

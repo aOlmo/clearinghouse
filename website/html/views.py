@@ -1141,22 +1141,24 @@ def registerexperiment(request):
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
 
-
   page_top_errors = []
   username = user.username
   ret =['testA'] #test list
-      
+
+  details_form = forms.DetailsForm(request.POST, prefix='details')
+
   if request.method == 'POST':
     # create a form instance and populate it with data from the request:
-    r_form = forms.RegisterExperimentForm(request.POST)#glabal data form
-    battery_form = forms.BatteryForm(request.POST, prefix = 'battery') #form for each sensor.
-    bluetooth_form = forms.BluetoothForm(request.POST, prefix = 'bluetooth') #form for each sensor.
-    cellular_form = forms.CellularForm(request.POST, prefix = 'cellular') #form for each sensor.
-    location_form = forms.LocationForm(request.POST, prefix = 'location') #form for each sensor.
-    settings_form = forms.SettingsForm(request.POST, prefix = 'settings') #form for each sensor.
-    sensor_form = forms.SensorForm(request.POST, prefix = 'sensor') #form for each sensor.
-    signalstrength_form = forms.SignalStrengthForm(request.POST, prefix = 'signalstrength') #form for each sensor.
-    wifi_form = forms.WifiForm(request.POST, prefix = 'wifi') #form for each sensor.
+    r_form = forms.RegisterExperimentForm(request.POST) #global data form
+    details_form = forms.DetailsForm(request.POST, prefix = 'details')
+    battery_form = forms.BatteryForm(request.POST, prefix = 'battery')
+    bluetooth_form = forms.BluetoothForm(request.POST, prefix = 'bluetooth')
+    cellular_form = forms.CellularForm(request.POST, prefix = 'cellular')
+    location_form = forms.LocationForm(request.POST, prefix = 'location')
+    settings_form = forms.SettingsForm(request.POST, prefix = 'settings')
+    sensor_form = forms.SensorForm(request.POST, prefix = 'sensor')
+    signalstrength_form = forms.SignalStrengthForm(request.POST, prefix = 'signalstrength')
+    wifi_form = forms.WifiForm(request.POST, prefix = 'wifi')
 
     if r_form.is_valid(): #if r_form is valid save the data
       ret.append("valid1")
@@ -1576,6 +1578,7 @@ def registerexperiment(request):
   # if a GET (or any other method) we'll create a blank form
   else:
       r_form = forms.RegisterExperimentForm()
+      details_form = forms.DetailsForm(prefix='details')
       battery_form = forms.BatteryForm(prefix = 'battery') #form for each sensor
       bluetooth_form = forms.BluetoothForm(prefix = 'bluetooth') #form for each sensor
       cellular_form = forms.CellularForm(prefix = 'cellular') #form for each sensor
@@ -1585,12 +1588,23 @@ def registerexperiment(request):
       signalstrength_form = forms.SignalStrengthForm(prefix = 'signalstrength') #form for each sensor
       wifi_form = forms.WifiForm(prefix = 'wifi') #form for each sensor
 
-  return render(request, 'control/registerexperiment.html', {'username' : username,
-                'battery_form': battery_form, 'bluetooth_form': bluetooth_form,
-                'cellular_form': cellular_form, 'location_form': location_form, 
-                'settings_form': settings_form, 'sensor_form': sensor_form, 
-                'signalstrength_form': signalstrength_form, 'wifi_form': wifi_form, 
-                'r_form': r_form, 'ret': ret, 'page_top_errors':page_top_errors})
+  values_to_render = {
+    'username' : username,
+    'battery_form': battery_form,
+    'bluetooth_form': bluetooth_form,
+    'cellular_form': cellular_form,
+    'location_form': location_form,
+    'settings_form': settings_form,
+    'sensor_form': sensor_form,
+    'signalstrength_form': signalstrength_form,
+    'wifi_form': wifi_form,
+    'r_form': r_form,
+    'details_form': details_form,
+    'ret': ret,
+    'page_top_errors':page_top_errors,
+  }
+
+  return render(request, 'control/registerexperiment.html', values_to_render)
 
 
 

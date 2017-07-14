@@ -24,6 +24,7 @@
 
 from clearinghouse.website.control.models import GeniUser
 from clearinghouse.website.control.models import Experiment
+from clearinghouse.website.control.models import Details
 from clearinghouse.website.control.models import Sensor
 from clearinghouse.website.control.models import Battery
 from clearinghouse.website.control.models import Bluetooth
@@ -35,10 +36,8 @@ from clearinghouse.website.control.models import Signal_strengths
 from clearinghouse.website.control.models import Wifi
 
 
-from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.forms import UserCreationForm as DjangoUserCreationForm
 import django.forms as forms
-
 
 
 from clearinghouse.common.exceptions import *
@@ -47,6 +46,10 @@ from clearinghouse.website.control import interface
 
 
 MAX_PUBKEY_UPLOAD_SIZE = 2048
+
+class PlainTextWidget(forms.Widget):
+    def render(self, _name, value, _attrs):
+        return mark_safe(value) if value is not None else '-'
 
 class PubKeyField(forms.FileField):
 
@@ -70,43 +73,48 @@ class RegisterExperimentForm(forms.ModelForm):
   class Meta:
     model = Experiment
     exclude = ['geni_user']
-    
-  expe_name = forms.CharField(label="Experiment name",
-                              error_messages={'required': 'Enter a experiment name'}, required = True)
 
-  researcher_name = forms.CharField(label="Researcher name",
-                                    error_messages={'required': 'Enter a researcher name'}, required = True)
+  experiment_name = forms.CharField(
+    label="Experiment name",
+    error_messages={'required':'Enter experiment name'},
+    required=True)
 
-  researcher_address = forms.CharField(label="Name and address of researcher's home institution",
-                                       error_messages={'required': 'Enter a Name and address of '
-                                                                   'researchers home institution'},
-                                       required = True)
+  researcher_name = forms.CharField(
+    label="Researcher name",
+    error_messages={'required':'Enter researcher name'},
+    required=True)
 
-  researcher_email = forms.CharField(label="Researcher's email address",
-                                     widget=forms.EmailInput(attrs={'class': 'form-control', 'type': 'email'}),
-                                     error_messages={'required': 'Enter an E-mail Address'}, required = True)
+  researcher_address = forms.CharField(
+    label="Name and address of researcher's home institution",
+    error_messages={'required':"Enter the name and address of researcher's home institution"},
+    required=True)
 
-  researcher_institution_name = forms.CharField(label="Name of home institution's IRB officer or contact person",
-                                                error_messages={'required': 'Name of home institutions IRB officer '
-                                                                            'or contact person'},
-                                                required = True)
+  researcher_email = forms.EmailField(
+    label="Researcher's email address",
+    widget=forms.EmailInput(attrs={'class': 'form-control', 'type': 'email'}),
+    error_messages={'required': 'Enter an email Address'},
+    required=True)
 
-  irb_officer_email = forms.CharField(label="Email address of home institution's IRB officer or contact person",
-                                      widget=forms.EmailInput(attrs={'class': 'form-control', 'type' : 'email'}),
-                                      error_messages={'required': 'Enter an E-mail Address'},
-                                      required = True)
+  researcher_institution_name = forms.CharField(
+    label="Name of home institution's IRB officer or contact person",
+    error_messages={'required': 'Name of home institutions IRB officer or contact person'},
+    required = True)
 
-  goal = forms.CharField(label="A. What is the goal of your research experiment? What do you want to find out?",
-    widget=forms.Textarea(attrs={'class': 'form-control', 'rows':1,'placeholder': 'Enter the goal of your Experiment'}),
-    error_messages={'required': 'Enter the goal of your research experiment'}, max_length=256, required = True)
+  irb_officer_email = forms.EmailField(
+    label="Email address of home institution's IRB officer or contact person",
+    widget=forms.EmailInput(
+      attrs={'class': 'form-control', 'type' : 'email'}),
+    error_messages={'required': 'Enter an E-mail Address'},
+    required = True)
 
   terms_of_use = forms.BooleanField(label="accept", required=False)
+
   generate_irb_text = forms.BooleanField(label="Generate basic text for my IRB application", required=False)
   
   def clean_expe_name(self):
     value = self.cleaned_data['expe_name']
     if value == '':
-      raise ValidationError("Experiment name can't not be an empty string")
+      raise ValidationError("Experiment name cannot be an empty string")
     try:
       validations.validate_register_experiment_field(value)
     except ValidationError, err:
@@ -166,6 +174,28 @@ class RegisterExperimentForm(forms.ModelForm):
     if value == 'True' or value == True:
       return True
     return False
+
+
+class DetailsForm(forms.ModelForm):
+  prefix = 'details'
+
+  class Meta:
+    model = Details
+    fields = '__all__'
+
+  goal = forms.CharField(
+    label="A. What is the goal of your research experiment? What do you want to find out?",
+    widget=forms.Textarea(
+      attrs={'class': 'form-control',
+             'rows': 1,
+             'placeholder': 'Enter the goal of your Experiment'}),
+    error_messages={'required': 'Enter the goal of your research experiment'},
+    max_length=256,
+    required=True)
+
+  # TODO: put this whole string in another and assign here
+  sensor_details = "B. What type(s) of smartphone sensors will you use (check all that apply)? " \
+    "A list of available sensors may be found at: https://sensibilitytestbed.com/projects/project/wiki/sensors"
 
 
 
@@ -257,12 +287,6 @@ class GeneralSensorAtributesForm(forms.ModelForm):
     except ValidationError, err:
       raise forms.ValidationError, str(err)
     return value
-
-    
-
-
-
-
 
 
 class BatteryForm(GeneralSensorAtributesForm):
@@ -417,7 +441,6 @@ class SignalStrengthForm(GeneralSensorAtributesForm):
   signalstrength = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Signal Strength",  
     widget=forms.Select(), required = True, initial = False)
   signal_strengths = forms.BooleanField(label="signal_strengths", required=False)
-
   
 class WifiForm(GeneralSensorAtributesForm):
   #Generic fields will be inherited

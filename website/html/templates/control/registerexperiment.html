@@ -28,8 +28,6 @@
 <Template Variables>
   form:
   New experiment registration form.
-
-
 {% endcomment %}
 
     {% block title %}
@@ -63,6 +61,9 @@
 
     <div id="middle">
     <h1>Register your experiment</h1>
+
+        <!--TODO: create a for loop to go through all forms, following the structure of title, subtitle, items-->
+
     <h2> 1. Provide your basic information (all fields are mandatory) </h2><br>
     Any researcher who would like to perform experiments using smartphone sensors may register on the Sensibility Testbed Clearinghouse site.<br><br>
     <form action="{% url 'registerexperiment' %}" method="post">
@@ -70,24 +71,19 @@
         {% csrf_token %}
 
         <!--Register experiment form-->
-        <!-- TODO: Where do we inherit this r_form from?? -->
         {% for item in r_form %}
+          {% if item.name != "terms_of_use" and item.name != "generate_irb_text" %}
             {{item.label_tag}} {{item}} <br>
+          {% endif %}
         {% endfor %}
-        <br> <br>
-
-        {{ r_form.management_form }}
-        {{ r_form.expe_name.label_tag }} {{r_form.expe_name}}<br>
-        {{r_form.researcher_name.label_tag}} {{r_form.researcher_name}}<br>
-        {{r_form.researcher_address.label_tag}} {{r_form.researcher_address}}<br>
-        {{r_form.researcher_email.label_tag}} {{r_form.researcher_email}}<br>
-        {{r_form.researcher_institution_name.label_tag}} {{r_form.researcher_institution_name}}<br>
-        {{r_form.irb_officer_email.label_tag}} {{r_form.irb_officer_email}}<br>
 
         <h2> 2. Provide details of your experiment </h2>
-        {{r_form.goal.label_tag}} {{r_form.goal}}<br><br>
 
-        B. What type(s) of smartphone sensors will you use (check all that apply)? A list of available sensors may be found at:  <a href = "https://sensibilitytestbed.com/projects/project/wiki/sensors"> Sensors</a><br><br>
+        {% for item in details_form %}
+          {{item.label_tag}} {{item}} <br>
+        {% endfor %}
+
+        {{details_form.sensor_details}} <br><br>
 
         <!--Battery form-->
         {{ battery_form.errors }}

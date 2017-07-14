@@ -121,7 +121,7 @@ class GeniUser(DjangoUser):
 
 class Experiment(models.Model):
   # Name of the Experiment
-  expe_name = models.CharField(max_length=30, default = None)
+  experiment_name = models.CharField(max_length=30, default = None)
 
   # The user who submitted the form
   geni_user = models.ForeignKey(GeniUser, db_index=True, default = None)
@@ -129,20 +129,17 @@ class Experiment(models.Model):
   # Name of the researcher who carry out the experiment
   researcher_name = models.CharField(max_length=30, default = None)
 
-  # Name and address of researcher's home institution
-  researcher_institution_name = models.CharField(max_length=30, default = None)
+  # Postal/Mail address of the researcher
+  researcher_address = models.CharField(max_length=64, default=None)
 
   # Email of the researcher
   researcher_email = models.EmailField(default = None)
 
-  # Postal/Mail address of the researcher
-  researcher_address = models.CharField(max_length=64, default = None)
+  # Name and address of researcher's home institution
+  researcher_institution_name = models.CharField(max_length=30, default = None)
 
   # Email Address of the Researcher's IRB officer
   irb_officer_email = models.EmailField( default = None)
-
-  # The main goal of the experiment
-  goal = models.CharField(max_length=256, default = None)
 
   #What data will be downloaded
   #data_downloaded = models.CharField(max_length=256, default = None)
@@ -156,7 +153,13 @@ class Experiment(models.Model):
     """
     return "Experiment:%s" % (self.id)
 
+class Details(models.Model):
 
+  # The main goal of the experiment
+  goal = models.CharField(max_length=256, default=None)
+
+  class Meta:
+    abstract = True
 
 class Sensor(models.Model):
   """
@@ -503,8 +506,6 @@ class Node(models.Model):
     Produces a string representation of the Node instance.
     """
     return "Node:%s:%s:%d" % (self.node_identifier[:10].replace(" ", "_"), self.last_known_ip, self.last_known_port)
-
-
 
 
 
