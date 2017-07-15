@@ -205,26 +205,65 @@ class GeneralSensorAtributesForm(forms.ModelForm):
         kwargs.setdefault('label_suffix', '')
         super(GeneralSensorAtributesForm, self).__init__(*args, **kwargs)
   
-  experiment_id = forms.IntegerField(required = False)
-  frequency = forms.IntegerField(label='i. How often will you need to access the sensor data? Once every', 
-    min_value=1, widget=forms.NumberInput(attrs={'class': 'form-control'}), initial = 1, required = False)
-  F_CHOICES = (('hour', 'Hour'),('min', 'Min'),('sec', 'Sec'),)
-  frequency_unit = forms.ChoiceField(widget = forms.Select(attrs={'class': 'form-control'}),
-                   choices = F_CHOICES, initial='hour', required = False)
-  frequency_other = forms.CharField(label="Other:", required=False,
-    widget=forms.TextInput(attrs={'class': 'form-control','placeholder': 'Please provide any additional information that you would like'}))
-  P_CHOICES = (('full', 'Full Precision'),('truncate', 'Truncate'),)
-  precision = forms.ChoiceField(label = 'ii. How precise do you need the data to be?',
-    widget = forms.Select(),choices = P_CHOICES, initial='full', required =  False)
-  truncation = forms.IntegerField(label='If truncation, choose the number of decimals to keep', 
-    min_value=1, widget=forms.NumberInput(attrs={'class': 'form-control'}), 
-    required = False, initial = 1)
-  precision_other = forms.CharField(label="A level of data precision that we currently do not support? Please elaborate:", 
-    required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows':1,
-     'placeholder': 'Please provide any additional information that you would like'}))
-  goal = forms.CharField(label="iii. What will this sensor used for?",
-    widget=forms.Textarea(attrs={'class': 'form-control', 'rows':1,'placeholder': 'Enter the goal of your Experiment'}),
-    error_messages={'required': 'Enter the goal of your research experiment'}, max_length=256, required=False)
+  experiment_id = forms.IntegerField(required=False)
+
+  frequency = forms.IntegerField(
+    label='i. How often will you need to access the sensor data? Once every',
+    min_value=1,
+    widget=forms.NumberInput(
+      attrs={'class': 'form-control'}),
+      initial = 1,
+    required = False)
+
+  F_CHOICES = (('hour', 'Hour'),('min', 'Min'),('sec', 'Sec'))
+
+  frequency_unit = forms.ChoiceField(
+    widget = forms.Select(
+      attrs={'class': 'form-control'}),
+    choices = F_CHOICES,
+    initial='hour', required = False)
+
+  frequency_other = forms.CharField(
+    label="Other:",
+    required=False,
+    widget=forms.TextInput(
+      attrs={'class': 'form-control',
+             'placeholder': 'Please provide any additional information that you would like'}))
+
+  P_CHOICES = (('full', 'Full Precision'),('truncate', 'Truncate'))
+
+  precision = forms.ChoiceField(
+    label = 'ii. How precise do you need the data to be?',
+    widget = forms.Select(),
+    choices = P_CHOICES,
+    initial='full',
+    required =  False)
+
+  truncation = forms.IntegerField(
+    label='If truncation, choose the number of decimals to keep',
+    min_value=1,
+    widget=forms.NumberInput(
+      attrs={'class': 'form-control'}),
+    required = False,
+    initial = 1)
+
+  precision_other = forms.CharField(
+    label="A level of data precision that we currently do not support? Please elaborate:",
+    required=False,
+    widget=forms.Textarea(
+      attrs={'class': 'form-control', 'rows':1,
+     'placeholder': 'Please provide any additional information that you would like'}
+    ))
+
+  goal = forms.CharField(
+    label="iii. What will this sensor used for?",
+    widget=forms.Textarea(
+      attrs={'class': 'form-control',
+             'rows':1,'placeholder': 'Enter the goal of your Experiment'}),
+    error_messages={
+      'required': 'Enter the goal of your research experiment'},
+    max_length=256,
+    required=False)
 
 
 
@@ -301,14 +340,37 @@ class BatteryForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
-  battery = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Battery", 
-    widget=forms.Select(), required=False, initial = False)
-  if_battery_present = forms.BooleanField(label="if_battery_present", required=False)
-  battery_health = forms.BooleanField(label="battery_health", required=False)
-  battery_level = forms.BooleanField(label="battery_label", required=False)
-  battery_plug_type = forms.BooleanField(label="battery_plug_type", required=False)
-  battery_status = forms.BooleanField(label="battery_status", required=False)
-  battery_technology = forms.BooleanField(label="battery_technology", required=False)
+
+  battery = forms.ChoiceField(
+    choices = TRUE_FALSE_CHOICES,
+    label="Battery",
+    widget=forms.Select(),
+    required=False,
+    initial=False)
+
+  if_battery_present = forms.BooleanField(
+    label="if_battery_present",
+    required=False)
+
+  battery_health = forms.BooleanField(
+    label="battery_health",
+    required=False)
+
+  battery_level = forms.BooleanField(
+    label="battery_level",
+    required=False)
+
+  battery_plug_type = forms.BooleanField(
+    label="battery_plug_type",
+    required=False)
+
+  battery_status = forms.BooleanField(
+    label="battery_status",
+    required=False)
+
+  battery_technology = forms.BooleanField(
+    label="battery_technology",
+    required=False)
 
     
 
@@ -324,14 +386,31 @@ class BluetoothForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
-  bluetooth = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Bluetooth",  
-    widget=forms.Select(), required=True, initial = False)
-  bluetooth_state = forms.BooleanField(label="bluetooth_state (if Bluetooth is enabled)", required=False)
-  bluetooth_is_discovering = forms.BooleanField(label="bluetooth_is_discovering (if the local Bluetooth adapter is currently in device discovery process)", required=False)
-  scan_mode = forms.BooleanField(label="scan_mode (if Bluetooth is connectable or discoverable)", required=False)
-  local_address = forms.BooleanField(label="local_address (hardware address of the local Bluetooth adapter)", 
+  bluetooth = forms.ChoiceField(
+    choices = TRUE_FALSE_CHOICES,
+    label="Bluetooth",
+    widget=forms.Select(),
+    required=True,
+    initial = False)
+
+  bluetooth_state = forms.BooleanField(
+    label="bluetooth_state (if Bluetooth is enabled)",
     required=False)
-  local_name = forms.BooleanField(label="local_name (visible device name)", required=False)
+
+  bluetooth_is_discovering = forms.BooleanField(
+    label="bluetooth_is_discovering (if the local Bluetooth adapter is currently in device discovery process)",
+    required=False)
+
+  scan_mode = forms.BooleanField(
+    label="scan_mode (if Bluetooth is connectable or discoverable)",
+    required=False)
+
+  local_address = forms.BooleanField(
+    label="local_address (hardware address of the local Bluetooth adapter)",
+    required=False)
+  local_name = forms.BooleanField(
+    label="local_name (visible device name)",
+    required=False)
 
 
   
@@ -393,8 +472,13 @@ class SettingsForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
-  settings = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Settings",  
-    widget=forms.Select(), required=True, initial = False)
+  settings = forms.ChoiceField(
+    choices = TRUE_FALSE_CHOICES,
+    label="Settings",
+    widget=forms.Select(),
+    required=True,
+    initial = False)
+
   airplane_mode = forms.BooleanField(label="airplane_mode", required=False)
   ringer_silent_mode = forms.BooleanField(label="ringer_silent_mode", required=False)
   screen_on = forms.BooleanField(label="screen_on", required=False)
@@ -417,14 +501,37 @@ class SensorForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
-  sensor = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Sensor",  
-    widget=forms.Select(), required=True, initial = False)
-  sensor_data = forms.BooleanField(label="sensors (get the most recently recorded sensor data: accelerometer, magnetic and orientation)", required=False)
-  sensors_accuracy = forms.BooleanField(label="sensors_accuracy", required=False)
-  light = forms.BooleanField(label="light (most recently received light value)", required=False)
-  accelerometer = forms.BooleanField(label="accelerometer (most recently received accelerometer value)", required=False)
-  magnetometer = forms.BooleanField(label="magnetometer (most recently received magnetic field value)", required=False)
-  orientation = forms.BooleanField(label="orientation (most recently received orientation value)", required=False)
+  sensor = forms.ChoiceField(
+    choices = TRUE_FALSE_CHOICES,
+    label="Sensor",
+    widget=forms.Select(),
+    required=True,
+    initial = False)
+
+  sensor_data = forms.BooleanField(
+    label="sensors (get the most recently recorded sensor data: accelerometer, magnetic and orientation)",
+    required=False)
+
+  sensors_accuracy = forms.BooleanField(
+    label="sensors_accuracy",
+    required=False)
+
+  light = forms.BooleanField(
+    label="light (most recently received light value)",
+    required=False)
+
+  accelerometer = forms.BooleanField(
+    label="accelerometer (most recently received accelerometer value)",
+    required=False)
+
+  magnetometer = forms.BooleanField(
+    label="magnetometer (most recently received magnetic field value)",
+    required=False)
+
+  orientation = forms.BooleanField(
+    label="orientation (most recently received orientation value)",
+    required=False)
+
 
 class SignalStrengthForm(GeneralSensorAtributesForm):
   #Generic fields will be inherited
@@ -438,9 +545,16 @@ class SignalStrengthForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
-  signalstrength = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Signal Strength",  
-    widget=forms.Select(), required = True, initial = False)
-  signal_strengths = forms.BooleanField(label="signal_strengths", required=False)
+  signalstrength = forms.ChoiceField(
+    choices = TRUE_FALSE_CHOICES,
+    label="Signal Strength",
+    widget=forms.Select(),
+    required = True,
+    initial = False)
+
+  signal_strengths = forms.BooleanField(
+    label="signal_strengths",
+    required=False)
   
 class WifiForm(GeneralSensorAtributesForm):
   #Generic fields will be inherited

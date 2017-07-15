@@ -158,8 +158,6 @@ class Details(models.Model):
   # The main goal of the experiment
   goal = models.CharField(max_length=256, default=None)
 
-  class Meta:
-    abstract = True
 
 class Sensor(models.Model):
   """
@@ -167,6 +165,12 @@ class Sensor(models.Model):
   Abstract base classes are useful when you want to put some common information into a number of other models.
   This class is defining the general Sensor data as the frequency, precission, goal...
   """
+
+  # This model will then not be used to create any database table.
+  # Instead, when it is used as a base class for other models,
+  # its fields will be added to those of the child class.
+  class meta:
+     abstract = True
 
   # Which experiment requests this sensor?
   experiment_id = models.ForeignKey(Experiment, db_index=True, default=None)
@@ -192,9 +196,6 @@ class Sensor(models.Model):
   # What will the sensor data be used for?
   goal = models.CharField(max_length=512, default=None, blank=True)
 
-  class meta:
-    # This model will then not be used to create any database table. Instead, when it is used as a base class for other models, its fields will be added to those of the child class.
-    abstract = True
 
 
 class Battery(Sensor):

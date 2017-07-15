@@ -79,41 +79,60 @@
 
         <h2> 2. Provide details of your experiment </h2>
 
+        <!--Details form-->
         {% for item in details_form %}
-          {{item.label_tag}} {{item}} <br>
+          {{item.label}} {{item}} <br>
         {% endfor %}
 
         {{details_form.sensor_details}} <br><br>
 
         <!--Battery form-->
+        {% for item in battery_form %}
+            <!--Print those vars exclusive from the battery_form-->
+            {% if item.name not in sensor_var_names %}
+                {{item}} {{item.label}} <br>
+            {% endif %}
+        {% endfor %}
+
+        <br><br>
+
+        {% for item in battery_form %}
+            {% if item.name in sensor_var_names %}
+                {{item.label}} {{item}} <br>
+            {% endif %}
+        {% endfor %}
+        <!--Battery form-->
+
+        <br><br>
+
         {{ battery_form.errors }}
         {{ battery_form.non_field_errors }}
         {{battery_form.battery}} {{battery_form.battery.label_tag}}<br><br>
-        &emsp;&emsp;{{battery_form.if_battery_present}}  {{battery_form.if_battery_present.label_tag}}<br>
-        &emsp;&emsp;{{battery_form.battery_health}}  {{battery_form.battery_health.label_tag}}<br>
-        &emsp;&emsp;{{battery_form.battery_level}}  {{battery_form.battery_level.label_tag}}<br>
-        &emsp;&emsp;{{battery_form.battery_plug_type}}  {{battery_form.battery_plug_type.label_tag}}<br>
-        &emsp;&emsp;{{battery_form.battery_status}}  {{battery_form.battery_status.label_tag}}<br>
-        &emsp;&emsp;{{battery_form.battery_technology}}  {{battery_form.battery_technology.label_tag}}<br><br>
+        {{battery_form.if_battery_present}}  {{battery_form.if_battery_present.label_tag}}<br>
+        {{battery_form.battery_health}}  {{battery_form.battery_health.label_tag}}<br>
+        {{battery_form.battery_level}}  {{battery_form.battery_level.label_tag}}<br>
+        {{battery_form.battery_plug_type}}  {{battery_form.battery_plug_type.label_tag}}<br>
+        {{battery_form.battery_status}}  {{battery_form.battery_status.label_tag}}<br>
+        {{battery_form.battery_technology}}  {{battery_form.battery_technology.label_tag}}<br><br>
 
-    &emsp;  {{battery_form.frequency.label_tag}}<br>
-    &emsp;  {{battery_form.frequency}} {{battery_form.frequency_unit}}<br>
+        {{battery_form.frequency.label_tag}}<br>
+        {{battery_form.frequency}} {{battery_form.frequency_unit}}<br>
         {{battery_form.frequency_other.label_tag}} {{battery_form.frequency_other}} <br><br>
 
-        &emsp;&emsp;{{battery_form.precision.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{battery_form.precision}}<br>
-        &emsp;&emsp;&emsp;{{battery_form.truncation.label_tag}} {{battery_form.truncation}}<br>
-        &emsp;&emsp;&emsp;{{battery_form.precision_other.label_tag}} {{battery_form.precision_other}} <br><br>
+        {{battery_form.precision.label_tag}}<br>
+        {{battery_form.precision}}<br>
+        {{battery_form.truncation.label_tag}} {{battery_form.truncation}}<br>
+        {{battery_form.precision_other.label_tag}} {{battery_form.precision_other}} <br><br>
 
-        &emsp;&emsp;{{battery_form.goal.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{battery_form.goal}} <br><br><br><br>
+        {{battery_form.goal.label_tag}}<br>
+        {{battery_form.goal}} <br><br><br><br>
 
 
         <!--Bluetooth form-->
         {{bluetooth_form.bluetooth}} {{bluetooth_form.bluetooth.label_tag}}<br><br>
-        &emsp;&emsp;{{bluetooth_form.bluetooth_state}}  {{bluetooth_form.bluetooth_state.label_tag}}<br>
-        &emsp;&emsp;{{bluetooth_form.bluetooth_is_discovering}}  {{bluetooth_form.bluetooth_is_discovering.label_tag}}<br>
-        &emsp;&emsp;{{bluetooth_form.scan_mode}}  {{bluetooth_form.scan_mode.label_tag}}<br>
+        {{bluetooth_form.bluetooth_state}}  {{bluetooth_form.bluetooth_state.label_tag}}<br>
+        {{bluetooth_form.bluetooth_is_discovering}}  {{bluetooth_form.bluetooth_is_discovering.label_tag}}<br>
+        {{bluetooth_form.scan_mode}}  {{bluetooth_form.scan_mode.label_tag}}<br>
         &emsp;&emsp;{{bluetooth_form.local_address}}  {{bluetooth_form.local_address.label_tag}}<br>
         &emsp;&emsp;{{bluetooth_form.local_name}}  {{bluetooth_form.local_name.label_tag}}<br><br>
 

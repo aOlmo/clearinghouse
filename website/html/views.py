@@ -97,10 +97,12 @@ from clearinghouse.website.control.models import Signal_strengths
 from clearinghouse.website.control.models import Wifi
 
 #for user get donations
-from clearinghouse.common.util.build_manager import BuildManager 
+from clearinghouse.common.util.build_manager import BuildManager
 
-
-
+# TODO: THIS IS USED FOR TESTING PURPOSES, DELETE LATER
+# ------------------------------------------------------
+import pdb
+# ------------------------------------------------------
 
 class LoggedInButFailedGetGeniUserError(Exception):
   """
@@ -1136,6 +1138,21 @@ def registerexperiment(request):
 
   context_instance = RequestContext(request)
 
+  # Since several Classes (battery, bluetooth, location, settings etc.)
+  # inherit from the abstract class Sensor, in order to print with a loop
+  # first the vars from each class and then those from the Sensor one, we
+  # will need to store the name of all Sensor vars to later compare them
+  # with the others and print them in the order we want
+  sensor_instance = Sensor()
+  sensor_var_names = vars(sensor_instance)
+
+  # One of the Sensor's vars is "experiment_id" but apparently, there appears
+  # another var called "experiment_id_id" instead, so we get rid of this and
+  # insert the name of the other one manually.
+  if "experiment_id_id" in sensor_var_names:
+    del sensor_var_names["experiment_id_id"]
+    sensor_var_names["experiment_id"] = None
+
   try:
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
@@ -1144,8 +1161,6 @@ def registerexperiment(request):
   page_top_errors = []
   username = user.username
   ret =['testA'] #test list
-
-  details_form = forms.DetailsForm(request.POST, prefix='details')
 
   if request.method == 'POST':
     # create a form instance and populate it with data from the request:
@@ -1601,7 +1616,8 @@ def registerexperiment(request):
     'r_form': r_form,
     'details_form': details_form,
     'ret': ret,
-    'page_top_errors':page_top_errors,
+    'page_top_errors': page_top_errors,
+    'sensor_var_names': sensor_var_names,
   }
 
   return render(request, 'control/registerexperiment.html', values_to_render)
