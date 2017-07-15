@@ -172,9 +172,6 @@ class Sensor(models.Model):
   class meta:
      abstract = True
 
-  # Which experiment requests this sensor?
-  experiment_id = models.ForeignKey(Experiment, db_index=True, default=None)
-
   # How frequently is this sensor data pulled/requested?
   frequency = models.IntegerField(default=None, blank=True)
 
@@ -195,6 +192,9 @@ class Sensor(models.Model):
 
   # What will the sensor data be used for?
   goal = models.CharField(max_length=512, default=None, blank=True)
+
+  # Which experiment requests this sensor?
+  experiment_id = models.ForeignKey(Experiment, db_index=True, default=None)
 
 
 

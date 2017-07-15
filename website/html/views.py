@@ -1123,8 +1123,6 @@ def build_mac_installer(request, username):
   return HttpResponseRedirect(installer_url)
 
 
-
-
 @login_required
 def registerexperiment(request):
   """

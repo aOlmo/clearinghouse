@@ -63,6 +63,8 @@
     <h1>Register your experiment</h1>
 
         <!--TODO: create a for loop to go through all forms, following the structure of title, subtitle, items-->
+        <!--TODO: Make this way more modular-->
+        <!--TODO: Use CSS to apply some indentation for each part of the new experiment-->
 
     <h2> 1. Provide your basic information (all fields are mandatory) </h2><br>
     Any researcher who would like to perform experiments using smartphone sensors may register on the Sensibility Testbed Clearinghouse site.<br><br>
@@ -84,7 +86,12 @@
           {{item.label}} {{item}} <br>
         {% endfor %}
 
-        {{details_form.sensor_details}} <br><br>
+        {{details_form.sensor_details}}
+        <!--End of details form-->
+
+        <br>
+
+        <h3>Battery</h3>
 
         <!--Battery form-->
         {% for item in battery_form %}
@@ -94,187 +101,202 @@
             {% endif %}
         {% endfor %}
 
-        <br><br>
-
-        {% for item in battery_form %}
-            {% if item.name in sensor_var_names %}
-                {{item.label}} {{item}} <br>
-            {% endif %}
-        {% endfor %}
-        <!--Battery form-->
-
-        <br><br>
-
         {{ battery_form.errors }}
         {{ battery_form.non_field_errors }}
-        {{battery_form.battery}} {{battery_form.battery.label_tag}}<br><br>
-        {{battery_form.if_battery_present}}  {{battery_form.if_battery_present.label_tag}}<br>
-        {{battery_form.battery_health}}  {{battery_form.battery_health.label_tag}}<br>
-        {{battery_form.battery_level}}  {{battery_form.battery_level.label_tag}}<br>
-        {{battery_form.battery_plug_type}}  {{battery_form.battery_plug_type.label_tag}}<br>
-        {{battery_form.battery_status}}  {{battery_form.battery_status.label_tag}}<br>
-        {{battery_form.battery_technology}}  {{battery_form.battery_technology.label_tag}}<br><br>
 
-        {{battery_form.frequency.label_tag}}<br>
-        {{battery_form.frequency}} {{battery_form.frequency_unit}}<br>
-        {{battery_form.frequency_other.label_tag}} {{battery_form.frequency_other}} <br><br>
+        {% for item in battery_form %}
+            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
+                {% if "i." in item.label %}
+                    <br>
+                {% endif %}
+                {% if item.name == "frequency" %}
+                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
+                {% else %}
+                  {{item.label}} <br> {{item}} <br>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <!--End of battery form-->
 
-        {{battery_form.precision.label_tag}}<br>
-        {{battery_form.precision}}<br>
-        {{battery_form.truncation.label_tag}} {{battery_form.truncation}}<br>
-        {{battery_form.precision_other.label_tag}} {{battery_form.precision_other}} <br><br>
+        <br>
 
-        {{battery_form.goal.label_tag}}<br>
-        {{battery_form.goal}} <br><br><br><br>
-
+        <h3>Bluetooth</h3>
 
         <!--Bluetooth form-->
-        {{bluetooth_form.bluetooth}} {{bluetooth_form.bluetooth.label_tag}}<br><br>
-        {{bluetooth_form.bluetooth_state}}  {{bluetooth_form.bluetooth_state.label_tag}}<br>
-        {{bluetooth_form.bluetooth_is_discovering}}  {{bluetooth_form.bluetooth_is_discovering.label_tag}}<br>
-        {{bluetooth_form.scan_mode}}  {{bluetooth_form.scan_mode.label_tag}}<br>
-        &emsp;&emsp;{{bluetooth_form.local_address}}  {{bluetooth_form.local_address.label_tag}}<br>
-        &emsp;&emsp;{{bluetooth_form.local_name}}  {{bluetooth_form.local_name.label_tag}}<br><br>
+        {% for item in bluetooth_form %}
+            <!--Print those vars exclusive from the bluetooth_form-->
+            {% if item.name not in sensor_var_names %}
+                {{item}} {{item.label}} <br>
+            {% endif %}
+        {% endfor %}
 
-        &emsp;&emsp;{{bluetooth_form.frequency.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{bluetooth_form.frequency}} {{bluetooth_form.frequency_unit}}<br>
-        &emsp;&emsp;&emsp;{{bluetooth_form.frequency_other.label_tag}} {{bluetooth_form.frequency_other}} <br><br>
+        {% for item in bluetooth_form %}
+            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
+                {% if "i." in item.label %}
+                    <br>
+                {% endif %}
+                {% if item.name == "frequency" %}
+                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
+                {% else %}
+                  {{item.label}} <br> {{item}} <br>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <!--End of bluetooth form-->
 
-        &emsp;&emsp;{{bluetooth_form.precision.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{bluetooth_form.precision}}<br>
-        &emsp;&emsp;&emsp;{{bluetooth_form.truncation.label_tag}} {{bluetooth_form.truncation}}<br>
-        &emsp;&emsp;&emsp;{{bluetooth_form.precision_other.label_tag}} {{bluetooth_form.precision_other}} <br><br>
+        <br>
 
-        &emsp;&emsp;{{bluetooth_form.goal.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{bluetooth_form.goal}} <br><br><br><br>
+        <h3>Cellular</h3>
 
         <!--Cellular form-->
-        {{cellular_form.cellular}} {{cellular_form.cellular.label_tag}}<br><br>
-        &emsp;&emsp;{{cellular_form.network_roaming}}  {{cellular_form.network_roaming.label_tag}}<br>
-        &emsp;&emsp;{{cellular_form.cellID}}  {{cellular_form.cellID.label_tag}}<br>
-        &emsp;&emsp;{{cellular_form.location_area_code}}  {{cellular_form.location_area_code.label_tag}}<br>
-        &emsp;&emsp;{{cellular_form.mobile_country_code}}  {{cellular_form.mobile_country_code.label_tag}}<br>
-        &emsp;&emsp;{{cellular_form.mobile_network_code}}  {{cellular_form.mobile_network_code.label_tag}}<br>
-        &emsp;&emsp;{{cellular_form.network_operator}}  {{cellular_form.network_operator.label_tag}}<br>
-        &emsp;&emsp;{{cellular_form.network_operator_name}}  {{cellular_form.network_operator_name.label_tag}}<br>
-        &emsp;&emsp;{{cellular_form.network_type}}  {{cellular_form.network_type.label_tag}}<br>
-        &emsp;&emsp;{{cellular_form.service_state}}  {{cellular_form.service_state.label_tag}}<br>
-        &emsp;&emsp;{{cellular_form.signal_strengths}}  {{cellular_form.signal_strengths.label_tag}}<br><br>
+        {% for item in cellular_form %}
+            <!--Print those vars exclusive from the cellular_form-->
+            {% if item.name not in sensor_var_names %}
+                {{item}} {{item.label}} <br>
+            {% endif %}
+        {% endfor %}
 
-        &emsp;&emsp;{{cellular_form.frequency.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{cellular_form.frequency}} {{cellular_form.frequency_unit}}<br>
-        &emsp;&emsp;&emsp;{{cellular_form.frequency_other.label_tag}} {{cellular_form.frequency_other}} <br><br>
+        {% for item in cellular_form %}
+            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
+                {% if "i." in item.label %}
+                    <br>
+                {% endif %}
+                {% if item.name == "frequency" %}
+                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
+                {% else %}
+                  {{item.label}} <br> {{item}} <br>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <!--End of cellular form-->
 
-        &emsp;&emsp;{{cellular_form.precision.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{cellular_form.precision}}<br>
-        &emsp;&emsp;&emsp;{{cellular_form.truncation.label_tag}} {{cellular_form.truncation}}<br>
-        &emsp;&emsp;&emsp;{{cellular_form.precision_other.label_tag}} {{cellular_form.precision_other}} <br><br>
-
-        &emsp;&emsp;{{cellular_form.goal.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{cellular_form.goal}} <br><br><br><br>
+        <h3>Location</h3>
 
         <!--Location form-->
-        {{location_form.location}} {{location_form.location.label_tag}}<br><br>
-        &emsp;&emsp;{{location_form.location_providers}}  {{location_form.location_providers.label_tag}}<br>
-        &emsp;&emsp;{{location_form.location_provider_enabled}}  {{location_form.location_provider_enabled.label_tag}}<br>
-        &emsp;&emsp;{{location_form.location_data}}  {{location_form.location_data.label_tag}}<br>
-        &emsp;&emsp;{{location_form.last_known_location}}  {{location_form.last_known_location.label_tag}}<br>
-        &emsp;&emsp;{{location_form.geocode}}  {{location_form.geocode.label_tag}}<br><br>
+        {% for item in location_form %}
+            <!--Print those vars exclusive from the location_form-->
+            {% if item.name not in sensor_var_names %}
+                {{item}} {{item.label}} <br>
+            {% endif %}
+        {% endfor %}
 
-        &emsp;&emsp;{{location_form.frequency.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{location_form.frequency}} {{location_form.frequency_unit}}<br>
-        &emsp;&emsp;&emsp;{{location_form.frequency_other.label_tag}} {{location_form.frequency_other}} <br><br>
+        {% for item in location_form %}
+            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
+                {% if "i." in item.label %}
+                    <br>
+                {% endif %}
+                {% if item.name == "frequency" %}
+                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
+                {% else %}
+                  {{item.label}} <br> {{item}} <br>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <!--End of location form-->
 
-        &emsp;&emsp;{{location_form.precision.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{location_form.precision}}<br>
-        &emsp;&emsp;&emsp;{{location_form.truncation.label_tag}} {{location_form.truncation}}<br>
-        &emsp;&emsp;&emsp;{{location_form.precision_other.label_tag}} {{location_form.precision_other}} <br><br>
+        <br>
 
-        &emsp;&emsp;{{location_form.goal.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{location_form.goal}} <br><br><br><br>
+        <h3>Settings</h3>
 
         <!--Settings form-->
-        {{settings_form.settings}} {{settings_form.settings.label_tag}}<br><br>
-        &emsp;&emsp;{{settings_form.airplane_mode}}  {{settings_form.airplane_mode.label_tag}}<br>
-        &emsp;&emsp;{{settings_form.ringer_silent_mode}}  {{settings_form.ringer_silent_mode.label_tag}}<br>
-        &emsp;&emsp;{{settings_form.screen_on}}  {{settings_form.screen_on.label_tag}}<br>
-        &emsp;&emsp;{{settings_form.max_media_volume}}  {{settings_form.max_media_volume.label_tag}}<br>
-        &emsp;&emsp;{{settings_form.max_ringer_volume}}  {{settings_form.max_ringer_volume.label_tag}}<br>
-        &emsp;&emsp;{{settings_form.media_volume}}  {{settings_form.media_volume.label_tag}}<br>
-        &emsp;&emsp;{{settings_form.ringer_volume}}  {{settings_form.ringer_volume.label_tag}}<br>
-        &emsp;&emsp;{{settings_form.screen_brightness}}  {{settings_form.screen_brightness.label_tag}}<br>
-        &emsp;&emsp;{{settings_form.screen_timeout}}  {{settings_form.screen_timeout.label_tag}}<br><br>
+        {% for item in settings_form %}
+            <!--Print those vars exclusive from the location_form-->
+            {% if item.name not in sensor_var_names %}
+                {{item}} {{item.label}} <br>
+            {% endif %}
+        {% endfor %}
 
-        &emsp;&emsp;{{settings_form.frequency.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{settings_form.frequency}} {{settings_form.frequency_unit}}<br>
-        &emsp;&emsp;&emsp;{{settings_form.frequency_other.label_tag}} {{settings_form.frequency_other}} <br><br>
+        {% for item in settings_form %}
+            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
+                {% if "i." in item.label %}
+                    <br>
+                {% endif %}
+                {% if item.name == "frequency" %}
+                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
+                {% else %}
+                  {{item.label}} <br> {{item}} <br>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <!--End of settings form-->
 
-        &emsp;&emsp;{{settings_form.precision.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{settings_form.precision}}<br>
-        &emsp;&emsp;&emsp;{{settings_form.truncation.label_tag}} {{settings_form.truncation}}<br>
-        &emsp;&emsp;&emsp;{{settings_form.precision_other.label_tag}} {{settings_form.precision_other}} <br><br>
-
-        &emsp;&emsp;{{settings_form.goal.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{settings_form.goal}} <br><br><br><br>
+        <br>
+        <h3>Sensor</h3>
 
         <!--Sensor form-->
-        {{sensor_form.sensor}} {{sensor_form.sensor.label_tag}}<br><br>
-        &emsp;&emsp;{{sensor_form.sensor_data}}  {{sensor_form.sensor_data.label_tag}}<br>
-        &emsp;&emsp;{{sensor_form.sensors_accuracy}}  {{sensor_form.sensors_accuracy.label_tag}}<br>
-        &emsp;&emsp;{{sensor_form.light}}  {{sensor_form.light.label_tag}}<br>
-        &emsp;&emsp;{{sensor_form.accelerometer}}  {{sensor_form.accelerometer.label_tag}}<br>
-        &emsp;&emsp;{{sensor_form.magnetometer}}  {{sensor_form.magnetometer.label_tag}}<br>
-        &emsp;&emsp;{{sensor_form.orientation}}  {{sensor_form.orientation.label_tag}}<br><br>
+        {% for item in sensor_form %}
+            <!--Print those vars exclusive from the location_form-->
+            {% if item.name not in sensor_var_names %}
+                {{item}} {{item.label}} <br>
+            {% endif %}
+        {% endfor %}
 
-        &emsp;&emsp;{{sensor_form.frequency.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{sensor_form.frequency}} {{sensor_form.frequency_unit}}<br>
-        &emsp;&emsp;&emsp;{{sensor_form.frequency_other.label_tag}} {{sensor_form.frequency_other}} <br><br>
+        {% for item in sensor_form %}
+            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
+                {% if "i." in item.label %}
+                    <br>
+                {% endif %}
+                {% if item.name == "frequency" %}
+                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
+                {% else %}
+                  {{item.label}} <br> {{item}} <br>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <!--End of sensor form-->
 
-        &emsp;&emsp;{{sensor_form.precision.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{sensor_form.precision}}<br>
-        &emsp;&emsp;&emsp;{{sensor_form.truncation.label_tag}} {{sensor_form.truncation}}<br>
-        &emsp;&emsp;&emsp;{{sensor_form.precision_other.label_tag}} {{sensor_form.precision_other}} <br><br>
+        <br>
 
-        &emsp;&emsp;{{sensor_form.goal.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{sensor_form.goal}} <br><br><br><br>
+        <h3>Signal Strength</h3>
 
-        <!--Signal strength form-->
-        {{signalstrength_form.signalstrength}} {{signalstrength_form.signalstrength.label_tag}}<br><br>
-        &emsp;&emsp;{{signalstrength_form.signal_strengths}}  {{signalstrength_form.signal_strengths.label_tag}}<br><br>
+        <!--Signalstrength form-->
+        {% for item in signalstrength_form %}
+            <!--Print those vars exclusive from the location_form-->
+            {% if item.name not in sensor_var_names %}
+                {{item}} {{item.label}} <br>
+            {% endif %}
+        {% endfor %}
 
-        &emsp;&emsp;{{signalstrength_form.frequency.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{signalstrength_form.frequency}} {{signalstrength_form.frequency_unit}}<br>
-        &emsp;&emsp;&emsp;{{signalstrength_form.frequency_other.label_tag}} {{signalstrength_form.frequency_other}} <br><br>
+        {% for item in signalstrength_form %}
+            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
+                {% if "i." in item.label %}
+                    <br>
+                {% endif %}
+                {% if item.name == "frequency" %}
+                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
+                {% else %}
+                  {{item.label}} <br> {{item}} <br>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <!--End of signalstrength form-->
 
-        &emsp;&emsp;{{signalstrength_form.precision.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{signalstrength_form.precision}}<br>
-        &emsp;&emsp;&emsp;{{signalstrength_form.truncation.label_tag}} {{signalstrength_form.truncation}}<br>
-        &emsp;&emsp;&emsp;{{signalstrength_form.precision_other.label_tag}} {{signalstrength_form.precision_other}} <br><br>
-
-        &emsp;&emsp;{{signalstrength_form.goal.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{signalstrength_form.goal}} <br><br><br><br>
+        <br>
+        <h3>Wifi</h3>
 
         <!--Wifi form-->
-        {{wifi_form.wifi}} {{wifi_form.wifi.label_tag}}<br><br>
-        &emsp;&emsp;{{wifi_form.wifi_state}}  {{wifi_form.wifi_state.label_tag}}<br>
-        &emsp;&emsp;{{wifi_form.ip_address}}  {{wifi_form.ip_address.label_tag}}<br>
-        &emsp;&emsp;{{wifi_form.link_speed}}  {{wifi_form.link_speed.label_tag}}<br>
-        &emsp;&emsp;{{wifi_form.supplicant_state}}  {{wifi_form.supplicant_state.label_tag}}<br>
-        &emsp;&emsp;{{wifi_form.ssid}}  {{wifi_form.ssid.label_tag}}<br>
-        &emsp;&emsp;{{wifi_form.rssi}}  {{wifi_form.rssi.label_tag}}<br>
-        &emsp;&emsp;{{wifi_form.scan_results}}  {{wifi_form.scan_results.label_tag}}<br><br>
+        {% for item in wifi_form %}
+            <!--Print those vars exclusive from the location_form-->
+            {% if item.name not in sensor_var_names %}
+                {{item}} {{item.label}} <br>
+            {% endif %}
+        {% endfor %}
 
-        &emsp;&emsp;{{wifi_form.frequency.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{wifi_form.frequency}} {{wifi_form.frequency_unit}}<br>
-        &emsp;&emsp;&emsp;{{wifi_form.frequency_other.label_tag}} {{wifi_form.frequency_other}} <br><br>
+        {% for item in wifi_form %}
+            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
+                {% if "i." in item.label %}
+                    <br>
+                {% endif %}
+                {% if item.name == "frequency" %}
+                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
+                {% else %}
+                  {{item.label}} <br> {{item}} <br>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <!--End of wifi form-->
 
-        &emsp;&emsp;{{wifi_form.precision.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{wifi_form.precision}}<br>
-        &emsp;&emsp;&emsp;{{wifi_form.truncation.label_tag}} {{wifi_form.truncation}}<br>
-        &emsp;&emsp;&emsp;{{wifi_form.precision_other.label_tag}} {{wifi_form.precision_other}} <br><br>
-
-        &emsp;&emsp;{{wifi_form.goal.label_tag}}<br>
-        &emsp;&emsp;&emsp;{{wifi_form.goal}} <br><br>
+        <br>
 
         <h2> 3. I have read and agree to the Terms of Use for Researchers</h2>
 
@@ -282,7 +304,7 @@
 
         <h2> 4. Complete your IRB (Institutional Review Board) application</h2>
 
-        <br>s{{r_form.generate_irb_text.label_tag}} {{r_form.generate_irb_text}}<br><br>
+        <br>{{r_form.generate_irb_text.label_tag}} {{r_form.generate_irb_text}}<br><br>
 
         Are you waiting for IRB approval from your institution? In the interim you may experiment on the Sensibility Testbed using your own device by visiting <a href = "https://sensibilitytestbed.com/projects/project">here</a> .
 
@@ -293,7 +315,5 @@
 
         <input type="submit" value="Submit" />
     </form>
-
-
 
         {% endblock content %}
