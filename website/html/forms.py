@@ -112,7 +112,7 @@ class RegisterExperimentForm(forms.ModelForm):
   generate_irb_text = forms.BooleanField(label="Generate basic text for my IRB application", required=False)
   
   def clean_expe_name(self):
-    value = self.cleaned_data['expe_name']
+    value = self.cleaned_data['experiment_name']
     if value == '':
       raise ValidationError("Experiment name cannot be an empty string")
     try:

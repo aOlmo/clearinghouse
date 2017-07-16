@@ -1160,29 +1160,31 @@ def registerexperiment(request):
   username = user.username
   ret =['testA'] #test list
 
+  # If we submit the form:
   if request.method == 'POST':
     # create a form instance and populate it with data from the request:
     r_form = forms.RegisterExperimentForm(request.POST) #global data form
-    details_form = forms.DetailsForm(request.POST, prefix = 'details')
-    battery_form = forms.BatteryForm(request.POST, prefix = 'battery')
-    bluetooth_form = forms.BluetoothForm(request.POST, prefix = 'bluetooth')
-    cellular_form = forms.CellularForm(request.POST, prefix = 'cellular')
-    location_form = forms.LocationForm(request.POST, prefix = 'location')
-    settings_form = forms.SettingsForm(request.POST, prefix = 'settings')
-    sensor_form = forms.SensorForm(request.POST, prefix = 'sensor')
-    signalstrength_form = forms.SignalStrengthForm(request.POST, prefix = 'signalstrength')
-    wifi_form = forms.WifiForm(request.POST, prefix = 'wifi')
+    details_form = forms.DetailsForm(request.POST, prefix='details')
+    battery_form = forms.BatteryForm(request.POST, prefix='battery')
+    bluetooth_form = forms.BluetoothForm(request.POST, prefix='bluetooth')
+    cellular_form = forms.CellularForm(request.POST, prefix='cellular')
+    location_form = forms.LocationForm(request.POST, prefix='location')
+    settings_form = forms.SettingsForm(request.POST, prefix='settings')
+    sensor_form = forms.SensorForm(request.POST, prefix='sensor')
+    signalstrength_form = forms.SignalStrengthForm(request.POST, prefix='signalstrength')
+    wifi_form = forms.WifiForm(request.POST, prefix='wifi')
 
     if r_form.is_valid(): #if r_form is valid save the data
       ret.append("valid1")
       geni_user = user #foreign key of the experiment
-      experiment_name = r_form.cleaned_data['expe_name']
+      experiment_name = r_form.cleaned_data['experiment_name']
       researcher_name = r_form.cleaned_data['researcher_name']
       researcher_address = r_form.cleaned_data['researcher_address']
       researcher_email = r_form.cleaned_data['researcher_email']
       irb = r_form.cleaned_data['researcher_institution_name']
       irb_email = r_form.cleaned_data['irb_officer_email']
       goal = r_form.cleaned_data['goal']
+
       if r_form.is_required('terms_of_use') == False:
         page_top_errors.append("Please accept the terms of use")
 
@@ -1664,7 +1666,7 @@ def viewexperiments(request):
     if name_list == []:
       name_list = "None"
 
-    ret.append([experiment.expe_name,name_list,experiment.id])
+    ret.append([experiment.experiment_name,name_list,experiment.id])
     
     
   

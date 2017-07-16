@@ -62,9 +62,8 @@
     <div id="middle">
     <h1>Register your experiment</h1>
 
-        <!--TODO: create a for loop to go through all forms, following the structure of title, subtitle, items-->
-        <!--TODO: Make this way more modular-->
-        <!--TODO: Use CSS to apply some indentation for each part of the new experiment-->
+    <!--TODO: create a for loop to go through all forms, following the current structure-->
+    <!--TODO: Use CSS to apply some indentation for each part of the new experiment-->
 
     <h2> 1. Provide your basic information (all fields are mandatory) </h2><br>
     Any researcher who would like to perform experiments using smartphone sensors may register on the Sensibility Testbed Clearinghouse site.<br><br>
@@ -78,6 +77,7 @@
             {{item.label_tag}} {{item}} <br>
           {% endif %}
         {% endfor %}
+        <!--End of register experiment form-->
 
         <h2> 2. Provide details of your experiment </h2>
 
@@ -93,208 +93,35 @@
 
         <h3>Battery</h3>
 
-        <!--Battery form-->
-        {% for item in battery_form %}
-            <!--Print those vars exclusive from the battery_form-->
-            {% if item.name not in sensor_var_names %}
-                {{item}} {{item.label}} <br>
-            {% endif %}
-        {% endfor %}
-
-        {{ battery_form.errors }}
-        {{ battery_form.non_field_errors }}
-
-        {% for item in battery_form %}
-            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
-                {% if "i." in item.label %}
-                    <br>
-                {% endif %}
-                {% if item.name == "frequency" %}
-                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
-                {% else %}
-                  {{item.label}} <br> {{item}} <br>
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-        <!--End of battery form-->
-
-        <br>
+        {% include "control/print_form.html" with form=battery_form %} <br>
 
         <h3>Bluetooth</h3>
 
-        <!--Bluetooth form-->
-        {% for item in bluetooth_form %}
-            <!--Print those vars exclusive from the bluetooth_form-->
-            {% if item.name not in sensor_var_names %}
-                {{item}} {{item.label}} <br>
-            {% endif %}
-        {% endfor %}
-
-        {% for item in bluetooth_form %}
-            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
-                {% if "i." in item.label %}
-                    <br>
-                {% endif %}
-                {% if item.name == "frequency" %}
-                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
-                {% else %}
-                  {{item.label}} <br> {{item}} <br>
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-        <!--End of bluetooth form-->
-
-        <br>
+        {% include "control/print_form.html" with form=bluetooth_form %} <br>
 
         <h3>Cellular</h3>
 
-        <!--Cellular form-->
-        {% for item in cellular_form %}
-            <!--Print those vars exclusive from the cellular_form-->
-            {% if item.name not in sensor_var_names %}
-                {{item}} {{item.label}} <br>
-            {% endif %}
-        {% endfor %}
-
-        {% for item in cellular_form %}
-            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
-                {% if "i." in item.label %}
-                    <br>
-                {% endif %}
-                {% if item.name == "frequency" %}
-                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
-                {% else %}
-                  {{item.label}} <br> {{item}} <br>
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-        <!--End of cellular form-->
+        {% include "control/print_form.html" with form=cellular_form %} <br>
 
         <h3>Location</h3>
 
-        <!--Location form-->
-        {% for item in location_form %}
-            <!--Print those vars exclusive from the location_form-->
-            {% if item.name not in sensor_var_names %}
-                {{item}} {{item.label}} <br>
-            {% endif %}
-        {% endfor %}
-
-        {% for item in location_form %}
-            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
-                {% if "i." in item.label %}
-                    <br>
-                {% endif %}
-                {% if item.name == "frequency" %}
-                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
-                {% else %}
-                  {{item.label}} <br> {{item}} <br>
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-        <!--End of location form-->
-
-        <br>
+        {% include "control/print_form.html" with form=location_form %} <br>
 
         <h3>Settings</h3>
 
-        <!--Settings form-->
-        {% for item in settings_form %}
-            <!--Print those vars exclusive from the location_form-->
-            {% if item.name not in sensor_var_names %}
-                {{item}} {{item.label}} <br>
-            {% endif %}
-        {% endfor %}
+        {% include "control/print_form.html" with form=settings_form %}<br>
 
-        {% for item in settings_form %}
-            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
-                {% if "i." in item.label %}
-                    <br>
-                {% endif %}
-                {% if item.name == "frequency" %}
-                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
-                {% else %}
-                  {{item.label}} <br> {{item}} <br>
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-        <!--End of settings form-->
-
-        <br>
         <h3>Sensor</h3>
 
-        <!--Sensor form-->
-        {% for item in sensor_form %}
-            <!--Print those vars exclusive from the location_form-->
-            {% if item.name not in sensor_var_names %}
-                {{item}} {{item.label}} <br>
-            {% endif %}
-        {% endfor %}
-
-        {% for item in sensor_form %}
-            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
-                {% if "i." in item.label %}
-                    <br>
-                {% endif %}
-                {% if item.name == "frequency" %}
-                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
-                {% else %}
-                  {{item.label}} <br> {{item}} <br>
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-        <!--End of sensor form-->
-
-        <br>
+        {% include "control/print_form.html" with form=sensor_form %} <br>
 
         <h3>Signal Strength</h3>
 
-        <!--Signalstrength form-->
-        {% for item in signalstrength_form %}
-            <!--Print those vars exclusive from the location_form-->
-            {% if item.name not in sensor_var_names %}
-                {{item}} {{item.label}} <br>
-            {% endif %}
-        {% endfor %}
+        {% include "control/print_form.html" with form=signalstrength_form %} <br>
 
-        {% for item in signalstrength_form %}
-            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
-                {% if "i." in item.label %}
-                    <br>
-                {% endif %}
-                {% if item.name == "frequency" %}
-                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
-                {% else %}
-                  {{item.label}} <br> {{item}} <br>
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-        <!--End of signalstrength form-->
-
-        <br>
         <h3>Wifi</h3>
 
-        <!--Wifi form-->
-        {% for item in wifi_form %}
-            <!--Print those vars exclusive from the location_form-->
-            {% if item.name not in sensor_var_names %}
-                {{item}} {{item.label}} <br>
-            {% endif %}
-        {% endfor %}
-
-        {% for item in wifi_form %}
-            {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
-                {% if "i." in item.label %}
-                    <br>
-                {% endif %}
-                {% if item.name == "frequency" %}
-                  {{item.label}} <br> {{item}} {{battery_form.frequency_unit}} <br>
-                {% else %}
-                  {{item.label}} <br> {{item}} <br>
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-        <!--End of wifi form-->
+        {% include "control/print_form.html" with form=wifi_form %}
 
         <br>
 

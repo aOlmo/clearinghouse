@@ -291,7 +291,7 @@ def create_experiment(geni_user,experiment_name,researcher_name,researcher_addre
   try:
       with transaction.atomic():
           # Create the Experiment
-          experiment = Experiment(expe_name=experiment_name, geni_user=geni_user, 
+          experiment = Experiment(experiment_name=experiment_name, geni_user=geni_user,
                               researcher_name=researcher_name, researcher_institution_name = irb_name,
                               researcher_email=researcher_email, researcher_address=researcher_address,
                               irb_officer_email=irb_email, goal=experiment_goal)   
