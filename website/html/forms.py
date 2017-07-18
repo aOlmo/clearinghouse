@@ -24,7 +24,7 @@
 
 from clearinghouse.website.control.models import GeniUser
 from clearinghouse.website.control.models import Experiment
-from clearinghouse.website.control.models import Details
+# from clearinghouse.website.control.models import Details
 from clearinghouse.website.control.models import Sensor
 from clearinghouse.website.control.models import Battery
 from clearinghouse.website.control.models import Bluetooth
@@ -72,7 +72,7 @@ class RegisterExperimentForm(forms.ModelForm):
 
   class Meta:
     model = Experiment
-    exclude = ['geni_user']
+    exclude = ['geni_user', 'goal']
 
   experiment_name = forms.CharField(
     label="Experiment name",
@@ -111,7 +111,7 @@ class RegisterExperimentForm(forms.ModelForm):
 
   generate_irb_text = forms.BooleanField(label="Generate basic text for my IRB application", required=False)
   
-  def clean_expe_name(self):
+  def clean_experiment_name(self):
     value = self.cleaned_data['experiment_name']
     if value == '':
       raise ValidationError("Experiment name cannot be an empty string")
@@ -161,14 +161,6 @@ class RegisterExperimentForm(forms.ModelForm):
       raise forms.ValidationError, str(err)
     return value
 
-  def clean_res_goal(self):
-    value = self.cleaned_data['goal']
-    try:
-      validations.validate_register_experiment_field(value)
-    except ValidationError, err:
-      raise forms.ValidationError, str(err)
-    return value
-
   def is_required(self, v):
     value = self.cleaned_data[v]
     if value == 'True' or value == True:
@@ -180,8 +172,8 @@ class DetailsForm(forms.ModelForm):
   prefix = 'details'
 
   class Meta:
-    model = Details
-    fields = '__all__'
+    model = Experiment
+    fields = ['goal']
 
   goal = forms.CharField(
     label="A. What is the goal of your research experiment? What do you want to find out?",
@@ -193,9 +185,18 @@ class DetailsForm(forms.ModelForm):
     max_length=256,
     required=True)
 
-  # TODO: put this whole string in another and assign here
+  # TODO: put this whole string in another var and assign here
   sensor_details = "B. What type(s) of smartphone sensors will you use (check all that apply)? " \
     "A list of available sensors may be found at: https://sensibilitytestbed.com/projects/project/wiki/sensors"
+
+  def clean_goal(self):
+    value = self.cleaned_data['goal']
+    try:
+      validations.validate_register_experiment_field(value)
+    except ValidationError, err:
+      raise forms.ValidationError, str(err)
+    return value
+
 
 
 
@@ -501,6 +502,7 @@ class SensorForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
+
   sensor = forms.ChoiceField(
     choices = TRUE_FALSE_CHOICES,
     label="Sensor",

@@ -50,97 +50,96 @@
 
     {% block content %}
     <div id="main">
-    {% if page_top_errors %}
-        <p class="warning">
-        {% for error in page_top_errors %}
-            {{ error }}
-            <br>
-        {% endfor %}
-         </p>
-    {% endif %}
+        {% if page_top_errors %}
+            <p class="warning">
+            {% for error in page_top_errors %}
+                {{ error }}
+                <br>
+            {% endfor %}
+             </p>
+        {% endif %}
 
-    <div id="middle">
-    <h1>Register your experiment</h1>
+        <div id="middle">
+            <h1>Register your experiment</h1>
 
-    <!--TODO: create a for loop to go through all forms, following the current structure-->
-    <!--TODO: Use CSS to apply some indentation for each part of the new experiment-->
+        <!--TODO: create a for loop to go through all form templates, following the current structure-->
+        <!--TODO: Use CSS to apply some indentation for each part of the new experiment-->
 
-    <h2> 1. Provide your basic information (all fields are mandatory) </h2><br>
-    Any researcher who would like to perform experiments using smartphone sensors may register on the Sensibility Testbed Clearinghouse site.<br><br>
-    <form action="{% url 'registerexperiment' %}" method="post">
-        <!-- Token to ensure there is no CSRF attack -->
-        {% csrf_token %}
+            <h2> 1. Provide your basic information (all fields are mandatory) </h2><br>
+            Any researcher who would like to perform experiments using smartphone sensors may register on the Sensibility Testbed Clearinghouse site.<br><br>
+            <form action="{% url 'registerexperiment' %}" method="post">
+                <!-- Token to ensure there is no CSRF attack -->
+                {% csrf_token %}
 
-        <!--Register experiment form-->
-        {% for item in r_form %}
-          {% if item.name != "terms_of_use" and item.name != "generate_irb_text" %}
-            {{item.label_tag}} {{item}} <br>
-          {% endif %}
-        {% endfor %}
-        <!--End of register experiment form-->
+                <!--Register experiment form-->
+                {% for item in r_form %}
+                  {% if item.name != "terms_of_use" and item.name != "generate_irb_text" %}
+                    {{item.label_tag}} {{item}} <br>
+                  {% endif %}
+                {% endfor %}
+                <!--End of register experiment form-->
 
-        <h2> 2. Provide details of your experiment </h2>
+                <h2> 2. Provide details of your experiment </h2>
 
-        <!--Details form-->
-        {% for item in details_form %}
-          {{item.label}} {{item}} <br>
-        {% endfor %}
+                <!--Details form-->
+                {% for item in details_form %}
+                  {{item.label}} {{item}} <br>
+                {% endfor %}
 
-        {{details_form.sensor_details}}
-        <!--End of details form-->
+                {{details_form.sensor_details}} <br>
+                <!--End of details form-->
 
-        <br>
+                <h3>Battery</h3>
 
-        <h3>Battery</h3>
+                {% include "control/print_form.html" with form=battery_form %} <br>
 
-        {% include "control/print_form.html" with form=battery_form %} <br>
+                <h3>Bluetooth</h3>
 
-        <h3>Bluetooth</h3>
+                {% include "control/print_form.html" with form=bluetooth_form %} <br>
 
-        {% include "control/print_form.html" with form=bluetooth_form %} <br>
+                <h3>Cellular</h3>
 
-        <h3>Cellular</h3>
+                {% include "control/print_form.html" with form=cellular_form %} <br>
 
-        {% include "control/print_form.html" with form=cellular_form %} <br>
+                <h3>Location</h3>
 
-        <h3>Location</h3>
+                {% include "control/print_form.html" with form=location_form %} <br>
 
-        {% include "control/print_form.html" with form=location_form %} <br>
+                <h3>Settings</h3>
 
-        <h3>Settings</h3>
+                {% include "control/print_form.html" with form=settings_form %}<br>
 
-        {% include "control/print_form.html" with form=settings_form %}<br>
+                <h3>Sensor</h3>
 
-        <h3>Sensor</h3>
+                {% include "control/print_form.html" with form=sensor_form %} <br>
 
-        {% include "control/print_form.html" with form=sensor_form %} <br>
+                <h3>Signal Strength</h3>
 
-        <h3>Signal Strength</h3>
+                {% include "control/print_form.html" with form=signalstrength_form %} <br>
 
-        {% include "control/print_form.html" with form=signalstrength_form %} <br>
+                <h3>Wifi</h3>
 
-        <h3>Wifi</h3>
+                {% include "control/print_form.html" with form=wifi_form %}
 
-        {% include "control/print_form.html" with form=wifi_form %}
+                <br>
 
-        <br>
+                <h2> 3. I have read and agree to the Terms of Use for Researchers</h2>
 
-        <h2> 3. I have read and agree to the Terms of Use for Researchers</h2>
+                <br> {{r_form.terms_of_use.label_tag}} {{r_form.terms_of_use}}
 
-        <br>{{r_form.terms_of_use.label_tag}} {{r_form.terms_of_use}}
+                <h2> 4. Complete your IRB (Institutional Review Board) application</h2>
 
-        <h2> 4. Complete your IRB (Institutional Review Board) application</h2>
+                <br>{{r_form.generate_irb_text.label_tag}} {{r_form.generate_irb_text}}<br><br>
 
-        <br>{{r_form.generate_irb_text.label_tag}} {{r_form.generate_irb_text}}<br><br>
+                Are you waiting for IRB approval from your institution? In the interim you may experiment on the Sensibility Testbed using your own device by visiting <a href = "https://sensibilitytestbed.com/projects/project">here</a> .
 
-        Are you waiting for IRB approval from your institution? In the interim you may experiment on the Sensibility Testbed using your own device by visiting <a href = "https://sensibilitytestbed.com/projects/project">here</a> .
+                <h2> 5. My IRB approved my experiment and and I am ready to run it! </h2>
+                Once we document your IRB approval letter in our database, we will email
+                you your account information (username/password) as well as any other
+                necessary information needed to run your experiment.<br><br><br><br>
 
-        <h2> 5. My IRB approved my experiment and and I am ready to run it! </h2>
-        Once we document your IRB approval letter in our database, we will email
-        you your account information (username/password) as well as any other
-        necessary information needed to run your experiment.<br><br><br><br>
-
-        <input type="submit" value="Submit" />
-    </form>
-
+                <input type="submit" value="Submit" />
+            </form>
+        </div>
+    </div>
         {% endblock content %}

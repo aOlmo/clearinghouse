@@ -141,6 +141,9 @@ class Experiment(models.Model):
   # Email Address of the Researcher's IRB officer
   irb_officer_email = models.EmailField( default = None)
 
+  # The main goal of the experiment
+  goal = models.CharField(max_length=256, default=None)
+
   #What data will be downloaded
   #data_downloaded = models.CharField(max_length=256, default = None)
 
@@ -152,11 +155,6 @@ class Experiment(models.Model):
     Produce a string representation of the GeniUser instance.
     """
     return "Experiment:%s" % (self.id)
-
-class Details(models.Model):
-
-  # The main goal of the experiment
-  goal = models.CharField(max_length=256, default=None)
 
 
 class Sensor(models.Model):

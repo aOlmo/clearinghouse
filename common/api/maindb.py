@@ -59,16 +59,9 @@ from clearinghouse.website.control.models import VesselUserAccessMap
 from clearinghouse.website.control.models import ActionLogEvent
 from clearinghouse.website.control.models import ActionLogVesselDetails
 
-from clearinghouse.website.control.models import Experiment
-from clearinghouse.website.control.models import Battery
-from clearinghouse.website.control.models import Bluetooth
-from clearinghouse.website.control.models import Cellular
-from clearinghouse.website.control.models import Location
-from clearinghouse.website.control.models import Settings
-from clearinghouse.website.control.models import ConcretSensor
-from clearinghouse.website.control.models import Signal_strengths
-from clearinghouse.website.control.models import Wifi
+import clearinghouse.website.control.models
 
+from clearinghouse.website.control.models import Experiment
 
 
 # The number of free vessel credits each user gets regardless of donations.
@@ -252,7 +245,7 @@ def create_user(username, password, email, affiliation, user_pubkey, user_privke
 
 
 
-def create_experiment(geni_user,experiment_name,researcher_name,researcher_address ,researcher_email, irb_name,irb_email, experiment_goal):
+def create_experiment(geni_user, experiment_name, researcher_name, researcher_address, researcher_email, irb_name, irb_email, experiment_goal):
   """
   <Purpose>
     Create a new experiment in the database.
@@ -285,16 +278,20 @@ def create_experiment(geni_user,experiment_name,researcher_name,researcher_addre
   assert_str(irb_email)
   assert_str(experiment_goal)
 
-
   # We're committing manually to make sure the multiple database writes are
   # atomic. (That is, regenerate_api_key() will do a database write.)
   try:
       with transaction.atomic():
           # Create the Experiment
-          experiment = Experiment(experiment_name=experiment_name, geni_user=geni_user,
-                              researcher_name=researcher_name, researcher_institution_name = irb_name,
-                              researcher_email=researcher_email, researcher_address=researcher_address,
-                              irb_officer_email=irb_email, goal=experiment_goal)   
+          experiment = Experiment(
+            experiment_name=experiment_name,
+            geni_user=geni_user,
+            researcher_name=researcher_name,
+            researcher_institution_name = irb_name,
+            researcher_email=researcher_email,
+            researcher_address=researcher_address,
+            irb_officer_email=irb_email,
+            goal=experiment_goal)
           
           experiment.save()
   except:
@@ -307,7 +304,7 @@ def create_experiment(geni_user,experiment_name,researcher_name,researcher_addre
   return experiment
 
 
-def create_sensor(senor_name,experiment,frequency,frequency_unit,frequency_other,precision,truncation, precision_other,goal,list_of_attributes):
+def create_sensor(sensor_name, experiment, **kwargs):
   """
   <Purpose>
     Create a new experiment in the database.
@@ -332,95 +329,46 @@ def create_sensor(senor_name,experiment,frequency,frequency_unit,frequency_other
     <Returns>
       A Sensor object of the newly created user.
   """
-  assert_str(frequency_unit)
-  assert_str(frequency_other)
-  assert_str(precision)
-  assert_str(precision_other)
-  assert_str(goal)
-  
+  assert_str(kwargs['frequency_unit'])
+  assert_str(kwargs['frequency_other'])
+  assert_str(kwargs['precision'])
+  assert_str(kwargs['precision_other'])
+  assert_str(kwargs['goal'])
+
+  # With these lines we are getting the constructor function directly
+  # from the string "sensor_name" in order to use it afterwards
+  sensor_name = sensor_name.title()
+
+  if sensor_name == "Sensor":
+    sensor_name = "ConcretSensor"
+  elif sensor_name == "Signalstrength":
+    sensor_name = "Signal_strengths"
+
+  constructor_to_call = getattr(clearinghouse.website.control.models, sensor_name)
 
   # We're committing manually to make sure the multiple database writes are
   # atomic. (That is, regenerate_api_key() will do a database write.)
   try:
       with transaction.atomic():
-          # Create the Object
-          if senor_name == 'battery':
-            sensor = Battery(experiment_id=experiment, frequency=frequency,
-                        frequency_unit=frequency_unit, frequency_other=frequency_other,
-                        precision=precision, truncation=truncation,
-                        precision_other=precision_other, goal=goal, 
-                        if_battery_present=list_of_attributes[0], battery_health=list_of_attributes[1],
-                        battery_level=list_of_attributes[2], battery_plug_type=list_of_attributes[3],
-                        battery_status=list_of_attributes[4], battery_technology=list_of_attributes[5])
-
-          elif senor_name == 'bluetooth':
-            sensor = Bluetooth(experiment_id=experiment, frequency=frequency,
-                        frequency_unit=frequency_unit, frequency_other=frequency_other,
-                        precision=precision, truncation=truncation,
-                        precision_other=precision_other, goal=goal, 
-                        bluetooth_state=list_of_attributes[0], bluetooth_is_discovering=list_of_attributes[1],
-                        bluetooth_scan_mode=list_of_attributes[2], bluetooth_local_address=list_of_attributes[3],
-                        bluetooth_local_name=list_of_attributes[4])
-
-          elif senor_name == 'cellular':
-            sensor = Cellular(experiment_id=experiment, frequency=frequency,
-                        frequency_unit=frequency_unit, frequency_other=frequency_other,
-                        precision=precision, truncation=truncation,
-                        precision_other=precision_other, goal=goal, 
-                        cellular_network_roaming=list_of_attributes[0], cellular_cellID=list_of_attributes[1],
-                        cellular_location_area_code=list_of_attributes[2], cellular_mobile_country_code=list_of_attributes[3],
-                        cellular_mobile_network_code=list_of_attributes[4], cellular_network_operator=list_of_attributes[5],
-                        cellular_network_operator_name=list_of_attributes[6], cellular_network_type=list_of_attributes[7],
-                        cellular_service_state=list_of_attributes[8], cellular_signal_strengths=list_of_attributes[9])
-
-          elif senor_name == 'location':
-            sensor = Location(experiment_id=experiment, frequency=frequency,
-                        frequency_unit=frequency_unit, frequency_other=frequency_other,
-                        precision=precision, truncation=truncation,
-                        precision_other=precision_other, goal=goal, 
-                        location_providers=list_of_attributes[0], location_data=list_of_attributes[1],
-                        location_last_known_location=list_of_attributes[2], location_geocode=list_of_attributes[3])
-
-          elif senor_name == 'settings':
-            sensor = Settings(experiment_id=experiment, frequency=frequency,
-                        frequency_unit=frequency_unit, frequency_other=frequency_other,
-                        precision=precision, truncation=truncation,
-                        precision_other=precision_other, goal=goal, 
-                        settings_airplane_mode=list_of_attributes[0], settings_ringer_silent_mode=list_of_attributes[1],
-                        settings_screen_on=list_of_attributes[2], settings_max_media_volume=list_of_attributes[3],
-                        settings_max_ringer_volume=list_of_attributes[4], settings_media_volume=list_of_attributes[5], 
-                        settings_ringer_volume =list_of_attributes[6], settings_screen_brightness=list_of_attributes[7], 
-                        settings_screen_tiemout=list_of_attributes[8])
-
-          elif senor_name == 'sensor':
-            sensor = ConcretSensor(experiment_id=experiment, frequency=frequency,
-                        frequency_unit=frequency_unit, frequency_other=frequency_other,
-                        precision=precision, truncation=truncation,
-                        precision_other=precision_other, goal=goal, 
-                        concretSensors=list_of_attributes[0], concretSensor_accuracy=list_of_attributes[1],
-                        concretSensor_light=list_of_attributes[2], concretSensor_acceleromoter=list_of_attributes[3],
-                        concretSensor_magnetometer=list_of_attributes[4], concretSensor_orientation=list_of_attributes[5])
-
-          elif senor_name == 'signalstrength':
-            sensor = Signal_strengths(experiment_id=experiment, frequency=frequency,
-                        frequency_unit=frequency_unit, frequency_other=frequency_other,
-                        precision=precision, truncation=truncation,
-                        precision_other=precision_other, goal=goal, 
-                        signal_strength=list_of_attributes[0])
-
-          elif senor_name == 'wifi':
-            sensor = Wifi(experiment_id=experiment, frequency=frequency,
-                        frequency_unit=frequency_unit, frequency_other=frequency_other,
-                        precision=precision, truncation=truncation,
-                        precision_other=precision_other, goal=goal, 
-                        Wifi_state=list_of_attributes[0], Wifi_ip_address=list_of_attributes[1],
-                        Wifi_link_speed=list_of_attributes[2], Wifi_supplicant_state=list_of_attributes[3],
-                        Wifi_ssid=list_of_attributes[4], Wifi_rssi=list_of_attributes[5], 
-                        Wifi_scan_results=list_of_attributes[6])
+          sensor = constructor_to_call(
+            experiment_id=experiment,
+            frequency=kwargs['frequency'],
+            frequency_unit=kwargs['frequency_unit'],
+            frequency_other=kwargs['frequency_other'],
+            precision=kwargs['precision'],
+            truncation=kwargs['truncation'],
+            precision_other=kwargs['precision_other'],
+            goal=kwargs['goal'],
+            if_battery_present=kwargs['if_battery_present'],
+            battery_health=kwargs['battery_health'],
+            battery_level=kwargs['battery_level'],
+            battery_plug_type=kwargs['battery_plug_type'],
+            battery_status=kwargs['battery_status'],
+            battery_technology=kwargs['battery_technology']
+          )
             
           sensor.save()
-          
-  
+
   except:
     transaction.rollback()
     raise

@@ -65,8 +65,6 @@ from clearinghouse.website.control import vessels
 
 
 
-
-
 @log_function_call_and_only_first_argument
 def register_user(username, password, email, affiliation, pubkey=None):
   """
@@ -144,7 +142,7 @@ def register_user(username, password, email, affiliation, pubkey=None):
   return geniuser
   
 
-def register_experiment(geni_user,experiment_name,researcher_name,researcher_address ,researcher_email, irb_name,irb_email, experiment_goal):
+def register_experiment(geni_user, experiment_name, researcher_name, researcher_address , researcher_email, irb_name,irb_email, experiment_goal):
   """
   <Purpose>
     Creates a experiment record with the specified information.
@@ -186,8 +184,7 @@ def register_experiment(geni_user,experiment_name,researcher_name,researcher_add
 
   return experiment
 
-
-def register_sensor(sensor_name,experiment,frequency,frequency_unit,frequency_other,precision,truncation, precision_other,goal,list_of_attributes):
+def register_sensor(sensor_name, experiment, **kwargs):
   """
   <Purpose>
     Creates a sensor record with the specified information.
@@ -218,15 +215,13 @@ def register_sensor(sensor_name,experiment,frequency,frequency_unit,frequency_ot
     #There's no need of validation with the Boolean fields.
     #Neither integer fields need it
 
-  validations.validate_register_experiment_field(frequency_unit)
-  validations.validate_register_experiment_field(frequency_other)
-  validations.validate_register_experiment_field(precision)
-  validations.validate_register_experiment_field(precision_other)
-  validations.validate_register_experiment_field(goal)
+  validations.validate_register_experiment_field(kwargs['frequency_unit'])
+  validations.validate_register_experiment_field(kwargs['frequency_other'])
+  validations.validate_register_experiment_field(kwargs['precision'])
+  validations.validate_register_experiment_field(kwargs['precision_other'])
+  validations.validate_register_experiment_field(kwargs['goal'])
 
-  sensor = maindb.create_sensor(sensor_name,experiment, frequency,
-              frequency_unit, frequency_other, precision, truncation, 
-              precision_other, goal, list_of_attributes)
+  sensor = maindb.create_sensor(sensor_name, experiment, **kwargs)
 
   return sensor
 

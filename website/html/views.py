@@ -165,7 +165,7 @@ def error(request):
     user = _validate_and_get_geniuser(request)
     return profile(request, info, info, messages)
   except:
-    return _show_login(request, 'accounts/login.html', {'messages' : messages})
+    return _show_login(request, 'accounts/login.html', {'messages': messages})
 
 
 
@@ -1144,6 +1144,9 @@ def registerexperiment(request):
   sensor_instance = Sensor()
   sensor_var_names = vars(sensor_instance)
 
+  # TODO: This is in fact a bug, 'experiment_id_id' is in the database
+  # TODO: in order to try to solve it, delete all entries from the database
+  # TODO: and make migrations again
   # One of the Sensor's vars is "experiment_id" but apparently, there appears
   # another var called "experiment_id_id" instead, so we get rid of this and
   # insert the name of the other one manually.
@@ -1162,6 +1165,7 @@ def registerexperiment(request):
 
   # If we submit the form:
   if request.method == 'POST':
+
     # create a form instance and populate it with data from the request:
     r_form = forms.RegisterExperimentForm(request.POST) #global data form
     details_form = forms.DetailsForm(request.POST, prefix='details')
@@ -1174,81 +1178,125 @@ def registerexperiment(request):
     signalstrength_form = forms.SignalStrengthForm(request.POST, prefix='signalstrength')
     wifi_form = forms.WifiForm(request.POST, prefix='wifi')
 
-    if r_form.is_valid(): #if r_form is valid save the data
+    # If all parameters from r_form are valid we'll save the data.
+    # In order to clean the values for each form, we first need to call
+    # the function is_valid()
+    if r_form.is_valid():
+
       ret.append("valid1")
-      geni_user = user #foreign key of the experiment
+
+      # Cleaning of all values from r_form
+      geni_user = user       # foreign key of the experiment
       experiment_name = r_form.cleaned_data['experiment_name']
       researcher_name = r_form.cleaned_data['researcher_name']
       researcher_address = r_form.cleaned_data['researcher_address']
       researcher_email = r_form.cleaned_data['researcher_email']
       irb = r_form.cleaned_data['researcher_institution_name']
       irb_email = r_form.cleaned_data['irb_officer_email']
-      goal = r_form.cleaned_data['goal']
+
+      #TODO: There is a bug here, the page top error is not displayed
+      #TODO: when the details is not valid
+
+      if details_form.is_valid():
+        goal = details_form.cleaned_data['goal']
+        if goal == "":
+          page_top_errors.append("Please, fill in section 2A.")
+          return
+
+      else:
+        page_top_errors.append("Please, fill in section 2A.")
 
       if r_form.is_required('terms_of_use') == False:
         page_top_errors.append("Please accept the terms of use")
 
-      try:
-        # we should never error here, since we've already finished validation at this point.
-        # but, just to be safe...
-        experiment = interface.register_experiment(geni_user,experiment_name,
-                                          researcher_name,researcher_address,
-                                          researcher_email,irb, irb_email, goal)
-      except ValidationError, err:
-        page_top_errors.append(str(err))
-
       else:
-        #Evreything went good so far and
+        # we should never error here, since we've already finished
+        # validation at this point, but just to be safe...
+        try:
+          experiment = interface.register_experiment(geni_user, experiment_name,
+                                                     researcher_name, researcher_address,
+                                                     researcher_email, irb, irb_email, goal)
+        except ValidationError, err:
+          page_top_errors.append(str(err))
+
+        #TODO: Remember to delete all contents of each key after
+        #TODO: using it for one specific sensor!
+
+        #TODO: Be carefull with these, as they are filled in as unicode !
+        common_sensor_vals = {
+          'frequency': None,
+          'frequency_unit': None,
+          'frequency_other': None,
+          'precision': None,
+          'truncation': None,
+          'precision_other': None,
+          'goal': None
+        }
+
+        #Everything went good so far and
         #now we have to check every sensor form.
         if battery_form.is_valid():
           if battery_form.is_required('battery'):#check if the researcher wants to use this sensor
-            #check sensor checkboxes
-            if_battery_present = battery_form.is_required('if_battery_present')
-            battery_health = battery_form.is_required('battery_health')
-            battery_level = battery_form.is_required('battery_level')
-            battery_plug_type = battery_form.is_required('battery_plug_type')
-            battery_status = battery_form.is_required('battery_status')
-            battery_technology = battery_form.is_required('battery_technology')
-            #check general sensor atributes
-            battery_frequency = battery_form.cleaned_data['frequency']
-            battery_frequency_unit = battery_form.cleaned_data['frequency_unit']
-            battery_frequency_other = battery_form.cleaned_data['frequency_other']
-            battery_precision = battery_form.cleaned_data['precision']
-            battery_truncation = battery_form.cleaned_data['truncation']
-            battery_precision_other = battery_form.cleaned_data['precision_other']
-            battery_goal = battery_form.cleaned_data['goal']
+            battery_sensor_checkboxes = {
+              'if_battery_present': False,
+              'battery_health': False,
+              'battery_level': False,
+              'battery_plug_type': False,
+              'battery_status': False,
+              'battery_technology': False
+            }
+
+            for item in battery_sensor_checkboxes:
+              battery_sensor_checkboxes[item] = battery_form.is_required(item)
+
+            # We get the cleaned data taking into account that some values are
+            # encoded in Unicode, so we first convert them to ascii
+            for item in common_sensor_vals:
+              val = battery_form.cleaned_data[item]
+              if isinstance(val, unicode):
+                common_sensor_vals[item] = val.encode('ascii', 'ignore')
+              else:
+                common_sensor_vals[item] = val
         
-            if battery_frequency == None: #if the user doesnt set frequency
-              battery_frequency = 0 #we set it to 0
-              if battery_frequency_other == '':#if he doesnt provide any other informatio either
+            if common_sensor_vals['frequency'] == None: #if the user doesnt set frequency
+              common_sensor_vals['frequency'] = 0 #we set it to 0
+              if common_sensor_vals['frequency_other'] == '':#if he doesnt provide any other information either
                 page_top_errors.append("Please select the frequency in the battery sensor")#We set an error
 
-            if battery_truncation == None:
-              if  battery_precision == 'truncate':
-                page_top_errors.append("Please select the truncation decimals in the battery sensor")
+            if common_sensor_vals['truncation'] == None:
+              if common_sensor_vals['precision'] == 'truncate':
+                page_top_errors.append("Please select the truncation decimals for the battery sensor")
               else:
-                battery_truncation = 0
+                common_sensor_vals['truncation'] = 0
 
-            if battery_goal == '':
+            if common_sensor_vals['goal'] == '':
               page_top_errors.append("Please explain the goal of using the battery sensor")
 
-            if if_battery_present == False and battery_health == False and \
-                battery_level == False and battery_plug_type == False and \
-                battery_status == False and battery_technology == False:
-              page_top_errors.append("Please select any battery attribute")
+            if all(val == False for val in battery_sensor_checkboxes.values()):
+              page_top_errors.append("Please select at least one battery attribute")
 
             if page_top_errors == []:
               try:
-                battery = interface.register_sensor('battery',experiment,battery_frequency,
-                                            battery_frequency_unit,battery_frequency_other,
-                                            battery_precision,battery_truncation, battery_precision_other,
-                                            battery_goal,[if_battery_present,battery_health,battery_level,
-                                            battery_plug_type,battery_status,battery_technology])
+
+                send_dict = battery_sensor_checkboxes
+                send_dict.update(common_sensor_vals)
+
+                battery = interface.register_sensor('battery', experiment, **send_dict)
               except ValidationError, err:
                 page_top_errors.append(str(err))
 
         else:#when battery form is not valid
           page_top_errors.append("Battery form is not valid")
+
+
+
+
+
+
+
+
+
+
 
         if bluetooth_form.is_valid():#save data into bluetooth model
           if bluetooth_form.is_required('bluetooth'):#check if the researcher wants to use this sensor
