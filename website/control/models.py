@@ -301,6 +301,9 @@ class Location(Sensor):
   # Need location providers, including network, GPS, passive?
   location_providers = models.BooleanField(default=False)
 
+  # TODO: What does this do? Checks if one of the providers is enabled?
+  location_provider_enabled = models.BooleanField(default=False)
+
   # Need location?
   location_data = models.BooleanField(default=False)
 
@@ -347,7 +350,7 @@ class Settings(Sensor):
   settings_screen_brightness = models.BooleanField(default=False)
 
   # Need screen timeout?
-  settings_screen_tiemout = models.BooleanField(default=False)
+  settings_screen_timeout = models.BooleanField(default=False)
 
   def show_name(self):
     """
@@ -407,29 +410,29 @@ class Wifi(Sensor):
     Model for wifi
   """
   # Need wifi state?
-  Wifi_state = models.BooleanField(default=False)
+  wifi_state = models.BooleanField(default=False)
 
   # I think we may just ask for more detailed connectionInfo.
   # # Need connectionInfo?
   # Wifi_connectionInfo = models.BooleanField(default=False)
 
   # Need ip_address?
-  Wifi_ip_address = models.BooleanField(default=False)
+  wifi_ip_address = models.BooleanField(default=False)
 
   # Need link_speed?
-  Wifi_link_speed = models.BooleanField(default=False)
+  wifi_link_speed = models.BooleanField(default=False)
 
   # Need supplicant state, (scanning, associating, completed, etc.)?
-  Wifi_supplicant_state = models.BooleanField(default=False)
+  wifi_supplicant_state = models.BooleanField(default=False)
 
   # Need ssid?
-  Wifi_ssid = models.BooleanField(default=False)
+  wifi_ssid = models.BooleanField(default=False)
 
   # Need received signal strength indicator(rssi)?
-  Wifi_rssi = models.BooleanField(default=False)
+  wifi_rssi = models.BooleanField(default=False)
 
   # Need scan results?
-  Wifi_scan_results = models.BooleanField(default=False)
+  wifi_scan_results = models.BooleanField(default=False)
 
   def show_name(self):
     """

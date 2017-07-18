@@ -1123,6 +1123,63 @@ def build_mac_installer(request, username):
   return HttpResponseRedirect(installer_url)
 
 
+
+def init_dict(dictionary):
+  for item in dictionary:
+    dictionary[item] = None
+
+
+def check_sensor_values(form_name, common_sensor_vals, page_top_errors, specific_checkboxes):
+  if common_sensor_vals['frequency'] == None:  # if the user doesnt set frequency
+    common_sensor_vals['frequency'] = 0  # we set it to 0
+    if common_sensor_vals['frequency_other'] == '':  # if he doesnt provide any other information either
+      page_top_errors.append("Please select the frequency in the " + form_name + " sensor")  # We set an error
+
+  if common_sensor_vals['truncation'] == None:
+    if common_sensor_vals['precision'] == 'truncate':
+      page_top_errors.append("Please select the truncation decimals for the " + form_name + " sensor")
+    else:
+      common_sensor_vals['truncation'] = 0
+
+  if common_sensor_vals['goal'] == '':
+    page_top_errors.append("Please explain the goal of using the " + form_name + " sensor")
+
+  if all(val == False for val in specific_checkboxes.values()):
+    page_top_errors.append("Please select at least one " + form_name + " attribute")
+
+
+def check_and_save(form_name, form, common_sensor_vals, specific_checkboxes, page_top_errors, experiment):
+  if form.is_valid():
+    if form.is_required(form_name):
+      for item in specific_checkboxes:
+        specific_checkboxes[item] = form.is_required(item)
+
+      # We get the cleaned data taking into account that some values are
+      # encoded in Unicode, so we first convert them to ascii
+      for item in common_sensor_vals:
+        val = form.cleaned_data[item]
+        if isinstance(val, unicode):
+          common_sensor_vals[item] = val.encode('ascii', 'ignore')
+        else:
+          common_sensor_vals[item] = val
+
+      check_sensor_values(form_name, common_sensor_vals, page_top_errors, specific_checkboxes)
+
+      if page_top_errors == []:
+        try:
+          send_dict = specific_checkboxes
+          send_dict.update(common_sensor_vals)
+          sensor = interface.register_sensor(form_name, experiment, **send_dict)
+
+        except ValidationError, err:
+          page_top_errors.append(str(err))
+
+  else:
+    page_top_errors.append(form_name + " form is not valid")
+
+  init_dict(common_sensor_vals)
+
+
 @login_required
 def registerexperiment(request):
   """
@@ -1133,8 +1190,69 @@ def registerexperiment(request):
       success.
   """
   # Obtain the context from the HTTP request.
-
   context_instance = RequestContext(request)
+
+  # TODO: explain all these using comments
+  # These values are common to all sensors when registering a new experiment
+  common_sensor_vals = {
+    'frequency': None,
+    'frequency_unit': None,
+    'frequency_other': None,
+    'precision': None,
+    'truncation': None,
+    'precision_other': None,
+    'goal': None
+  }
+
+  battery_sensor_checkboxes = {
+    'if_battery_present': False,
+    'battery_health': False,
+    'battery_level': False,
+    'battery_plug_type': False,
+    'battery_status': False,
+    'battery_technology': False
+  }
+
+  bluetooth_sensor_checkboxes = {
+    'bluetooth_state': False,
+    'bluetooth_is_discovering': False,
+    'bluetooth_scan_mode': False,
+    'bluetooth_local_address': False,
+    'bluetooth_local_name': False
+  }
+
+  cellular_sensor_checkboxes = {
+    'cellular_network_roaming': False,
+    'cellular_cellID': False,
+    'cellular_location_area_code': False,
+    'cellular_mobile_country_code': False,
+    'cellular_mobile_network_code': False,
+    'cellular_network_operator': False,
+    'cellular_network_operator_name': False,
+    'cellular_network_type': False,
+    'cellular_service_state': False,
+    'cellular_signal_strengths': False
+  }
+
+  location_sensor_checkboxes = {
+    'location_providers': False,
+    'location_provider_enabled': False,
+    'location_data': False,
+    'location_last_known_location': False,
+    'location_geocode': False
+  }
+
+  settings_sensor_checkboxes = {
+    'settings_airplane_mode': False,
+    'settings_ringer_silent_mode': False,
+    'settings_screen_on': False,
+    'settings_max_media_volume': False,
+    'settings_max_ringer_volume': False,
+    'settings_media_volume': False,
+    'settings_ringer_volume': False,
+    'settings_screen_brightness': False,
+    'settings_screen_timeout': False
+  }
 
   # Since several Classes (battery, bluetooth, location, settings etc.)
   # inherit from the abstract class Sensor, in order to print with a loop
@@ -1182,7 +1300,6 @@ def registerexperiment(request):
     # In order to clean the values for each form, we first need to call
     # the function is_valid()
     if r_form.is_valid():
-
       ret.append("valid1")
 
       # Cleaning of all values from r_form
@@ -1201,7 +1318,6 @@ def registerexperiment(request):
         goal = details_form.cleaned_data['goal']
         if goal == "":
           page_top_errors.append("Please, fill in section 2A.")
-          return
 
       else:
         page_top_errors.append("Please, fill in section 2A.")
@@ -1219,283 +1335,27 @@ def registerexperiment(request):
         except ValidationError, err:
           page_top_errors.append(str(err))
 
-        #TODO: Remember to delete all contents of each key after
-        #TODO: using it for one specific sensor!
+        # Everything went good so far,
+        # now we have to check every sensor form.
 
-        #TODO: Be carefull with these, as they are filled in as unicode !
-        common_sensor_vals = {
-          'frequency': None,
-          'frequency_unit': None,
-          'frequency_other': None,
-          'precision': None,
-          'truncation': None,
-          'precision_other': None,
-          'goal': None
-        }
 
-        #Everything went good so far and
-        #now we have to check every sensor form.
-        if battery_form.is_valid():
-          if battery_form.is_required('battery'):#check if the researcher wants to use this sensor
-            battery_sensor_checkboxes = {
-              'if_battery_present': False,
-              'battery_health': False,
-              'battery_level': False,
-              'battery_plug_type': False,
-              'battery_status': False,
-              'battery_technology': False
-            }
+        check_and_save("battery", battery_form, common_sensor_vals,
+                       battery_sensor_checkboxes, page_top_errors, experiment)
 
-            for item in battery_sensor_checkboxes:
-              battery_sensor_checkboxes[item] = battery_form.is_required(item)
+        check_and_save("bluetooth", bluetooth_form, common_sensor_vals,
+                       bluetooth_sensor_checkboxes, page_top_errors, experiment)
 
-            # We get the cleaned data taking into account that some values are
-            # encoded in Unicode, so we first convert them to ascii
-            for item in common_sensor_vals:
-              val = battery_form.cleaned_data[item]
-              if isinstance(val, unicode):
-                common_sensor_vals[item] = val.encode('ascii', 'ignore')
-              else:
-                common_sensor_vals[item] = val
-        
-            if common_sensor_vals['frequency'] == None: #if the user doesnt set frequency
-              common_sensor_vals['frequency'] = 0 #we set it to 0
-              if common_sensor_vals['frequency_other'] == '':#if he doesnt provide any other information either
-                page_top_errors.append("Please select the frequency in the battery sensor")#We set an error
+        check_and_save("cellular", cellular_form, common_sensor_vals,
+                       cellular_sensor_checkboxes, page_top_errors, experiment)
 
-            if common_sensor_vals['truncation'] == None:
-              if common_sensor_vals['precision'] == 'truncate':
-                page_top_errors.append("Please select the truncation decimals for the battery sensor")
-              else:
-                common_sensor_vals['truncation'] = 0
+        check_and_save("location", location_form, common_sensor_vals,
+                       location_sensor_checkboxes, page_top_errors, experiment)
 
-            if common_sensor_vals['goal'] == '':
-              page_top_errors.append("Please explain the goal of using the battery sensor")
-
-            if all(val == False for val in battery_sensor_checkboxes.values()):
-              page_top_errors.append("Please select at least one battery attribute")
-
-            if page_top_errors == []:
-              try:
-
-                send_dict = battery_sensor_checkboxes
-                send_dict.update(common_sensor_vals)
-
-                battery = interface.register_sensor('battery', experiment, **send_dict)
-              except ValidationError, err:
-                page_top_errors.append(str(err))
-
-        else:#when battery form is not valid
-          page_top_errors.append("Battery form is not valid")
+        check_and_save("settings", settings_form, common_sensor_vals,
+                       settings_sensor_checkboxes, page_top_errors, experiment)
 
 
 
-
-
-
-
-
-
-
-
-        if bluetooth_form.is_valid():#save data into bluetooth model
-          if bluetooth_form.is_required('bluetooth'):#check if the researcher wants to use this sensor
-            #check sensor checkboxes
-            bluetooth_state = bluetooth_form.is_required('bluetooth_state')
-            bluetooth_is_discovering = bluetooth_form.is_required('bluetooth_is_discovering')
-            scan_mode = bluetooth_form.is_required('scan_mode')
-            local_address = bluetooth_form.is_required('local_address')
-            local_name = bluetooth_form.is_required('local_name')
-            #check general sensor atributes
-            bluetooth_frequency = bluetooth_form.cleaned_data['frequency']
-            bluetooth_frequency_unit = bluetooth_form.cleaned_data['frequency_unit']
-            bluetooth_frequency_other = bluetooth_form.cleaned_data['frequency_other']
-            bluetooth_precision = bluetooth_form.cleaned_data['precision']
-            bluetooth_truncation = bluetooth_form.cleaned_data['truncation']
-            bluetooth_precision_other = bluetooth_form.cleaned_data['precision_other']
-            bluetooth_goal = bluetooth_form.cleaned_data['goal']
-
-            if bluetooth_frequency == None:
-              bluetooth_frequency = 0
-              if bluetooth_frequency_other == '':
-                page_top_errors.append("Please select the frequency in the bluetooth sensor")
-
-            if bluetooth_precision == 'truncate'and bluetooth_truncation == None:
-              page_top_errors.append("Please select the truncation decimals in the bluetooth sensor")
-
-            if bluetooth_goal == '':
-              page_top_errors.append("Please explain the goal of using the bluetooth sensor")
-
-            if bluetooth_state == False and bluetooth_is_discovering == False and \
-                scan_mode == False and local_address == False and \
-                local_name == False:
-              page_top_errors.append("Please select any bluetooth attribute")
-
-            if page_top_errors == []:
-              try:
-                bluetooth = interface.register_sensor('bluetooth',experiment,bluetooth_frequency,
-                                            bluetooth_frequency_unit,bluetooth_frequency_other,
-                                            bluetooth_precision,bluetooth_truncation, bluetooth_precision_other,
-                                            bluetooth_goal,[bluetooth_state,bluetooth_is_discovering,scan_mode,
-                                            local_address,local_name])
-              except ValidationError, err:
-                page_top_errors.append(str(err))
-
-        else:#when bluetooth form is not valid
-          page_top_errors.append("Bluetooth form is not valid")
-
-        if cellular_form.is_valid():#save data into cellular model
-          if cellular_form.is_required('cellular'):#check if the researcher wants to use this sensor
-            #check sensor checkboxes
-            network_roaming = cellular_form.is_required('network_roaming')
-            cellID = cellular_form.is_required('cellID')
-            location_area_code = cellular_form.is_required('location_area_code')
-            mobile_country_code = cellular_form.is_required('mobile_country_code')
-            mobile_network_code = cellular_form.is_required('mobile_network_code')
-            network_operator = cellular_form.is_required('network_operator')
-            network_operator_name = cellular_form.is_required('network_operator_name')
-            network_type = cellular_form.is_required('network_type')
-            service_state = cellular_form.is_required('service_state')
-            signal_strengths = cellular_form.is_required('signal_strengths')
-            #check general sensor atributes
-            cellular_frequency = cellular_form.cleaned_data['frequency']
-            cellular_frequency_unit = cellular_form.cleaned_data['frequency_unit']
-            cellular_frequency_other = cellular_form.cleaned_data['frequency_other']
-            cellular_precision = cellular_form.cleaned_data['precision']
-            cellular_truncation = cellular_form.cleaned_data['truncation']
-            cellular_precision_other = cellular_form.cleaned_data['precision_other']
-            cellular_goal = cellular_form.cleaned_data['goal']
-
-            if cellular_frequency == None:
-              cellular_frequency = 0
-              if cellular_frequency_other == '':
-                page_top_errors.append("Please select the frequency in the cellular sensor")
-
-            if cellular_precision == 'truncate'and cellular_truncation == None:
-              page_top_errors.append("Please select the truncation decimals in the cellular sensor")
-
-            if cellular_goal == '':
-              page_top_errors.append("Please explain the goal of using the cellular sensor")
-
-            if network_roaming == False and cellID == False and \
-                location_area_code == False and mobile_country_code == False and \
-                mobile_network_code == False and network_operator == False and \
-                network_operator_name == False and network_type == False and \
-                service_state == False and signal_strengths == False:
-              page_top_errors.append("Please select any cellular attribute")
-
-            if page_top_errors == []:
-              try:
-                cellular = interface.register_sensor('cellular',experiment,cellular_frequency,
-                                            cellular_frequency_unit,cellular_frequency_other,
-                                            cellular_precision,cellular_truncation, cellular_precision_other,
-                                            cellular_goal,[network_roaming,cellID,location_area_code,
-                                            mobile_country_code,mobile_network_code,network_operator,
-                                            network_operator_name, network_type,service_state,signal_strengths])
-              except ValidationError, err:
-                page_top_errors.append(str(err))
-
-        else:#when cellular form is not valid
-          page_top_errors.append("Cellular form is not valid")
-
-        if location_form.is_valid():#save data into location model
-          if location_form.is_required('location'):#check if the researcher wants to use this sensor
-            #check sensor checkboxes
-            location_providers = location_form.is_required('location_providers')
-            location_provider_enabled = location_form.is_required('location_provider_enabled')
-            location_data = location_form.is_required('location_data')
-            last_known_location = location_form.is_required('last_known_location')
-            geocode = location_form.is_required('geocode')
-            #check general sensor atributes
-            location_frequency = location_form.cleaned_data['frequency']
-            location_frequency_unit = location_form.cleaned_data['frequency_unit']
-            location_frequency_other = location_form.cleaned_data['frequency_other']
-            location_precision = location_form.cleaned_data['precision']
-            location_truncation = location_form.cleaned_data['truncation']
-            location_precision_other = location_form.cleaned_data['precision_other']
-            location_goal = location_form.cleaned_data['goal']
-
-            if location_frequency == None:
-              location_frequency = 0
-              if location_frequency_other == '':
-                page_top_errors.append("Please select the frequency in the location sensor")
-
-            if location_precision == 'truncate'and location_truncation == None:
-              page_top_errors.append("Please select the truncation decimals in the location sensor")
-
-            if location_goal == '':
-              page_top_errors.append("Please explain the goal of using the location sensor")
-
-            if location_providers == False and location_provider_enabled == False and \
-                location_data == False and last_known_location == False and \
-                geocode == False:
-              page_top_errors.append("Please select any location attribute")
-
-            if page_top_errors == []:
-              try:
-                location = interface.register_sensor('location',experiment,location_frequency,
-                                            location_frequency_unit,location_frequency_other,
-                                            location_precision,location_truncation, location_precision_other,
-                                            location_goal,[location_providers,location_provider_enabled,
-                                            location_data,last_known_location,geocode])
-              except ValidationError, err:
-                page_top_errors.append(str(err))
-
-        else:#when location form is not valid
-          page_top_errors.append("Location form is not valid")
-
-        if settings_form.is_valid():#save data into settings model
-          if settings_form.is_required('settings'):#check if the researcher wants to use this sensor
-            #check sensor checkboxes
-            airplane_mode = settings_form.is_required('airplane_mode')
-            ringer_silent_mode = settings_form.is_required('ringer_silent_mode')
-            screen_on = settings_form.is_required('screen_on')
-            max_media_volume = settings_form.is_required('max_media_volume')
-            max_ringer_volume = settings_form.is_required('max_ringer_volume')
-            media_volume = settings_form.is_required('media_volume')
-            ringer_volume = settings_form.is_required('ringer_volume')
-            screen_brightness = settings_form.is_required('screen_brightness')
-            screen_timeout = settings_form.is_required('screen_timeout')
-            #check general sensor atributes
-            settings_frequency = settings_form.cleaned_data['frequency']
-            settings_frequency_unit = settings_form.cleaned_data['frequency_unit']
-            settings_frequency_other = settings_form.cleaned_data['frequency_other']
-            settings_precision = settings_form.cleaned_data['precision']
-            settings_truncation = settings_form.cleaned_data['truncation']
-            settings_precision_other = settings_form.cleaned_data['precision_other']
-            settings_goal = settings_form.cleaned_data['goal']
-
-            if settings_frequency == None:
-              settings_frequency = 0
-              if settings_frequency_other == '':
-                page_top_errors.append("Please select the frequency in the settings sensor")
-
-            if settings_precision == 'truncate'and settings_truncation == None:
-              page_top_errors.append("Please select the truncation decimals in the settings sensor")
-
-            if settings_goal == '':
-              page_top_errors.append("Please explain the goal of using the settings sensor")
-
-            if airplane_mode == False and ringer_silent_mode == False and \
-                screen_on == False and max_media_volume == False and \
-                max_ringer_volume == False and media_volume == False and \
-                ringer_volume == False and screen_brightness == False and \
-                screen_timeout == False:
-              page_top_errors.append("Please select any settings attribute")
-
-            if page_top_errors == []:
-              try:
-                settings = interface.register_sensor('settings',experiment,settings_frequency,
-                                            settings_frequency_unit,settings_frequency_other,
-                                            settings_precision,settings_truncation, settings_precision_other,
-                                            settings_goal,[airplane_mode,ringer_silent_mode,screen_on,
-                                            max_media_volume,max_ringer_volume,media_volume,ringer_volume,
-                                            screen_brightness,screen_timeout])
-              except ValidationError, err:
-                page_top_errors.append(str(err))
-
-        else:#when settings form is not valid
-          page_top_errors.append("Settings form is not valid")
 
         if sensor_form.is_valid():#save data into sensor model
           if sensor_form.is_required('sensor'):#check if the researcher wants to use this sensor

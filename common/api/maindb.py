@@ -63,6 +63,7 @@ import clearinghouse.website.control.models
 
 from clearinghouse.website.control.models import Experiment
 
+import pdb
 
 # The number of free vessel credits each user gets regardless of donations.
 # This is the value set for newly-created users. Changing this value only
@@ -346,33 +347,17 @@ def create_sensor(sensor_name, experiment, **kwargs):
 
   constructor_to_call = getattr(clearinghouse.website.control.models, sensor_name)
 
+  pdb.set_trace()
+
   # We're committing manually to make sure the multiple database writes are
   # atomic. (That is, regenerate_api_key() will do a database write.)
   try:
       with transaction.atomic():
-          sensor = constructor_to_call(
-            experiment_id=experiment,
-            frequency=kwargs['frequency'],
-            frequency_unit=kwargs['frequency_unit'],
-            frequency_other=kwargs['frequency_other'],
-            precision=kwargs['precision'],
-            truncation=kwargs['truncation'],
-            precision_other=kwargs['precision_other'],
-            goal=kwargs['goal'],
-            if_battery_present=kwargs['if_battery_present'],
-            battery_health=kwargs['battery_health'],
-            battery_level=kwargs['battery_level'],
-            battery_plug_type=kwargs['battery_plug_type'],
-            battery_status=kwargs['battery_status'],
-            battery_technology=kwargs['battery_technology']
-          )
-            
+          sensor = constructor_to_call(experiment_id=experiment, **kwargs)
           sensor.save()
-
   except:
     transaction.rollback()
     raise
-  
   else:
     transaction.commit()
 

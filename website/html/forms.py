@@ -402,14 +402,15 @@ class BluetoothForm(GeneralSensorAtributesForm):
     label="bluetooth_is_discovering (if the local Bluetooth adapter is currently in device discovery process)",
     required=False)
 
-  scan_mode = forms.BooleanField(
+  bluetooth_scan_mode = forms.BooleanField(
     label="scan_mode (if Bluetooth is connectable or discoverable)",
     required=False)
 
-  local_address = forms.BooleanField(
+  bluetooth_local_address = forms.BooleanField(
     label="local_address (hardware address of the local Bluetooth adapter)",
     required=False)
-  local_name = forms.BooleanField(
+
+  bluetooth_local_name = forms.BooleanField(
     label="local_name (visible device name)",
     required=False)
 
@@ -430,16 +431,16 @@ class CellularForm(GeneralSensorAtributesForm):
   }
   cellular = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Cellular",
     widget=forms.Select(), required=True, initial = False)
-  network_roaming = forms.BooleanField(label="network_roaming (returns true if the device is considered roaming on the current network, for GSM purposes)", required=False)
-  cellID = forms.BooleanField(label="cellID (details about  cell ID) ", required=False)
-  location_area_code = forms.BooleanField(label="location_area_code", required=False)
-  mobile_country_code = forms.BooleanField(label="mobile_country_code (mobile country code, or MCC)", required=False)
-  mobile_network_code = forms.BooleanField(label="mobile_network_code (mobile network code, or MNC)", required=False)
-  network_operator = forms.BooleanField(label="network_operator (returns the numeric name, MCC+MNC, of current registered operator. Note: MCC+MNC  identify a unique operator)", required=False)
-  network_operator_name = forms.BooleanField(label="network_operator_name (returns the alphabetic name of current registered operator)", required=False)
-  network_type = forms.BooleanField(label="network_type (returns the radio technology, or network type, currently in use on the device)", required=False)
-  service_state = forms.BooleanField(label="service_state (returns the state of cellular service: emergency call only, in service, out of service, or power off)", required=False)
-  signal_strengths = forms.BooleanField(label="signal_strengths", required=False)
+  cellular_network_roaming = forms.BooleanField(label="network_roaming (returns true if the device is considered roaming on the current network, for GSM purposes)", required=False)
+  cellular_cellID = forms.BooleanField(label="cellID (details about  cell ID) ", required=False)
+  cellular_location_area_code = forms.BooleanField(label="location_area_code", required=False)
+  cellular_mobile_country_code = forms.BooleanField(label="mobile_country_code (mobile country code, or MCC)", required=False)
+  cellular_mobile_network_code = forms.BooleanField(label="mobile_network_code (mobile network code, or MNC)", required=False)
+  cellular_network_operator = forms.BooleanField(label="network_operator (returns the numeric name, MCC+MNC, of current registered operator. Note: MCC+MNC  identify a unique operator)", required=False)
+  cellular_network_operator_name = forms.BooleanField(label="network_operator_name (returns the alphabetic name of current registered operator)", required=False)
+  cellular_network_type = forms.BooleanField(label="network_type (returns the radio technology, or network type, currently in use on the device)", required=False)
+  cellular_service_state = forms.BooleanField(label="service_state (returns the state of cellular service: emergency call only, in service, out of service, or power off)", required=False)
+  cellular_signal_strengths = forms.BooleanField(label="signal_strengths", required=False)
 
 class LocationForm(GeneralSensorAtributesForm):
   #Generic fields will be inherited
@@ -453,13 +454,29 @@ class LocationForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
-  location = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Location",  
-    widget=forms.Select(), required=True, initial = False)
-  location_providers = forms.BooleanField(label="location_providers (network/GPS/passive)", required=False)
-  location_provider_enabled = forms.BooleanField(label="location_provider_enabled (check if one of the providers is enabled)", required=False)
+
+  location = forms.ChoiceField(
+    choices = TRUE_FALSE_CHOICES,
+    label="Location",
+    widget=forms.Select(),
+    required=True,
+    initial = False)
+
+  location_providers = forms.BooleanField(
+    label="location_providers (network/GPS/passive)",
+    required=False)
+
+  location_provider_enabled = forms.BooleanField(
+    label="location_provider_enabled (check if one of the providers is enabled)",
+    required=False)
+
   location_data = forms.BooleanField(label="location data", required=False)
-  last_known_location = forms.BooleanField(label="last_known_location", required=False)
-  geocode = forms.BooleanField(label="geocode (obtain a list of addresses for the given latitude and longitude)", required=False)
+
+  location_last_known_location = forms.BooleanField(label="last_known_location", required=False)
+
+  location_geocode = forms.BooleanField(
+    label="geocode (obtain a list of addresses for the given latitude and longitude)",
+    required=False)
 
 class SettingsForm(GeneralSensorAtributesForm):
   #Generic fields will be inherited
@@ -480,15 +497,15 @@ class SettingsForm(GeneralSensorAtributesForm):
     required=True,
     initial = False)
 
-  airplane_mode = forms.BooleanField(label="airplane_mode", required=False)
-  ringer_silent_mode = forms.BooleanField(label="ringer_silent_mode", required=False)
-  screen_on = forms.BooleanField(label="screen_on", required=False)
-  max_media_volume = forms.BooleanField(label="max_media_volume", required=False)
-  max_ringer_volume = forms.BooleanField(label="max_ringer_volume", required=False)
-  media_volume = forms.BooleanField(label="media_volume", required=False)
-  ringer_volume = forms.BooleanField(label="ringer_volume", required=False)
-  screen_brightness = forms.BooleanField(label="screen_brightness", required=False)
-  screen_timeout = forms.BooleanField(label="screen_timeout", required=False)
+  settings_airplane_mode = forms.BooleanField(label="airplane_mode", required=False)
+  settings_ringer_silent_mode = forms.BooleanField(label="ringer_silent_mode", required=False)
+  settings_screen_on = forms.BooleanField(label="screen_on", required=False)
+  settings_max_media_volume = forms.BooleanField(label="max_media_volume", required=False)
+  settings_max_ringer_volume = forms.BooleanField(label="max_ringer_volume", required=False)
+  settings_media_volume = forms.BooleanField(label="media_volume", required=False)
+  settings_ringer_volume = forms.BooleanField(label="ringer_volume", required=False)
+  settings_screen_brightness = forms.BooleanField(label="screen_brightness", required=False)
+  settings_screen_timeout = forms.BooleanField(label="screen_timeout", required=False)
 
 class SensorForm(GeneralSensorAtributesForm):
   #Generic fields will be inherited
@@ -554,8 +571,8 @@ class SignalStrengthForm(GeneralSensorAtributesForm):
     required = True,
     initial = False)
 
-  signal_strengths = forms.BooleanField(
-    label="signal_strengths",
+  signal_strength = forms.BooleanField(
+    label="signal_strength",
     required=False)
   
 class WifiForm(GeneralSensorAtributesForm):
@@ -573,12 +590,12 @@ class WifiForm(GeneralSensorAtributesForm):
   wifi = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Wifi",  
     widget=forms.Select(), required=True, initial = False)
   wifi_state = forms.BooleanField(label="wifi_state (check WiFi state: whether it is enabled)", required=False)
-  ip_address = forms.BooleanField(label="ip_address", required=False)
-  link_speed = forms.BooleanField(label="link_speed", required=False)
-  supplicant_state = forms.BooleanField(label="supplicant_state (scanning, associating, completed, etc.)", required=False)
-  ssid = forms.BooleanField(label="ssid", required=False)
-  rssi = forms.BooleanField(label="rssi (received signal strength indicator)", required=False)
-  scan_results = forms.BooleanField(label="scan_results (list of access points found during the most recent WiFi scan: list of information similar to connectionInfo)", required=False)
+  wifi_ip_address = forms.BooleanField(label="ip_address", required=False)
+  wifi_link_speed = forms.BooleanField(label="link_speed", required=False)
+  wifi_supplicant_state = forms.BooleanField(label="supplicant_state (scanning, associating, completed, etc.)", required=False)
+  wifi_ssid = forms.BooleanField(label="ssid", required=False)
+  wifi_rssi = forms.BooleanField(label="rssi (received signal strength indicator)", required=False)
+  wifi_scan_results = forms.BooleanField(label="scan_results (list of access points found during the most recent WiFi scan: list of information similar to connectionInfo)", required=False)
 
   
 class GeniUserCreationForm(DjangoUserCreationForm):
