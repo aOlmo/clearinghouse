@@ -340,8 +340,8 @@ def create_sensor(sensor_name, experiment, **kwargs):
   # from the string "sensor_name" in order to use it afterwards
   sensor_name = sensor_name.title()
 
-  if sensor_name == "Sensor":
-    sensor_name = "ConcretSensor"
+  if sensor_name == "Concretesensor":
+    sensor_name = "ConcreteSensor"
   elif sensor_name == "Signalstrength":
     sensor_name = "Signal_strengths"
 

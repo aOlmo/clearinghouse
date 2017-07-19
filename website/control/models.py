@@ -360,33 +360,33 @@ class Settings(Sensor):
 
 
 
-class ConcretSensor(Sensor):
+class ConcreteSensor(Sensor):
   """
-    Model for concret sensor
+    Model for Concrete Sensor
   """
   # Need sensors data?
-  concretSensors = models.BooleanField(default=False)
+  concreteSensor = models.BooleanField(default=False)
 
   # Need sensors accuracy?
-  concretSensor_accuracy = models.BooleanField(default=False)
+  concreteSensor_accuracy = models.BooleanField(default=False)
 
   # Need most recently received light value?
-  concretSensor_light = models.BooleanField(default=False)
+  concreteSensor_light = models.BooleanField(default=False)
 
   # Need most recently received accelerometer value?
-  concretSensor_acceleromoter = models.BooleanField(default=False)
+  concreteSensor_accelerometer = models.BooleanField(default=False)
 
   # Need most recently received magnetic field value?
-  concretSensor_magnetometer = models.BooleanField(default=False)
+  concreteSensor_magnetometer = models.BooleanField(default=False)
 
   # Need most recently received orientation value?
-  concretSensor_orientation = models.BooleanField(default=False)
+  concreteSensor_orientation = models.BooleanField(default=False)
 
   def show_name(self):
     """
     Produce a string representation of the instance.
     """
-    return "Concret Sensor"
+    return "Concrete Sensor"
 
 
 

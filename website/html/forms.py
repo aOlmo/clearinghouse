@@ -31,7 +31,7 @@ from clearinghouse.website.control.models import Bluetooth
 from clearinghouse.website.control.models import Cellular
 from clearinghouse.website.control.models import Location
 from clearinghouse.website.control.models import Settings
-from clearinghouse.website.control.models import ConcretSensor
+from clearinghouse.website.control.models import ConcreteSensor
 from clearinghouse.website.control.models import Signal_strengths
 from clearinghouse.website.control.models import Wifi
 
@@ -512,7 +512,7 @@ class SensorForm(GeneralSensorAtributesForm):
   prefix = 'sensor'
 
   class Meta:
-    model = ConcretSensor
+    model = ConcreteSensor
     fields = ('frequency',)
 
   TRUE_FALSE_CHOICES = {
@@ -520,34 +520,34 @@ class SensorForm(GeneralSensorAtributesForm):
     (False, "No")
   }
 
-  sensor = forms.ChoiceField(
-    choices = TRUE_FALSE_CHOICES,
+  concreteSensor = forms.ChoiceField(
+    choices=TRUE_FALSE_CHOICES,
     label="Sensor",
     widget=forms.Select(),
     required=True,
     initial=False)
 
-  sensor_data = forms.BooleanField(
+  concreteSensor_sensor_data = forms.BooleanField(
     label="sensors (get the most recently recorded sensor data: accelerometer, magnetic and orientation)",
     required=False)
 
-  sensors_accuracy = forms.BooleanField(
+  concreteSensor_accuracy = forms.BooleanField(
     label="sensors_accuracy",
     required=False)
 
-  light = forms.BooleanField(
+  concreteSensor_light = forms.BooleanField(
     label="light (most recently received light value)",
     required=False)
 
-  accelerometer = forms.BooleanField(
+  concreteSensor_accelerometer = forms.BooleanField(
     label="accelerometer (most recently received accelerometer value)",
     required=False)
 
-  magnetometer = forms.BooleanField(
+  concreteSensor_magnetometer = forms.BooleanField(
     label="magnetometer (most recently received magnetic field value)",
     required=False)
 
-  orientation = forms.BooleanField(
+  concreteSensor_orientation = forms.BooleanField(
     label="orientation (most recently received orientation value)",
     required=False)
 
@@ -564,6 +564,7 @@ class SignalStrengthForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
+
   signalstrength = forms.ChoiceField(
     choices = TRUE_FALSE_CHOICES,
     label="Signal Strength",
@@ -587,15 +588,32 @@ class WifiForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
-  wifi = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Wifi",  
-    widget=forms.Select(), required=True, initial = False)
+
+  wifi = forms.ChoiceField(
+    choices=TRUE_FALSE_CHOICES,
+    label="Wifi",
+    widget=forms.Select(),
+    required=True,
+    initial=False)
+
   wifi_state = forms.BooleanField(label="wifi_state (check WiFi state: whether it is enabled)", required=False)
+
   wifi_ip_address = forms.BooleanField(label="ip_address", required=False)
+
   wifi_link_speed = forms.BooleanField(label="link_speed", required=False)
-  wifi_supplicant_state = forms.BooleanField(label="supplicant_state (scanning, associating, completed, etc.)", required=False)
+
+  wifi_supplicant_state = forms.BooleanField(
+    label="supplicant_state (scanning, associating, completed, etc.)",
+    required=False)
+
   wifi_ssid = forms.BooleanField(label="ssid", required=False)
+
   wifi_rssi = forms.BooleanField(label="rssi (received signal strength indicator)", required=False)
-  wifi_scan_results = forms.BooleanField(label="scan_results (list of access points found during the most recent WiFi scan: list of information similar to connectionInfo)", required=False)
+
+  wifi_scan_results = forms.BooleanField(
+    label="scan_results (list of access points found during the most recent WiFi scan: "
+          "list of information similar to connectionInfo)",
+    required=False)
 
   
 class GeniUserCreationForm(DjangoUserCreationForm):
