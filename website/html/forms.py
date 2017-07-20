@@ -32,7 +32,7 @@ from clearinghouse.website.control.models import Cellular
 from clearinghouse.website.control.models import Location
 from clearinghouse.website.control.models import Settings
 from clearinghouse.website.control.models import ConcreteSensor
-from clearinghouse.website.control.models import Signal_strengths
+from clearinghouse.website.control.models import SignalStrength
 from clearinghouse.website.control.models import Wifi
 
 
@@ -554,10 +554,10 @@ class SensorForm(GeneralSensorAtributesForm):
 
 class SignalStrengthForm(GeneralSensorAtributesForm):
   #Generic fields will be inherited
-  prefix = 'signalstrength'
+  prefix = 'signalStrength'
 
   class Meta:
-    model = Signal_strengths
+    model = SignalStrength
     fields = ('frequency',)
 
   TRUE_FALSE_CHOICES = {
@@ -565,7 +565,7 @@ class SignalStrengthForm(GeneralSensorAtributesForm):
     (False, "No")
   }
 
-  signalstrength = forms.ChoiceField(
+  signalStrength = forms.ChoiceField(
     choices = TRUE_FALSE_CHOICES,
     label="Signal Strength",
     widget=forms.Select(),

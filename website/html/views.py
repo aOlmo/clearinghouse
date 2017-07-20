@@ -94,7 +94,7 @@ from clearinghouse.website.control.models import Cellular
 from clearinghouse.website.control.models import Location
 from clearinghouse.website.control.models import Settings
 from clearinghouse.website.control.models import ConcreteSensor
-from clearinghouse.website.control.models import Signal_strengths
+from clearinghouse.website.control.models import SignalStrength
 from clearinghouse.website.control.models import Wifi
 
 #for user get donations
@@ -1087,8 +1087,6 @@ def build_linux_installer(request, username):
 
 
 
-
-
 def build_mac_installer(request, username):
   """
   <Purpose>
@@ -1125,20 +1123,20 @@ def build_mac_installer(request, username):
 
 
 
-
-def check_sensor_values(sensor_name, common_sensor_vals, page_top_errors, specific_checkboxes):
+def check_sensor_values(form_name, form, page_top_errors, specific_checkboxes):
   """
   <Purpose>
-    Complements "check_and_save_sensor" function.
+    Complements "save_sensor__values" function.
     Checks if the common sensor values have been correctly filled by the user. In the event these
     were not, an error message would be prompted.
 
   <Arguments>
-    sensor_name:
-      Name of the sensor itself, used to print errors.
+    form_name:
+      String with the ame of the form, used to print errors and
+      access the Yes/No form var.
 
-    common_sensor_vals:
-      Dictionary with the Sensor() class attributes as keys.
+    form:
+      Form from each sensor
 
     page_top_errors:
       List that is used to print error messages.
@@ -1156,25 +1154,65 @@ def check_sensor_values(sensor_name, common_sensor_vals, page_top_errors, specif
     Returns via reference the updated values of page_top_erros and common_sensor_vals.
   """
 
-  if common_sensor_vals['frequency'] == None:  # if the user doesnt set frequency
-    common_sensor_vals['frequency'] = 0  # we set it to 0
-    if common_sensor_vals['frequency_other'] == '':  # if he doesnt provide any other information either
-      page_top_errors.append("Please select the frequency in the " + sensor_name + " sensor")  # We set an error
+  common_sensor_vals = {
+    'frequency': None,
+    'frequency_unit': None,
+    'frequency_other': None,
+    'precision': None,
+    'truncation': None,
+    'precision_other': None,
+    'goal': None
+  }
 
-  if common_sensor_vals['truncation'] == None:
-    if common_sensor_vals['precision'] == 'truncate':
-      page_top_errors.append("Please select the truncation decimals for the " + sensor_name + " sensor")
-    else:
-      common_sensor_vals['truncation'] = 0
+  sensor_name = form_name
+  if sensor_name == "concreteSensor":
+    sensor_name = "sensor"
+  elif sensor_name == "signalStrength":
+    sensor_name = "signal strength"
 
-  if common_sensor_vals['goal'] == '':
-    page_top_errors.append("Please explain the goal of using the " + sensor_name + " sensor")
+  if form.is_valid():
+    if form.is_required(form_name):
+      for item in specific_checkboxes:
+        specific_checkboxes[item] = form.is_required(item)
 
-  if all(val == False for val in specific_checkboxes.values()):
-    page_top_errors.append("Please select at least one " + sensor_name + " attribute")
+      # We get the cleaned data taking into account that some values are
+      # encoded in Unicode, so we first convert them to ascii
+      for item in common_sensor_vals:
+        val = form.cleaned_data[item]
+        if isinstance(val, unicode):
+          common_sensor_vals[item] = val.encode('ascii', 'ignore')
+        else:
+          common_sensor_vals[item] = val
+
+    if common_sensor_vals['frequency'] == None:  # if the user doesnt set frequency
+      common_sensor_vals['frequency'] = 0  # we set it to 0
+      if common_sensor_vals['frequency_other'] == '':  # if he doesnt provide any other information either
+        page_top_errors.append("Please select the frequency in the " + sensor_name + " sensor")  # We set an error
+
+    if common_sensor_vals['truncation'] == None:
+      if common_sensor_vals['precision'] == 'truncate':
+        page_top_errors.append("Please select the truncation decimals for the " + sensor_name + " sensor")
+      else:
+        common_sensor_vals['truncation'] = 0
+
+    if common_sensor_vals['goal'] == '':
+      page_top_errors.append("Please explain the goal of using the " + sensor_name + " sensor")
+
+    if specific_checkboxes[form_name]:
+      # Delete the Yes/No checkbox temporarily
+      # in order to know if all the rest checkboxes are false to prompt an error
+      del specific_checkboxes[form_name]
+      if all(val == False for val in specific_checkboxes.values()):
+        page_top_errors.append("Please select at least one " + sensor_name + " attribute")
+
+      # We recover the previous value again (which we already know was True)
+      specific_checkboxes[form_name] = True
+
+  else:
+    page_top_errors.append(sensor_name + " form is not valid")
 
 
-def check_and_save_sensor(form_name, form, common_sensor_vals, specific_checkboxes, page_top_errors, experiment):
+def save_sensor_values(form_name, form, page_top_errors, specific_checkboxes, experiment):
   """
   <Purpose>
     Checks if the values input by the user in the registerexperiment form are correct for
@@ -1186,9 +1224,6 @@ def check_and_save_sensor(form_name, form, common_sensor_vals, specific_checkbox
 
     form:
       Form that we are going to check from the specific sensor.
-
-    common_sensor_vals:
-      Dictionary with the Sensor() class attributes as keys.
 
     specific_checkboxes:
       Dictionary with the specific values for each sensor.
@@ -1208,44 +1243,45 @@ def check_and_save_sensor(form_name, form, common_sensor_vals, specific_checkbox
   <Returns>
     Returns via reference the updated values of page_top_erros and common_sensor_vals.
   """
-  sensor_name = form_name
-  if sensor_name == "concreteSensor":
-    sensor_name = "sensor"
-  elif sensor_name == "signalstrength":
-    sensor_name = "signal strength"
 
-  if form.is_valid():
-    if form.is_required(form_name):
-      for item in specific_checkboxes:
-        specific_checkboxes[item] = form.is_required(item)
+  common_sensor_vals = {
+    'frequency': None,
+    'frequency_unit': None,
+    'frequency_other': None,
+    'precision': None,
+    'truncation': None,
+    'precision_other': None,
+    'goal': None
+  }
 
-      # We get the cleaned data taking into account that some values are
-      # encoded in Unicode, so we first convert them to ascii
-      for item in common_sensor_vals:
-        val = form.cleaned_data[item]
-        if isinstance(val, unicode):
-          common_sensor_vals[item] = val.encode('ascii', 'ignore')
-        else:
-          common_sensor_vals[item] = val
+  if form.is_required(form_name):
+    for item in common_sensor_vals:
+      val = form.cleaned_data[item]
+      if isinstance(val, unicode):
+        common_sensor_vals[item] = val.encode('ascii', 'ignore')
+      else:
+        common_sensor_vals[item] = val
 
-      check_sensor_values(sensor_name, common_sensor_vals, page_top_errors, specific_checkboxes)
+    sensor_name = form_name
+    if sensor_name == "concreteSensor":
+      sensor_name = "sensor"
+    elif sensor_name == "signalStrength":
+      sensor_name = "signal strength"
 
-      if page_top_errors == []:
-        try:
-          send_dict = specific_checkboxes
-          send_dict.update(common_sensor_vals)
-          sensor = interface.register_sensor(form_name, experiment, **send_dict)
 
-        except ValidationError, err:
-          page_top_errors.append(str(err))
+    # Delete the Yes/No checkbox as it is something unnecessary
+    del specific_checkboxes[form_name]
 
-  else:
-    page_top_errors.append(sensor_name + " form is not valid")
+    send_dict = specific_checkboxes
+    send_dict.update(common_sensor_vals)
 
-  # Initialization of the common_sensor_vals dictionary after using it
-  # so as to use it again with another sensor
-  for item in common_sensor_vals:
-    common_sensor_vals[item] = None
+    try:
+      sensor = interface.register_sensor(form_name, experiment, **send_dict)
+
+    except ValidationError, err:
+      page_top_errors.append(str(err))
+
+
 
 
 # TODO: RECOMMENT THIS FUNCTION
@@ -1260,89 +1296,6 @@ def registerexperiment(request):
   """
   # Obtain the context from the HTTP request.
   context_instance = RequestContext(request)
-
-  # These values are common to all sensors when registering a new experiment
-  common_sensor_vals = {
-    'frequency': None,
-    'frequency_unit': None,
-    'frequency_other': None,
-    'precision': None,
-    'truncation': None,
-    'precision_other': None,
-    'goal': None
-  }
-
-  battery_sensor_checkboxes = {
-    'if_battery_present': False,
-    'battery_health': False,
-    'battery_level': False,
-    'battery_plug_type': False,
-    'battery_status': False,
-    'battery_technology': False
-  }
-
-  bluetooth_sensor_checkboxes = {
-    'bluetooth_state': False,
-    'bluetooth_is_discovering': False,
-    'bluetooth_scan_mode': False,
-    'bluetooth_local_address': False,
-    'bluetooth_local_name': False
-  }
-
-  cellular_sensor_checkboxes = {
-    'cellular_network_roaming': False,
-    'cellular_cellID': False,
-    'cellular_location_area_code': False,
-    'cellular_mobile_country_code': False,
-    'cellular_mobile_network_code': False,
-    'cellular_network_operator': False,
-    'cellular_network_operator_name': False,
-    'cellular_network_type': False,
-    'cellular_service_state': False,
-    'cellular_signal_strengths': False
-  }
-
-  location_sensor_checkboxes = {
-    'location_providers': False,
-    'location_provider_enabled': False,
-    'location_data': False,
-    'location_last_known_location': False,
-    'location_geocode': False
-  }
-
-  settings_sensor_checkboxes = {
-    'settings_airplane_mode': False,
-    'settings_ringer_silent_mode': False,
-    'settings_screen_on': False,
-    'settings_max_media_volume': False,
-    'settings_max_ringer_volume': False,
-    'settings_media_volume': False,
-    'settings_ringer_volume': False,
-    'settings_screen_brightness': False,
-    'settings_screen_timeout': False
-  }
-
-  concreteSensor_checkboxes = {
-    'concreteSensor_accuracy': False,
-    'concreteSensor_light': False,
-    'concreteSensor_accelerometer': False,
-    'concreteSensor_magnetometer': False,
-    'concreteSensor_orientation': False
-  }
-
-  signalstrength_checkboxes = {
-    'signal_strength': False
-  }
-
-  wifi_sensor_checkboxes = {
-    'wifi_state': False,
-    'wifi_ip_address': False,
-    'wifi_link_speed': False,
-    'wifi_supplicant_state': False,
-    'wifi_ssid': False,
-    'wifi_rssi': False,
-    'wifi_scan_results': False
-  }
 
   # Since several Classes (battery, bluetooth, location, settings etc.)
   # inherit from the abstract class Sensor, in order to print with a loop
@@ -1362,6 +1315,100 @@ def registerexperiment(request):
     del sensor_var_names["experiment_id_id"]
     sensor_var_names["experiment_id"] = None
 
+  sensors = ["battery", "bluetooth", "cellular", "location", "settings", "concreteSensor", "signalStrength", "wifi"]
+
+  # TODO: the following variables could be declared dynamically
+  experiment_values = {
+    'geni_user': None,
+    'experiment_name': None,
+    'researcher_name': None,
+    'researcher_address': None,
+    'researcher_email': None,
+    'researcher_institution_name': None,
+    'irb_officer_email': None,
+    'goal': None
+  }
+
+  battery_sensor_checkboxes = {
+    'battery': False,
+    'if_battery_present': False,
+    'battery_health': False,
+    'battery_level': False,
+    'battery_plug_type': False,
+    'battery_status': False,
+    'battery_technology': False
+  }
+
+  bluetooth_sensor_checkboxes = {
+    'bluetooth': False,
+    'bluetooth_state': False,
+    'bluetooth_is_discovering': False,
+    'bluetooth_scan_mode': False,
+    'bluetooth_local_address': False,
+    'bluetooth_local_name': False
+  }
+
+  cellular_sensor_checkboxes = {
+    'cellular': False,
+    'cellular_network_roaming': False,
+    'cellular_cellID': False,
+    'cellular_location_area_code': False,
+    'cellular_mobile_country_code': False,
+    'cellular_mobile_network_code': False,
+    'cellular_network_operator': False,
+    'cellular_network_operator_name': False,
+    'cellular_network_type': False,
+    'cellular_service_state': False,
+    'cellular_signal_strengths': False
+  }
+
+  location_sensor_checkboxes = {
+    'location': False,
+    'location_providers': False,
+    'location_provider_enabled': False,
+    'location_data': False,
+    'location_last_known_location': False,
+    'location_geocode': False
+  }
+
+  settings_sensor_checkboxes = {
+    'settings': False,
+    'settings_airplane_mode': False,
+    'settings_ringer_silent_mode': False,
+    'settings_screen_on': False,
+    'settings_max_media_volume': False,
+    'settings_max_ringer_volume': False,
+    'settings_media_volume': False,
+    'settings_ringer_volume': False,
+    'settings_screen_brightness': False,
+    'settings_screen_timeout': False
+  }
+
+  concreteSensor_sensor_checkboxes = {
+    'concreteSensor': False,
+    'concreteSensor_accuracy': False,
+    'concreteSensor_light': False,
+    'concreteSensor_accelerometer': False,
+    'concreteSensor_magnetometer': False,
+    'concreteSensor_orientation': False
+  }
+
+  signalStrength_sensor_checkboxes = {
+    'signalStrength': False,
+    'signal_strength': False
+  }
+
+  wifi_sensor_checkboxes = {
+    'wifi': False,
+    'wifi_state': False,
+    'wifi_ip_address': False,
+    'wifi_link_speed': False,
+    'wifi_supplicant_state': False,
+    'wifi_ssid': False,
+    'wifi_rssi': False,
+    'wifi_scan_results': False
+  }
+
   try:
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
@@ -1376,15 +1423,15 @@ def registerexperiment(request):
   if request.method == 'POST':
 
     # create a form instance and populate it with data from the request:
-    r_form = test(request.POST)  # global data form
-    details_form = test2(request.POST, prefix='details')
+    r_form = forms.RegisterExperimentForm(request.POST)  # global data form
+    details_form = forms.DetailsForm(request.POST, prefix='details')
     battery_form = forms.BatteryForm(request.POST, prefix='battery')
     bluetooth_form = forms.BluetoothForm(request.POST, prefix='bluetooth')
     cellular_form = forms.CellularForm(request.POST, prefix='cellular')
     location_form = forms.LocationForm(request.POST, prefix='location')
     settings_form = forms.SettingsForm(request.POST, prefix='settings')
-    sensor_form = forms.SensorForm(request.POST, prefix='sensor')
-    signalstrength_form = forms.SignalStrengthForm(request.POST, prefix='signalstrength')
+    concreteSensor_form = forms.SensorForm(request.POST, prefix='sensor')
+    signalStrength_form = forms.SignalStrengthForm(request.POST, prefix='signalStrength')
     wifi_form = forms.WifiForm(request.POST, prefix='wifi')
 
     # If all parameters from r_form are valid we'll save the data.
@@ -1393,18 +1440,17 @@ def registerexperiment(request):
     if r_form.is_valid():
       ret.append("valid1")
 
-      # Cleaning of all values from r_form
-      geni_user = user       # foreign key of the experiment
-      experiment_name = r_form.cleaned_data['experiment_name']
-      researcher_name = r_form.cleaned_data['researcher_name']
-      researcher_address = r_form.cleaned_data['researcher_address']
-      researcher_email = r_form.cleaned_data['researcher_email']
-      irb = r_form.cleaned_data['researcher_institution_name']
-      irb_email = r_form.cleaned_data['irb_officer_email']
+      for item in experiment_values:
+        if item == "geni_user":
+          experiment_values["geni_user"] = user
+        elif item == "goal":
+          continue
+        else:
+          experiment_values[item] = r_form.cleaned_data[item]
 
       #TODO: There is a bug here, the page top error is not displayed
-      #TODO: when the details is not valid
-
+      #TODO: when the details form is not valid
+      # --------------------------------------------------------------------
       if details_form.is_valid():
         goal = details_form.cleaned_data['goal']
         if goal == "":
@@ -1418,38 +1464,30 @@ def registerexperiment(request):
         # we should never error here, since we've already finished
         # validation at this point, but just to be safe...
         try:
-          experiment = interface.register_experiment(geni_user, experiment_name, researcher_name,
-                                                     researcher_address, researcher_email, irb, irb_email, goal)
+          for item in experiment_values:
+            if item == "goal":
+              experiment_values[item] = goal
+
+          experiment = interface.register_experiment(**experiment_values)
         except ValidationError, err:
           page_top_errors.append(str(err))
+        # --------------------------------------------------------------------
 
-        # Everything went good so far,
-        # now we have to check every sensor form.
+        # Here we check all sensor values and update the page_top_errors variable
+        for sensor_name in sensors:
+          specific_checkboxes = sensor_name + "_sensor_checkboxes"
+          form = sensor_name + "_form"
 
-        #TODO: the following function calls could be made with a for loop
-        check_and_save_sensor("battery", battery_form, common_sensor_vals,
-                       battery_sensor_checkboxes, page_top_errors, experiment)
+          check_sensor_values(sensor_name, eval(form), page_top_errors, eval(specific_checkboxes))
 
-        check_and_save_sensor("bluetooth", bluetooth_form, common_sensor_vals,
-                       bluetooth_sensor_checkboxes, page_top_errors, experiment)
 
-        check_and_save_sensor("cellular", cellular_form, common_sensor_vals,
-                       cellular_sensor_checkboxes, page_top_errors, experiment)
+        # Only save the contents of the forms if there are no errors
+        if page_top_errors == []:
+          for sensor_name in sensors:
+            specific_checkboxes = sensor_name + "_sensor_checkboxes"
+            form = sensor_name + "_form"
 
-        check_and_save_sensor("location", location_form, common_sensor_vals,
-                       location_sensor_checkboxes, page_top_errors, experiment)
-
-        check_and_save_sensor("settings", settings_form, common_sensor_vals,
-                       settings_sensor_checkboxes, page_top_errors, experiment)
-
-        check_and_save_sensor("concreteSensor", sensor_form, common_sensor_vals,
-                       concreteSensor_checkboxes, page_top_errors, experiment)
-
-        check_and_save_sensor("signalstrength", signalstrength_form, common_sensor_vals,
-                       signalstrength_checkboxes, page_top_errors, experiment)
-
-        check_and_save_sensor("wifi", wifi_form, common_sensor_vals,
-                       wifi_sensor_checkboxes, page_top_errors, experiment)
+            save_sensor_values(sensor_name, eval(form), page_top_errors, eval(specific_checkboxes), experiment)
 
         # If all data have been saved succesfully,
         # redirect to the viewexperiments page
@@ -1468,8 +1506,8 @@ def registerexperiment(request):
       cellular_form = forms.CellularForm(prefix='cellular') #form for each sensor
       location_form = forms.LocationForm(prefix='location') #form for each sensor
       settings_form = forms.SettingsForm(prefix='settings') #form for each sensor
-      sensor_form = forms.SensorForm(prefix='sensor') #form for each sensor
-      signalstrength_form = forms.SignalStrengthForm(prefix='signalstrength') #form for each sensor
+      concreteSensor_form = forms.SensorForm(prefix='sensor') #form for each sensor
+      signalStrength_form = forms.SignalStrengthForm(prefix='signalStrength') #form for each sensor
       wifi_form = forms.WifiForm(prefix='wifi') #form for each sensor
 
   values_to_render = {
@@ -1479,8 +1517,8 @@ def registerexperiment(request):
     'cellular_form': cellular_form,
     'location_form': location_form,
     'settings_form': settings_form,
-    'sensor_form': sensor_form,
-    'signalstrength_form': signalstrength_form,
+    'concreteSensor_form': concreteSensor_form,
+    'signalStrength_form': signalStrength_form,
     'wifi_form': wifi_form,
     'r_form': r_form,
     'details_form': details_form,
@@ -1506,6 +1544,8 @@ def viewexperiments(request):
 
   context_instance = RequestContext(request)
 
+  sensors = ["battery", "bluetooth", "cellular", "location", "settings", "concreteSensor", "signalStrength", "wifi"]
+
   try:
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
@@ -1521,14 +1561,13 @@ def viewexperiments(request):
     #reversed so the oldest experiment is the last we show.
     experiment_sensors = []
     name_list = []
-    experiment_sensors.extend(list(Battery.objects.filter(experiment_id=experiment)))
-    experiment_sensors.extend(list(Bluetooth.objects.filter(experiment_id=experiment)))
-    experiment_sensors.extend(list(Cellular.objects.filter(experiment_id=experiment)))
-    experiment_sensors.extend(list(Settings.objects.filter(experiment_id=experiment)))
-    experiment_sensors.extend(list(ConcreteSensor.objects.filter(experiment_id=experiment)))
-    experiment_sensors.extend(list(Location.objects.filter(experiment_id=experiment)))
-    experiment_sensors.extend(list(Signal_strengths.objects.filter(experiment_id=experiment)))
-    experiment_sensors.extend(list(Wifi.objects.filter(experiment_id=experiment)))
+
+    # Filter all sensors based on their experiment ID
+    for sensor in sensors:
+      # Capitalize only the first letter of the sensor
+      sensor_name = "%s%s" % (sensor[0].upper(), sensor[1:])
+      function = getattr(clearinghouse.website.control.models, sensor_name)
+      experiment_sensors.extend(list(function.objects.filter(experiment_id=experiment)))
 
     for sensor in experiment_sensors:
       name_list.append(sensor.show_name())
@@ -1536,7 +1575,7 @@ def viewexperiments(request):
     if name_list == []:
       name_list = "None"
 
-    ret.append([experiment.experiment_name,name_list,experiment.id])
+    ret.append([experiment.experiment_name, name_list, experiment.id])
     
     
   

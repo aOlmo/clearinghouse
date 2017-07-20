@@ -135,8 +135,7 @@ def register_user(username, password, email, affiliation, pubkey=None):
 	return geniuser
 
 
-def register_experiment(geni_user, experiment_name, researcher_name, researcher_address, researcher_email, irb_name,
-												irb_email, experiment_goal):
+def register_experiment(**kwargs):
 	"""
 	<Purpose>
 		Creates a experiment record with the specified information.
@@ -164,17 +163,19 @@ def register_experiment(geni_user, experiment_name, researcher_name, researcher_
 	# These ensure that the data is of the correct type (e.g. a string) as well as
 	# that we like the content of the variable.
 
-	validations.validate_register_experiment_field(experiment_name)
-	validations.validate_register_experiment_field(researcher_name)
-	validations.validate_register_experiment_field(researcher_address)
-	validations.validate_email(researcher_email)
-	validations.validate_register_experiment_field(irb_name)
-	validations.validate_email(irb_email)
-	validations.validate_register_experiment_field(experiment_goal)
+	for item in kwargs:
+		if item != "geni_user":
+			validations.validate_register_experiment_field(kwargs[item])
 
-	experiment = maindb.create_experiment(geni_user, experiment_name,
-																				researcher_name, researcher_address, researcher_email,
-																				irb_name, irb_email, experiment_goal)
+	# validations.validate_register_experiment_field('experiment_name')
+	# validations.validate_register_experiment_field('researcher_name')
+	# validations.validate_register_experiment_field('researcher_address')
+	# validations.validate_email('researcher_email')
+	# validations.validate_register_experiment_field('researcher_institution_name')
+	# validations.validate_email('irb_officer_email')
+	# validations.validate_register_experiment_field('goal')
+
+	experiment = maindb.create_experiment(**kwargs)
 
 	return experiment
 

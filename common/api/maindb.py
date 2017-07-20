@@ -246,20 +246,21 @@ def create_user(username, password, email, affiliation, user_pubkey, user_privke
 
 
 
-def create_experiment(geni_user, experiment_name, researcher_name, researcher_address, researcher_email, irb_name, irb_email, experiment_goal):
+def create_experiment(**kwargs):
   """
   <Purpose>
     Create a new experiment in the database.
     
   <Arguments>
-    geni_user
-    experiment_name
-    researcher_name
-    researcher_address
-    researcher_email
-    irb_name
-    irb_email
-    experiment_goal  
+    kwargs:
+      geni_user
+      experiment_name
+      researcher_name
+      researcher_address
+      researcher_email
+      irb_name
+      irb_email
+      experiment_goal
       
     <Exceptions>
       None
@@ -271,28 +272,17 @@ def create_experiment(geni_user, experiment_name, researcher_name, researcher_ad
     <Returns>
       A GeniUser object of the newly created user.
   """
-  assert_str(experiment_name)
-  assert_str(researcher_name)
-  assert_str(researcher_address)
-  assert_str(researcher_email)
-  assert_str(irb_name)
-  assert_str(irb_email)
-  assert_str(experiment_goal)
+
+  for item in kwargs:
+    if item != "geni_user":
+      assert_str(kwargs[item])
 
   # We're committing manually to make sure the multiple database writes are
   # atomic. (That is, regenerate_api_key() will do a database write.)
   try:
       with transaction.atomic():
           # Create the Experiment
-          experiment = Experiment(
-            experiment_name=experiment_name,
-            geni_user=geni_user,
-            researcher_name=researcher_name,
-            researcher_institution_name = irb_name,
-            researcher_email=researcher_email,
-            researcher_address=researcher_address,
-            irb_officer_email=irb_email,
-            goal=experiment_goal)
+          experiment = Experiment(**kwargs)
           
           experiment.save()
   except:
@@ -343,7 +333,7 @@ def create_sensor(sensor_name, experiment, **kwargs):
   if sensor_name == "Concretesensor":
     sensor_name = "ConcreteSensor"
   elif sensor_name == "Signalstrength":
-    sensor_name = "Signal_strengths"
+    sensor_name = "SignalStrength"
 
   constructor_to_call = getattr(clearinghouse.website.control.models, sensor_name)
 

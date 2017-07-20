@@ -121,25 +121,25 @@ class GeniUser(DjangoUser):
 
 class Experiment(models.Model):
   # Name of the Experiment
-  experiment_name = models.CharField(max_length=30, default = None)
+  experiment_name = models.CharField(max_length=30, default=None)
 
   # The user who submitted the form
-  geni_user = models.ForeignKey(GeniUser, db_index=True, default = None)
+  geni_user = models.ForeignKey(GeniUser, db_index=True, default=None)
 
   # Name of the researcher who carry out the experiment
-  researcher_name = models.CharField(max_length=30, default = None)
+  researcher_name = models.CharField(max_length=30, default=None)
 
   # Postal/Mail address of the researcher
   researcher_address = models.CharField(max_length=64, default=None)
 
   # Email of the researcher
-  researcher_email = models.EmailField(default = None)
+  researcher_email = models.EmailField(default=None)
 
   # Name and address of researcher's home institution
-  researcher_institution_name = models.CharField(max_length=30, default = None)
+  researcher_institution_name = models.CharField(max_length=30, default=None)
 
   # Email Address of the Researcher's IRB officer
-  irb_officer_email = models.EmailField( default = None)
+  irb_officer_email = models.EmailField( default=None)
 
   # The main goal of the experiment
   goal = models.CharField(max_length=256, default=None)
@@ -164,7 +164,7 @@ class Sensor(models.Model):
   This class is defining the general Sensor data as the frequency, precission, goal...
   """
 
-  # This model will then not be used to create any database table.
+  # This model will not be used to create any database table.
   # Instead, when it is used as a base class for other models,
   # its fields will be added to those of the child class.
   class meta:
@@ -390,7 +390,7 @@ class ConcreteSensor(Sensor):
 
 
 
-class Signal_strengths(Sensor):
+class SignalStrength(Sensor):
   """
     Model for signal strengths
   """
