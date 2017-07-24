@@ -167,14 +167,6 @@ def register_experiment(**kwargs):
 		if item != "geni_user":
 			validations.validate_register_experiment_field(kwargs[item])
 
-	# validations.validate_register_experiment_field('experiment_name')
-	# validations.validate_register_experiment_field('researcher_name')
-	# validations.validate_register_experiment_field('researcher_address')
-	# validations.validate_email('researcher_email')
-	# validations.validate_register_experiment_field('researcher_institution_name')
-	# validations.validate_email('irb_officer_email')
-	# validations.validate_register_experiment_field('goal')
-
 	experiment = maindb.create_experiment(**kwargs)
 
 	return experiment

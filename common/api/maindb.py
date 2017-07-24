@@ -337,13 +337,11 @@ def create_sensor(sensor_name, experiment, **kwargs):
 
   constructor_to_call = getattr(clearinghouse.website.control.models, sensor_name)
 
-  pdb.set_trace()
-
   # We're committing manually to make sure the multiple database writes are
   # atomic. (That is, regenerate_api_key() will do a database write.)
   try:
       with transaction.atomic():
-          sensor = constructor_to_call(experiment_id=experiment, **kwargs)
+          sensor = constructor_to_call(experiment=experiment, **kwargs)
           sensor.save()
   except:
     transaction.rollback()

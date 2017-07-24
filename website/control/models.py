@@ -192,7 +192,7 @@ class Sensor(models.Model):
   goal = models.CharField(max_length=512, default=None, blank=True)
 
   # Which experiment requests this sensor?
-  experiment_id = models.ForeignKey(Experiment, db_index=True, default=None)
+  experiment = models.ForeignKey(Experiment, db_index=True, default=None)
 
 
 
@@ -367,6 +367,9 @@ class ConcreteSensor(Sensor):
   # Need sensors data?
   concreteSensor = models.BooleanField(default=False)
 
+  # Get the most recently recorded data for the accelerometer, magnetometer and orientation sensors.
+  concreteSensor_sensor_data = models.BooleanField(default=False)
+
   # Need sensors accuracy?
   concreteSensor_accuracy = models.BooleanField(default=False)
 
@@ -395,7 +398,7 @@ class SignalStrength(Sensor):
     Model for signal strengths
   """
   # Need signal strength?
-  signal_strength = models.BooleanField(default=False)
+  signalStrength_signal_strength = models.BooleanField(default=False)
 
 
   def show_name(self):

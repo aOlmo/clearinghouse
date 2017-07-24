@@ -185,7 +185,6 @@ class DetailsForm(forms.ModelForm):
     max_length=256,
     required=True)
 
-  # TODO: put this whole string in another var and assign here
   sensor_details = "B. What type(s) of smartphone sensors will you use (check all that apply)? " \
     "A list of available sensors may be found at: https://sensibilitytestbed.com/projects/project/wiki/sensors"
 
@@ -209,7 +208,7 @@ class GeneralSensorAtributesForm(forms.ModelForm):
   F_CHOICES = (('hour', 'Hour'), ('min', 'Min'), ('sec', 'Sec'))
   P_CHOICES = (('full', 'Full Precision'), ('truncate', 'Truncate'))
 
-  experiment_id = forms.IntegerField(required=False)
+  experiment = forms.IntegerField(required=False)
 
   frequency = forms.IntegerField(
     label='i. How often will you need to access the sensor data? Once every',
@@ -491,11 +490,11 @@ class SettingsForm(GeneralSensorAtributesForm):
     (False, "No")
   }
   settings = forms.ChoiceField(
-    choices = TRUE_FALSE_CHOICES,
+    choices=TRUE_FALSE_CHOICES,
     label="Settings",
     widget=forms.Select(),
     required=True,
-    initial = False)
+    initial=False)
 
   settings_airplane_mode = forms.BooleanField(label="airplane_mode", required=False)
   settings_ringer_silent_mode = forms.BooleanField(label="ringer_silent_mode", required=False)
@@ -513,7 +512,7 @@ class SensorForm(GeneralSensorAtributesForm):
 
   class Meta:
     model = ConcreteSensor
-    fields = ('frequency',)
+    fields = []
 
   TRUE_FALSE_CHOICES = {
     (True, "Yes"),
@@ -572,7 +571,7 @@ class SignalStrengthForm(GeneralSensorAtributesForm):
     required = True,
     initial = False)
 
-  signal_strength = forms.BooleanField(
+  signalStrength_signal_strength = forms.BooleanField(
     label="signal_strength",
     required=False)
   
@@ -596,19 +595,29 @@ class WifiForm(GeneralSensorAtributesForm):
     required=True,
     initial=False)
 
-  wifi_state = forms.BooleanField(label="wifi_state (check WiFi state: whether it is enabled)", required=False)
+  wifi_state = forms.BooleanField(
+    label="wifi_state (check WiFi state: whether it is enabled)",
+    required=False)
 
-  wifi_ip_address = forms.BooleanField(label="ip_address", required=False)
+  wifi_ip_address = forms.BooleanField(
+    label="ip_address",
+    required=False)
 
-  wifi_link_speed = forms.BooleanField(label="link_speed", required=False)
+  wifi_link_speed = forms.BooleanField(
+    label="link_speed",
+    required=False)
 
   wifi_supplicant_state = forms.BooleanField(
     label="supplicant_state (scanning, associating, completed, etc.)",
     required=False)
 
-  wifi_ssid = forms.BooleanField(label="ssid", required=False)
+  wifi_ssid = forms.BooleanField(
+    label="ssid",
+    required=False)
 
-  wifi_rssi = forms.BooleanField(label="rssi (received signal strength indicator)", required=False)
+  wifi_rssi = forms.BooleanField(
+    label="rssi (received signal strength indicator)",
+    required=False)
 
   wifi_scan_results = forms.BooleanField(
     label="scan_results (list of access points found during the most recent WiFi scan: "

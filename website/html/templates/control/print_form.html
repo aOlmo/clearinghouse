@@ -2,14 +2,16 @@
 {{ form.non_field_errors }}
 
 {% for item in form %}
-    <!--Print those vars exclusive from the form-->
+    <!--Print those vars exclusive from the form except "experiment"-->
     {% if item.name not in sensor_var_names %}
-        {{item}} {{item.label}} <br>
+        {% if item.name != "experiment" %}
+            {{item}} {{item.label}} <br>
+        {% endif %}
     {% endif %}
 {% endfor %}
 
 {% for item in form %}
-    {% if item.name in sensor_var_names and item.name != "experiment_id" and item.name != "frequency_unit" %}
+    {% if item.name in sensor_var_names and item.name != "experiment" and item.name != "frequency_unit" %}
         {% if "i." in item.label %}
             <br>
         {% endif %}

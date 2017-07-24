@@ -1288,7 +1288,7 @@ def save_sensor_values(form_name, form, page_top_errors, specific_checkboxes, ex
 @login_required
 def registerexperiment(request):
   """
-  <Purpose>
+  <Purpose>pr
       Show the Experiment Registration Form
   <Returns>
       An HTTP response object that represents the experiment registration page on
@@ -1297,27 +1297,6 @@ def registerexperiment(request):
   # Obtain the context from the HTTP request.
   context_instance = RequestContext(request)
 
-  # Since several Classes (battery, bluetooth, location, settings etc.)
-  # inherit from the abstract class Sensor, in order to print with a loop
-  # first the vars from each class and then those from the Sensor one, we
-  # will need to store the name of all Sensor vars to later compare them
-  # with the others and print them in the order we want
-  sensor_instance = Sensor()
-  sensor_var_names = vars(sensor_instance)
-
-  # TODO: This is in fact a bug, 'experiment_id_id' is in the database
-  # TODO: in order to try to solve it, delete all entries from the database
-  # TODO: and make migrations again
-  # One of the Sensor's vars is "experiment_id" but apparently, there appears
-  # another var called "experiment_id_id" instead, so we get rid of this and
-  # insert the name of the other one manually.
-  if "experiment_id_id" in sensor_var_names:
-    del sensor_var_names["experiment_id_id"]
-    sensor_var_names["experiment_id"] = None
-
-  sensors = ["battery", "bluetooth", "cellular", "location", "settings", "concreteSensor", "signalStrength", "wifi"]
-
-  # TODO: the following variables could be declared dynamically
   experiment_values = {
     'geni_user': None,
     'experiment_name': None,
@@ -1329,85 +1308,51 @@ def registerexperiment(request):
     'goal': None
   }
 
-  battery_sensor_checkboxes = {
-    'battery': False,
-    'if_battery_present': False,
-    'battery_health': False,
-    'battery_level': False,
-    'battery_plug_type': False,
-    'battery_status': False,
-    'battery_technology': False
-  }
 
-  bluetooth_sensor_checkboxes = {
-    'bluetooth': False,
-    'bluetooth_state': False,
-    'bluetooth_is_discovering': False,
-    'bluetooth_scan_mode': False,
-    'bluetooth_local_address': False,
-    'bluetooth_local_name': False
-  }
+  # Since several Classes (battery, bluetooth, location, settings etc.)
+  # inherit from the abstract class Sensor, in order to print with a loop
+  # first the vars from each class and then those from the Sensor one, we
+  # will need to store the name of all Sensor vars to later compare them
+  # with the others and print them in the order we want
+  sensor_instance = Sensor()
+  sensor_var_names = vars(sensor_instance)
 
-  cellular_sensor_checkboxes = {
-    'cellular': False,
-    'cellular_network_roaming': False,
-    'cellular_cellID': False,
-    'cellular_location_area_code': False,
-    'cellular_mobile_country_code': False,
-    'cellular_mobile_network_code': False,
-    'cellular_network_operator': False,
-    'cellular_network_operator_name': False,
-    'cellular_network_type': False,
-    'cellular_service_state': False,
-    'cellular_signal_strengths': False
-  }
+  # Below we create and assign dynamically each sensor's checkboxes
+  # to finally store them all in a dictionary of dictionaries.
 
-  location_sensor_checkboxes = {
-    'location': False,
-    'location_providers': False,
-    'location_provider_enabled': False,
-    'location_data': False,
-    'location_last_known_location': False,
-    'location_geocode': False
-  }
+  sensors = ["battery", "bluetooth", "cellular", "location", "settings", "concreteSensor", "signalStrength", "wifi"]
 
-  settings_sensor_checkboxes = {
-    'settings': False,
-    'settings_airplane_mode': False,
-    'settings_ringer_silent_mode': False,
-    'settings_screen_on': False,
-    'settings_max_media_volume': False,
-    'settings_max_ringer_volume': False,
-    'settings_media_volume': False,
-    'settings_ringer_volume': False,
-    'settings_screen_brightness': False,
-    'settings_screen_timeout': False
-  }
+  # First get all vars from each sensor class
+  battery_vars = vars(Battery())
+  bluetooth_vars = vars(Bluetooth())
+  cellular_vars = vars(Cellular())
+  location_vars = vars(Location())
+  settings_vars = vars(Settings())
+  concreteSensor_vars = vars(ConcreteSensor())
+  signalStrength_vars = vars(SignalStrength())
+  wifi_vars = vars(Wifi())
 
-  concreteSensor_sensor_checkboxes = {
-    'concreteSensor': False,
-    'concreteSensor_accuracy': False,
-    'concreteSensor_light': False,
-    'concreteSensor_accelerometer': False,
-    'concreteSensor_magnetometer': False,
-    'concreteSensor_orientation': False
-  }
+  # Declaration of each sensor checkboxes
+  battery_sensor_checkboxes = {}
+  bluetooth_sensor_checkboxes = {}
+  cellular_sensor_checkboxes = {}
+  location_sensor_checkboxes = {}
+  settings_sensor_checkboxes = {}
+  concreteSensor_sensor_checkboxes = {}
+  signalStrength_sensor_checkboxes = {}
+  wifi_sensor_checkboxes = {}
 
-  signalStrength_sensor_checkboxes = {
-    'signalStrength': False,
-    'signal_strength': False
-  }
+  all_sensor_checkboxes = {}
 
-  wifi_sensor_checkboxes = {
-    'wifi': False,
-    'wifi_state': False,
-    'wifi_ip_address': False,
-    'wifi_link_speed': False,
-    'wifi_supplicant_state': False,
-    'wifi_ssid': False,
-    'wifi_rssi': False,
-    'wifi_scan_results': False
-  }
+  for sensor_name in sensors:
+    for item in eval(sensor_name + "_vars"):
+      # For each of the sensors we only get those vars that contain the same name as the class.
+      # We can do this due to the fact that each var for each class starts with the name of that class
+      if sensor_name in item:
+        eval(sensor_name + "_sensor_checkboxes")[item] = False
+
+    eval(sensor_name + "_sensor_checkboxes")[sensor_name] = False
+    all_sensor_checkboxes[sensor_name] = eval(sensor_name + "_sensor_checkboxes")
 
   try:
     user = _validate_and_get_geniuser(request)
@@ -1448,9 +1393,6 @@ def registerexperiment(request):
         else:
           experiment_values[item] = r_form.cleaned_data[item]
 
-      #TODO: There is a bug here, the page top error is not displayed
-      #TODO: when the details form is not valid
-      # --------------------------------------------------------------------
       if details_form.is_valid():
         goal = details_form.cleaned_data['goal']
         if goal == "":
@@ -1461,33 +1403,27 @@ def registerexperiment(request):
       if r_form.is_required('terms_of_use') == False:
         page_top_errors.append("Please accept the terms of use")
       else:
-        # we should never error here, since we've already finished
-        # validation at this point, but just to be safe...
-        try:
-          for item in experiment_values:
-            if item == "goal":
-              experiment_values[item] = goal
-
-          experiment = interface.register_experiment(**experiment_values)
-        except ValidationError, err:
-          page_top_errors.append(str(err))
-        # --------------------------------------------------------------------
 
         # Here we check all sensor values and update the page_top_errors variable
         for sensor_name in sensors:
           specific_checkboxes = sensor_name + "_sensor_checkboxes"
           form = sensor_name + "_form"
 
-          check_sensor_values(sensor_name, eval(form), page_top_errors, eval(specific_checkboxes))
-
+          check_sensor_values(sensor_name, eval(form), page_top_errors, all_sensor_checkboxes[sensor_name])
 
         # Only save the contents of the forms if there are no errors
         if page_top_errors == []:
+          for item in experiment_values:
+            if item == "goal":
+              experiment_values[item] = goal
+
+          experiment = interface.register_experiment(**experiment_values)
+
           for sensor_name in sensors:
             specific_checkboxes = sensor_name + "_sensor_checkboxes"
             form = sensor_name + "_form"
 
-            save_sensor_values(sensor_name, eval(form), page_top_errors, eval(specific_checkboxes), experiment)
+            save_sensor_values(sensor_name, eval(form), page_top_errors, all_sensor_checkboxes[sensor_name], experiment)
 
         # If all data have been saved succesfully,
         # redirect to the viewexperiments page
@@ -1567,7 +1503,7 @@ def viewexperiments(request):
       # Capitalize only the first letter of the sensor
       sensor_name = "%s%s" % (sensor[0].upper(), sensor[1:])
       function = getattr(clearinghouse.website.control.models, sensor_name)
-      experiment_sensors.extend(list(function.objects.filter(experiment_id=experiment)))
+      experiment_sensors.extend(list(function.objects.filter(experiment=experiment)))
 
     for sensor in experiment_sensors:
       name_list.append(sensor.show_name())
