@@ -342,9 +342,9 @@ class BatteryForm(GeneralSensorAtributesForm):
   }
 
   battery = forms.ChoiceField(
-    choices = TRUE_FALSE_CHOICES,
+    choices=TRUE_FALSE_CHOICES,
     label="Battery",
-    widget=forms.Select(),
+    widget=forms.Select(attrs={'class':'dropDown'}),
     required=False,
     initial=False)
 
@@ -389,7 +389,7 @@ class BluetoothForm(GeneralSensorAtributesForm):
   bluetooth = forms.ChoiceField(
     choices = TRUE_FALSE_CHOICES,
     label="Bluetooth",
-    widget=forms.Select(),
+    widget=forms.Select(attrs={'class': 'dropDown'}),
     required=True,
     initial=False)
 
@@ -428,8 +428,12 @@ class CellularForm(GeneralSensorAtributesForm):
     (True, "Yes"),
     (False, "No")
   }
-  cellular = forms.ChoiceField(choices = TRUE_FALSE_CHOICES, label="Cellular",
-    widget=forms.Select(), required=True, initial = False)
+  cellular = forms.ChoiceField(
+    choices=TRUE_FALSE_CHOICES,
+    label="Cellular",
+    widget=forms.Select(attrs={'class': 'dropDown'}),
+    required=True, initial=False)
+
   cellular_network_roaming = forms.BooleanField(label="network_roaming (returns true if the device is considered roaming on the current network, for GSM purposes)", required=False)
   cellular_cellID = forms.BooleanField(label="cellID (details about  cell ID) ", required=False)
   cellular_location_area_code = forms.BooleanField(label="location_area_code", required=False)
@@ -457,7 +461,7 @@ class LocationForm(GeneralSensorAtributesForm):
   location = forms.ChoiceField(
     choices = TRUE_FALSE_CHOICES,
     label="Location",
-    widget=forms.Select(),
+    widget=forms.Select(attrs={'class': 'dropDown'}),
     required=True,
     initial = False)
 
@@ -492,7 +496,7 @@ class SettingsForm(GeneralSensorAtributesForm):
   settings = forms.ChoiceField(
     choices=TRUE_FALSE_CHOICES,
     label="Settings",
-    widget=forms.Select(),
+    widget=forms.Select(attrs={'class': 'dropDown'}),
     required=True,
     initial=False)
 
@@ -522,7 +526,7 @@ class SensorForm(GeneralSensorAtributesForm):
   concreteSensor = forms.ChoiceField(
     choices=TRUE_FALSE_CHOICES,
     label="Sensor",
-    widget=forms.Select(),
+    widget=forms.Select(attrs={'class': 'dropDown'}),
     required=True,
     initial=False)
 
@@ -567,7 +571,7 @@ class SignalStrengthForm(GeneralSensorAtributesForm):
   signalStrength = forms.ChoiceField(
     choices = TRUE_FALSE_CHOICES,
     label="Signal Strength",
-    widget=forms.Select(),
+    widget=forms.Select(attrs={'class': 'dropDown'}),
     required = True,
     initial = False)
 
@@ -591,7 +595,7 @@ class WifiForm(GeneralSensorAtributesForm):
   wifi = forms.ChoiceField(
     choices=TRUE_FALSE_CHOICES,
     label="Wifi",
-    widget=forms.Select(),
+    widget=forms.Select(attrs={'class': 'dropDown'}),
     required=True,
     initial=False)
 

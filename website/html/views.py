@@ -1284,15 +1284,14 @@ def save_sensor_values(form_name, form, page_top_errors, specific_checkboxes, ex
 
 
 
-# TODO: RECOMMENT THIS FUNCTION
 @login_required
 def registerexperiment(request):
   """
-  <Purpose>pr
-      Show the Experiment Registration Form
+  <Purpose>
+      Initializes all variables for each sensor and shows the Experiment Registration form
   <Returns>
       An HTTP response object that represents the experiment registration page on
-      success.
+      success. The user is redirected to the viewexperiments frunction.
   """
   # Obtain the context from the HTTP request.
   context_instance = RequestContext(request)
@@ -1308,12 +1307,12 @@ def registerexperiment(request):
     'goal': None
   }
 
-
-  # Since several Classes (battery, bluetooth, location, settings etc.)
+  # Since several all sensor classes (battery, bluetooth, location etc.)
   # inherit from the abstract class Sensor, in order to print with a loop
   # first the vars from each class and then those from the Sensor one, we
   # will need to store the name of all Sensor vars to later compare them
-  # with the others and print them in the order we want
+  # with the others and print them in the order we want. This is applied
+  # in print_form.html
   sensor_instance = Sensor()
   sensor_var_names = vars(sensor_instance)
 

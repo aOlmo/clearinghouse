@@ -192,7 +192,7 @@ class Sensor(models.Model):
   goal = models.CharField(max_length=512, default=None, blank=True)
 
   # Which experiment requests this sensor?
-  experiment = models.ForeignKey(Experiment, db_index=True, default=None)
+  experiment = models.ForeignKey(Experiment, db_index=True, default=None, on_delete=models.CASCADE)
 
 
 

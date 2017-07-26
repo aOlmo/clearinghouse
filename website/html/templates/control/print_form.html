@@ -5,7 +5,7 @@
     <!--Print those vars exclusive from the form except "experiment"-->
     {% if item.name not in sensor_var_names %}
         {% if item.name != "experiment" %}
-            {{item}} {{item.label}} <br>
+            {{item}} <span>{{item.label}} </span> <br>
         {% endif %}
     {% endif %}
 {% endfor %}
@@ -16,9 +16,9 @@
             <br>
         {% endif %}
         {% if item.name == "frequency" %}
-          {{item.label}} <br> {{item}} {{form.frequency_unit}} <br>
+          <span>{{item.label}} </span> <br> {{item}} {{form.frequency_unit}} <br>
         {% else %}
-          {{item.label}} <br> {{item}} <br>
+          <span>{{item.label}}</span> <br> {{item}} <br>
         {% endif %}
     {% endif %}
 {% endfor %}
