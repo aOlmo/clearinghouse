@@ -1,11 +1,7 @@
 
-$(document).ready(function() {
-	$('#registerexperiment .collapsible').change(function() {
-		//$('#mycheckboxdiv').toggle();
-		sensor_on_change(this.getAttribute('data-target'), this.checked);
-	});
-});
-
+// The following code was made to collapse the sensor forms,
+// TODO: It can be improved if instead of hiding everything until the next
+// <h2> or <h3> tag, each form was within a div and hide this one instead.
 $(document).ready(function(){
     var $dropDown = $(".dropDown");
     var last_form_id = $(".dropDown").last().attr("id")
@@ -13,13 +9,11 @@ $(document).ready(function(){
     $(".dropDown").each(function(){
 
        if (this.id == last_form_id){
-            console.log("From if: " + this.id)
             if ($(this).val() == "False")
                 $(this).nextUntil('h2').hide();
             else
                 $(this).nextUntil('h2').show();
        } else {
-            console.log("From else: " + this.id)
             if ($(this).val() == "False")
                 $(this).nextUntil('h3').hide();
             else
