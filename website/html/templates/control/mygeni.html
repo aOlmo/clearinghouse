@@ -2,35 +2,35 @@
 
 {% comment %}
 <Program>
-  mygeni.html
-  
-<Started>
-  4 August 2009
+    mygeni.html
 
-<Author>
-  Jason Chen
-  Sean (Xuanhua) Ren
-  Ivan Beschastnikh
-  
-<Purpose>
-  Django template file for Seattle Clearinghouse's 'My Seattle Clearinghouse' page.
-  The older mygeni.js functionality (graphics logic) has been ported into this page as inline javascript. 
-{% endcomment %}
+    <Started>
+        4 August 2009
 
-{% block title %}
-My {{ TESTBED }} {{ CLEARINGHOUSE }} - {{ TESTBED }} {{ CLEARINGHOUSE }}
-{% endblock title %}
+        <Author>
+            Jason Chen
+            Sean (Xuanhua) Ren
+            Ivan Beschastnikh
 
-{% block style %}
-{{ block.super }}
-<link href="{{ MEDIA_URL }}css/mygeni.css" rel="stylesheet" type="text/css" />
-{% endblock style %}
+            <Purpose>
+                Django template file for Seattle Clearinghouse's 'My Seattle Clearinghouse' page.
+                The older mygeni.js functionality (graphics logic) has been ported into this page as inline javascript.
+                {% endcomment %}
 
-{% block script %}
-{{ block.super }}
-<script type="text/javascript" src="{{MEDIA_URL}}scripts/jquery.tooltip.js" charset="utf-8"></script>
+                {% block title %}
+                My {{ TESTBED }} {{ CLEARINGHOUSE }} - {{ TESTBED }} {{ CLEARINGHOUSE }}
+                {% endblock title %}
 
-<script type="text/javascript">
+                {% block style %}
+                {{ block.super }}
+                <link href="{{ MEDIA_URL }}css/mygeni.css" rel="stylesheet" type="text/css"/>
+                {% endblock style %}
+
+                {% block script %}
+                {{ block.super }}
+                <script type="text/javascript" src="{{MEDIA_URL}}scripts/jquery.tooltip.js" charset="utf-8"></script>
+
+                <script type="text/javascript">
 
 $(document).ready(function() {
 	update_credits();
@@ -256,100 +256,106 @@ function color_generator(username) {
 	return color;
 }
 
-</script>
 
-{% endblock script %}
+                </script>
 
-{% block nav_mygeni %}
-<td class="active"><a href="{% url 'mygeni' %}">My {{ TESTBED }} {{ CLEARINGHOUSE }}</a></td>
-{% endblock nav_mygeni %}
+                {% endblock script %}
 
-{% block content %}
-	<div id="main">
-		<div id="middle">
-			<div class="bar">
-				<span class="vesselstatus" id="vesselscredits"></span>
-				<h3>My Credits (donated by)</h3>
-				<table class="credits">
-					<tr id="credits"></tr>
-				</table>
-				<table class="names">
-					<tr id="creditnames"></tr>
-				</table>
-				<table id="creditotherstable" class="users">
-					<caption>Other donated resources</caption>
-					<tr class="header">
-						<th>Username</td>
-						<th>Percent</td>
-					</tr>
-				</table>
-			</div>
-		
-			<div class="bar">
-				<span class="vesselstatus" id="vesselsavailable"></span>
-				<span class="vesselstatus" id="vesselsused"></span>
-				<h3>Resource Usage (used by)</h3>
-				<table class="usage">
-					<tr id="usage"></tr>
-				</table>
-				<table class="names">
-					<tr id="usagenames"></tr>
-				</table>
-				<table id="usageotherstable" class="users">
-					<caption>Resource shared by others</caption>
-					<tr class="header">
-						<th>Username</td>
-						<th>Percent</td>
-						<th>Actions</td>
-					</tr>
-				</table>
-			</div>
-					
-			<div id="overlay"></div>
-			<div id="dialogframe">
-				<div id="getresourcesdialog">
-					<span class="vesselstatus"></span>
-					<h3>Get more resources</h3>
-					<span>Number of vessels</span>
-					<select name="num" id="numvessels">
-					</select>
-					<br />
-					<span>Environment</span>
-					<select name="env" id="environment">
-						<option value="1">LAN</option>
-						<option value="2">WAN</option>
-						<option value="3">Random</option>
-					</select>
-					<br />
-					<button class="cancel">Cancel</button>
-					<button id="getresourcesaction">Get</button>
-				</div>
-				<div id="shareresourcesdialog">
-					<h3>Share resources</h3>
-					<span>Username</span>
-					<input id="username" type="text" />
-					<br />
-					<span>Percent</span>
-					<input id="percent" type="text" />
-					<br />
-					<button class="cancel">Cancel</button>
-					<button id="shareresources">Share</button>
-				</div>
-			</div>
-			{% if over_vessel_credits %}
-			<div id="overcreditlimit">
-			  <p>You have acquired {{ over_vessel_credits }} more vessels than we
-			  would normally let you. This usually means that some of your donations
-			  have gone offline.</p>
-			  
-			  <p>We won't remove the extra acquired vessels from your account, but you
-			  won't be able to acquire more vessels or renew your vessels until you
-			  remove or let expire {{ over_vessel_credits }} of them.
-			  (Or, of course, until more donations are made on behalf of your account
-			  or those donations that have gone offline come back online.)</p>
-			</div>
-			{% endif %}
-		</div>
-	</div>
-	
-{% endblock content %}
+                {% block nav_mygeni %}
+                <td class="active"><a href="{% url 'mygeni' %}">My {{ TESTBED }} {{ CLEARINGHOUSE }}</a></td>
+                {% endblock nav_mygeni %}
+
+                {% block content %}
+                <div id="main">
+                    <div id="middle">
+                        <div class="bar">
+                            <span class="vesselstatus" id="vesselscredits"></span>
+                            <h3>My Credits (donated by)</h3>
+                            <table class="credits">
+                                <tr id="credits"></tr>
+                            </table>
+                            <table class="names">
+                                <tr id="creditnames"></tr>
+                            </table>
+                            <table id="creditotherstable" class="users">
+                                <caption>Other donated resources</caption>
+                                <tr class="header">
+                                    <th>Username
+                                    </td>
+                                    <th>Percent
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="bar">
+                            <span class="vesselstatus" id="vesselsavailable"></span>
+                            <span class="vesselstatus" id="vesselsused"></span>
+                            <h3>Resource Usage (used by)</h3>
+                            <table class="usage">
+                                <tr id="usage"></tr>
+                            </table>
+                            <table class="names">
+                                <tr id="usagenames"></tr>
+                            </table>
+                            <table id="usageotherstable" class="users">
+                                <caption>Resource shared by others</caption>
+                                <tr class="header">
+                                    <th>Username
+                                    </td>
+                                    <th>Percent
+                                    </td>
+                                    <th>Actions
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div id="overlay"></div>
+                        <div id="dialogframe">
+                            <div id="getresourcesdialog">
+                                <span class="vesselstatus"></span>
+                                <h3>Get more resources</h3>
+                                <span>Number of vessels</span>
+                                <select name="num" id="numvessels">
+                                </select>
+                                <br/>
+                                <span>Environment</span>
+                                <select name="env" id="environment">
+                                    <option value="1">LAN</option>
+                                    <option value="2">WAN</option>
+                                    <option value="3">Random</option>
+                                </select>
+                                <br/>
+                                <button class="cancel">Cancel</button>
+                                <button id="getresourcesaction">Get</button>
+                            </div>
+                            <div id="shareresourcesdialog">
+                                <h3>Share resources</h3>
+                                <span>Username</span>
+                                <input id="username" type="text"/>
+                                <br/>
+                                <span>Percent</span>
+                                <input id="percent" type="text"/>
+                                <br/>
+                                <button class="cancel">Cancel</button>
+                                <button id="shareresources">Share</button>
+                            </div>
+                        </div>
+                        {% if over_vessel_credits %}
+                        <div id="overcreditlimit">
+                            <p>You have acquired {{ over_vessel_credits }} more vessels than we
+                                would normally let you. This usually means that some of your donations
+                                have gone offline.</p>
+
+                            <p>We won't remove the extra acquired vessels from your account, but you
+                                won't be able to acquire more vessels or renew your vessels until you
+                                remove or let expire {{ over_vessel_credits }} of them.
+                                (Or, of course, until more donations are made on behalf of your account
+                                or those donations that have gone offline come back online.)</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% endblock content %}

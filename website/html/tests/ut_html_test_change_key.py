@@ -16,7 +16,7 @@
   See test_register.py for an explanation of our usage of the Django test client.
 """
 
-#pragma out
+# pragma out
 
 # We import the testlib FIRST, as the test db settings 
 # need to be set before we import anything else.
@@ -36,10 +36,6 @@ from django.contrib.auth.models import User as DjangoUser
 from django.test.client import Client
 
 
-
-
-
-
 # Declare our mock functions
 def mock_get_logged_in_user(request):
   geniuser = models.GeniUser(username='tester', password='password', email='test@test.com',
@@ -49,46 +45,35 @@ def mock_get_logged_in_user(request):
   return geniuser
 
 
-
-
-
 def mock_noop(*args, **kwargs):
   pass
-  
-  
-  
-  
+
 
 c = Client()
 
 interface.change_user_keys = mock_noop
 
 
-
-
-
 def main():
-  
   # Setup test environment
   testlib.setup_test_environment()
   testlib.setup_test_db()
-  
+
   try:
     login_test_user()
-    
+
     test_regenerate_key()
     test_upload_key_no_file()
     test_upload_key_file()
     test_upload_key_file_empty_file()
     test_upload_key_file_invalid_key()
-    
-    print "All tests passed."
-    
+
+    print
+    "All tests passed."
+
   finally:
     testlib.teardown_test_db()
     testlib.teardown_test_environment()
-
-
 
 
 def test_regenerate_key():
@@ -96,14 +81,11 @@ def test_regenerate_key():
   <Purpose>
     Tests submission of form to generate a new user key.
   """
-  post_data = {'generate':'yes'}
+  post_data = {'generate': 'yes'}
   response = c.post('/html/change_key', post_data, follow=True)
-  assert(response.status_code == 200)
-  assert(response.template[0].name == "control/profile.html")
-  assert("Your new keys have been generated" in response.content)
-
-
-
+  assert (response.status_code == 200)
+  assert (response.template[0].name == "control/profile.html")
+  assert ("Your new keys have been generated" in response.content)
 
 
 def test_upload_key_no_file():
@@ -113,12 +95,9 @@ def test_upload_key_no_file():
   """
   post_data = {}
   response = c.post('/html/change_key', post_data, follow=True)
-  assert(response.status_code == 200)
-  assert(response.template[0].name == "control/change_key.html")
-  assert("You didn&#39;t select a public key file to upload" in response.content)
-
-
-
+  assert (response.status_code == 200)
+  assert (response.template[0].name == "control/change_key.html")
+  assert ("You didn&#39;t select a public key file to upload" in response.content)
 
 
 def test_upload_key_file():
@@ -131,16 +110,14 @@ def test_upload_key_file():
   uploaded_file.flush()
   uploaded_file.seek(0)
 
-  post_data = {'pubkey':uploaded_file}
+  post_data = {'pubkey': uploaded_file}
   response = c.post('/html/change_key', post_data, follow=True)
-  
+
   uploaded_file.close()
-  
-  assert(response.status_code == 200)
-  assert(response.template[0].name == "control/profile.html")
-  assert("Your public key has been successfully changed" in response.content)
 
-
+  assert (response.status_code == 200)
+  assert (response.template[0].name == "control/profile.html")
+  assert ("Your public key has been successfully changed" in response.content)
 
 
 def test_upload_key_file_empty_file():
@@ -150,17 +127,14 @@ def test_upload_key_file_empty_file():
   """
   uploaded_file = tempfile.NamedTemporaryFile(mode="w+")
 
-  post_data = {'pubkey':uploaded_file}
+  post_data = {'pubkey': uploaded_file}
   response = c.post('/html/change_key', post_data, follow=True)
-  
+
   uploaded_file.close()
-  
-  assert(response.status_code == 200)
-  assert(response.template[0].name == "control/change_key.html")
-  assert("Invalid file uploaded" in response.content)
 
-
-
+  assert (response.status_code == 200)
+  assert (response.template[0].name == "control/change_key.html")
+  assert ("Invalid file uploaded" in response.content)
 
 
 def test_upload_key_file_invalid_key():
@@ -173,29 +147,25 @@ def test_upload_key_file_invalid_key():
   uploaded_file.flush()
   uploaded_file.seek(0)
 
-  post_data = {'pubkey':uploaded_file}
+  post_data = {'pubkey': uploaded_file}
   response = c.post('/html/change_key', post_data, follow=True)
-  
+
   uploaded_file.close()
-  
-  assert(response.status_code == 200)
-  assert(response.template[0].name == "control/change_key.html")
-  assert("Invalid public key uploaded" in response.content)
+
+  assert (response.status_code == 200)
+  assert (response.template[0].name == "control/change_key.html")
+  assert ("Invalid public key uploaded" in response.content)
 
 
-
-
-  
 # Creates a test user in the test db, and uses the test client to 'login',
 # so all views that expect @login_required will now pass the login check. 
 def login_test_user():
   # uses the mock get_logged_in_user function that represents a logged in user
   interface.get_logged_in_user = mock_get_logged_in_user
-  
+
   user = DjangoUser.objects.create_user('tester', 'test@test.com', 'testpassword')
   user.save()
   c.login(username='tester', password='testpassword')
-
 
 
 if __name__ == "__main__":

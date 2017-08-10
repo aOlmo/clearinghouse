@@ -6,7 +6,7 @@ Get Donations - {{ TESTBED }} {{ CLEARINGHOUSE }}
 
 {% block style %}
 {{ block.super }}
-<link href="{{ MEDIA_URL }}css/download.css" rel="stylesheet" type="text/css" />
+<link href="{{ MEDIA_URL }}css/download.css" rel="stylesheet" type="text/css"/>
 {% endblock style %}
 
 {% block script %}
@@ -21,19 +21,19 @@ Get Donations - {{ TESTBED }} {{ CLEARINGHOUSE }}
 {% endblock nav_getdonations %}
 
 {% block content %}
-	<div id="main">
-		<div id="middle">
-		  <div id="downloadlink">
-		    {% if validuser %}
-		    <p>Donate resources on behalf of {{ username }}:</p>
-		    </div>
-			  {% include "common/installers.html" %}
-		    {% else %}
-		    <p>The given username doesn't exist!</p><br>
-		    <p>Please check the username.</p>
-		    </div>
-		    {% endif %}
-		</div>
-	</div>
+<div id="main">
+    <div id="middle">
+        <div id="downloadlink">
+            {% if validuser %}
+            <p>Donate resources on behalf of {{ username }}:</p>
+        </div>
+        {% include "common/installers.html" %}
+        {% else %}
+        <p>The given username doesn't exist!</p><br>
+        <p>Please check the username.</p>
+    </div>
+    {% endif %}
+</div>
+</div>
 
 {% endblock content %}

@@ -19,10 +19,8 @@
   by the default 404handler.
 """
 
-
 from django.template import loader, RequestContext
 from django import http
-
 
 
 def internal_error(request):

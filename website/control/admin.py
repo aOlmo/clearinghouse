@@ -27,7 +27,6 @@ from models import VesselUserAccessMap
 from models import ActionLogEvent
 from models import ActionLogVesselDetails
 
-
 from django.contrib import admin
 from django.contrib.auth.forms import AdminPasswordChangeForm
 from django.contrib import messages
@@ -39,15 +38,13 @@ from django.utils.html import escape
 from django.utils.translation import ugettext, ugettext_lazy as _
 
 
-
-
 class GeniUserAdmin(admin.ModelAdmin):
   """Customized admin view of the GeniUser model."""
 
   # Use django's admin change password form
   change_password_form = AdminPasswordChangeForm
 
-  list_display = ["username", "affiliation", "email", "free_vessel_credits", 
+  list_display = ["username", "affiliation", "email", "free_vessel_credits",
                   "usable_vessel_port", "date_created", "is_staff",
                   "is_superuser"]
   list_filter = ["free_vessel_credits", "date_created", "is_staff",
@@ -57,19 +54,15 @@ class GeniUserAdmin(admin.ModelAdmin):
   search_fields = ["username", "user_pubkey", "donor_pubkey", "email",
                    "affiliation"]
   ordering = ["-date_created"]
-  
-
 
   def get_urls(self):
     from django.conf.urls import patterns
 
     # Assign handler for the password change url
     return patterns('',
-      (r'^(\d+)/password/$',
-        self.admin_site.admin_view(self.user_change_password))
-    ) + super(GeniUserAdmin, self).get_urls()
-
-
+                    (r'^(\d+)/password/$',
+                     self.admin_site.admin_view(self.user_change_password))
+                    ) + super(GeniUserAdmin, self).get_urls()
 
   def user_change_password(self, request, id):
     if not self.has_change_permission(request):
@@ -96,24 +89,21 @@ class GeniUserAdmin(admin.ModelAdmin):
     # following tags. They are mostly used for deciding what elements are to be
     # shown on the form.
     return render_to_response('admin/auth/user/change_password.html', {
-        'title': _('Change password: %s') % escape(user.username),
-        'adminForm': adminForm,
-        'form': form,
-        'is_popup': '_popup' in request.REQUEST,
-        'add': True,
-        'change': False,
-        'has_delete_permission': False,
-        'has_change_permission': True,
-        'has_absolute_url': False,
-        'opts': self.model._meta,
-        'original': user,
-        'save_as': False,
-        'show_save': True,
-        'root_path': self.admin_site.root_path,
+      'title': _('Change password: %s') % escape(user.username),
+      'adminForm': adminForm,
+      'form': form,
+      'is_popup': '_popup' in request.REQUEST,
+      'add': True,
+      'change': False,
+      'has_delete_permission': False,
+      'has_change_permission': True,
+      'has_absolute_url': False,
+      'opts': self.model._meta,
+      'original': user,
+      'save_as': False,
+      'show_save': True,
+      'root_path': self.admin_site.root_path,
     }, context_instance=RequestContext(request))
-
-
-
 
 
 def partial_node_identifier(node):
@@ -128,6 +118,8 @@ def is_ok(node):
   "not broken" field where a green checkmark means it's not broken.
   """
   return not node.is_broken
+
+
 # Set a boolean attribute of the function itself which tells django to use the
 # boolean icons to represent this field.
 is_ok.boolean = True
@@ -146,7 +138,7 @@ def donor(node):
   for donation in donation_list:
     donor_names_list.append(donation.donor.username)
   return ",".join(donor_names_list)
-  
+
 
 class NodeAdmin(admin.ModelAdmin):
   """Customized admin view of the Node model."""
@@ -160,18 +152,12 @@ class NodeAdmin(admin.ModelAdmin):
   ordering = ["-date_created"]
 
 
-
-
-
 class DonationAdmin(admin.ModelAdmin):
   """Customized admin view of the Donation model."""
   list_display = ["node", "donor", "date_created"]
   list_filter = ["date_created"]
   search_fields = ["node__node_identifier", "donor__username"]
   ordering = ["-date_created"]
-
-
-
 
 
 class VesselAdmin(admin.ModelAdmin):
@@ -184,18 +170,12 @@ class VesselAdmin(admin.ModelAdmin):
   ordering = ["-date_acquired"]
 
 
-
-
-
 class VesselPortAdmin(admin.ModelAdmin):
   """Customized admin view of the VesselPort model."""
   list_display = ["vessel", "port"]
   list_filter = []
   search_fields = ["vessel__node__node_identifier",
                    "vessel__node__last_known_ip", "port"]
-
-
-
 
 
 class VesselUserAccessMapAdmin(admin.ModelAdmin):
@@ -207,12 +187,9 @@ class VesselUserAccessMapAdmin(admin.ModelAdmin):
   ordering = ["-date_created"]
 
 
-
-
-
 class ActionLogEventAdmin(admin.ModelAdmin):
   """Customized admin view of the ActionLogEvent model."""
-  
+
   list_display = ["function_name", "user", "second_arg", "third_arg",
                   "was_successful", "message", "vessel_count", "date_started",
                   "completion_time"]
@@ -222,18 +199,12 @@ class ActionLogEventAdmin(admin.ModelAdmin):
   ordering = ["-date_started"]
 
 
-
-
-
 class ActionLogVesselDetailsAdmin(admin.ModelAdmin):
   """Customized admin view of the ActionLogVesselDetails model."""
-  
+
   list_display = ["event", "node", "node_address", "node_port", "vessel_name"]
   search_fields = ["node_address"]
   ordering = ["-event"]
-
-
-
 
 
 # Register/associate each custom admin view defined above with the
@@ -246,4 +217,3 @@ admin.site.register(VesselPort, VesselPortAdmin)
 admin.site.register(VesselUserAccessMap, VesselUserAccessMapAdmin)
 admin.site.register(ActionLogEvent, ActionLogEventAdmin)
 admin.site.register(ActionLogVesselDetails, ActionLogVesselDetailsAdmin)
-

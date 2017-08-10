@@ -64,9 +64,6 @@ from clearinghouse.common.util.decorators import log_function_call_without_retur
 from clearinghouse.website.control import vessels
 
 
-
-
-
 @log_function_call_and_only_first_argument
 def register_user(username, password, email, affiliation, pubkey=None):
   """
@@ -107,7 +104,7 @@ def register_user(username, password, email, affiliation, pubkey=None):
   validations.validate_affiliation(affiliation)
   if pubkey is not None:
     validations.validate_pubkey_string(pubkey)
-  
+
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, username)
@@ -120,31 +117,32 @@ def register_user(username, password, email, affiliation, pubkey=None):
     except DoesNotExistError:
       # This is what we wanted: the username isn't already taken.
       pass
-    
+
     # Get a key pair from the keygen api if the user didn't supply their own pubkey.
     if pubkey is None:
       (pubkey, privkey) = keygen.generate_keypair()
     else:
       privkey = None
-    
+
     # Generate a donor key for this user. This is done through the backend
     # as the private key must be stored in the keydb, which the website cannot
     # directly access.
     keydescription = "donor:" + username
     donor_pubkey = backend.generate_key(keydescription)
-    
+
     # Create the user record.
     geniuser = maindb.create_user(username, password, email, affiliation, pubkey, privkey, donor_pubkey)
-    
+
   finally:
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-    
-  return geniuser
-  
 
-def register_experiment(geni_user,experiment_name,researcher_name,researcher_address ,researcher_email, irb_name,irb_email, experiment_goal):
+  return geniuser
+
+
+def register_experiment(geni_user, experiment_name, researcher_name, researcher_address, researcher_email, irb_name,
+                        irb_email, experiment_goal):
   """
   <Purpose>
     Creates a experiment record with the specified information.
@@ -165,13 +163,13 @@ def register_experiment(geni_user,experiment_name,researcher_name,researcher_add
     Experiment instance (our Experiment model) corresponding to the
     new
     """
-    # If the frontend code that called this function wants to know which field
-    # is invalid, it must call the validation functions itself before making the
-    # call to register_experiment().
-    # These will raise a ValidationError if any of the fields are invalid.
-    # These ensure that the data is of the correct type (e.g. a string) as well as
-    # that we like the content of the variable.
-    
+  # If the frontend code that called this function wants to know which field
+  # is invalid, it must call the validation functions itself before making the
+  # call to register_experiment().
+  # These will raise a ValidationError if any of the fields are invalid.
+  # These ensure that the data is of the correct type (e.g. a string) as well as
+  # that we like the content of the variable.
+
   validations.validate_register_experiment_field(experiment_name)
   validations.validate_register_experiment_field(researcher_name)
   validations.validate_register_experiment_field(researcher_address)
@@ -180,12 +178,14 @@ def register_experiment(geni_user,experiment_name,researcher_name,researcher_add
   validations.validate_email(irb_email)
   validations.validate_register_experiment_field(experiment_goal)
 
-  experiment = maindb.create_experiment(geni_user, experiment_name,researcher_name,researcher_address ,researcher_email, irb_name,irb_email, experiment_goal)
+  experiment = maindb.create_experiment(geni_user, experiment_name, researcher_name, researcher_address,
+                                        researcher_email, irb_name, irb_email, experiment_goal)
 
   return experiment
 
 
-def register_sensor(sensor_name,experiment,frequency,frequency_unit,frequency_other,precision,truncation, precision_other,goal,list_of_attributes):
+def register_sensor(sensor_name, experiment, frequency, frequency_unit, frequency_other, precision, truncation,
+                    precision_other, goal, list_of_attributes):
   """
   <Purpose>
     Creates a sensor record with the specified information.
@@ -206,15 +206,15 @@ def register_sensor(sensor_name,experiment,frequency,frequency_unit,frequency_ot
   <Returns>
     Batter instance 
   """
-    # If the frontend code that called this function wants to know which field
-    # is invalid, it must call the validation functions itself before making the
-    # call to register_battery().
-    # These will raise a ValidationError if any of the fields are invalid.
-    # These ensure that the data is of the correct type (e.g. a string) as well as
-    # that we like the content of the variable.
+  # If the frontend code that called this function wants to know which field
+  # is invalid, it must call the validation functions itself before making the
+  # call to register_battery().
+  # These will raise a ValidationError if any of the fields are invalid.
+  # These ensure that the data is of the correct type (e.g. a string) as well as
+  # that we like the content of the variable.
 
-    #There's no need of validation with the Boolean fields.
-    #Neither integer fields need it
+  # There's no need of validation with the Boolean fields.
+  # Neither integer fields need it
 
   validations.validate_register_experiment_field(frequency_unit)
   validations.validate_register_experiment_field(frequency_other)
@@ -222,12 +222,10 @@ def register_sensor(sensor_name,experiment,frequency,frequency_unit,frequency_ot
   validations.validate_register_experiment_field(precision_other)
   validations.validate_register_experiment_field(goal)
 
-  sensor = maindb.create_sensor(sensor_name,experiment,frequency,frequency_unit,frequency_other,precision,truncation, precision_other,goal,list_of_attributes)
+  sensor = maindb.create_sensor(sensor_name, experiment, frequency, frequency_unit, frequency_other, precision,
+                                truncation, precision_other, goal, list_of_attributes)
 
   return sensor
-
-    
-
 
 
 # JTC: Added for installers.
@@ -250,11 +248,8 @@ def get_user_for_installers(username):
     The GeniUser instance if the username is valid.
   """
   assert_str(username)
-  
+
   return maindb.get_user(username)
-
-
-
 
 
 @log_function_call
@@ -274,11 +269,8 @@ def get_user_without_password(username):
     The GeniUser instance if the username is valid.
   """
   assert_str(username)
-  
+
   return maindb.get_user(username)
-
-
-
 
 
 @log_function_call_and_only_first_argument
@@ -301,11 +293,8 @@ def get_user_with_password(username, password):
   """
   assert_str(username)
   assert_str(password)
-  
+
   return maindb.get_user_with_password(username, password)
-
-
-
 
 
 @log_function_call_and_only_first_argument
@@ -328,11 +317,8 @@ def get_user_with_api_key(username, api_key):
   """
   assert_str(username)
   assert_str(api_key)
-  
-  return maindb.get_user_with_api_key(username, api_key)  
 
-  
-
+  return maindb.get_user_with_api_key(username, api_key)
 
 
 # Not logging arguments. The call to get_user_with_password()
@@ -363,32 +349,29 @@ def login_user(request, username, password):
   """
   assert_str(username)
   assert_str(password)
-  
+
   # Raises a DoesNotExistError if there is no such user. We could actually
   # skip this and only rely on authenticate, but I'd like to make sure that
   # the get_user_with_password function gets called before letting the user
   # access the site. The the note further down about checking the is_active
   # field for one example of why.
   get_user_with_password(username, password)
-  
+
   # The auth.authenticate() method must be called before the auth.login()
   # method, as this method sets some values in the user object that are
   # required by auth.login().
   djangouser = django.contrib.auth.authenticate(username=username, password=password)
-  
+
   # Note that we aren't checking the is_active field which is part of the base
   # django user class. If we want to be able to disable user accounts, we need
   # to be sure to do it in a way that will work for all frontends, including
   # xmlrpc. So, for example, the get_user_with_* methods could be changed.
   # If we looked for it only here, then the user could still perform actions
   # via xmlrpc.
-  
+
   # Logs the user in via django's auth platform. This associates the user
   # with the current session. 
   django.contrib.auth.login(request, djangouser)
-  
-
-
 
 
 @log_function_call
@@ -417,9 +400,6 @@ def get_logged_in_user(request):
     raise DoesNotExistError
 
 
-
-
-
 @log_function_call
 def logout_user(request):
   """
@@ -436,9 +416,6 @@ def logout_user(request):
     None
   """
   request.session.flush()
-
-
-
 
 
 @log_function_call
@@ -464,10 +441,10 @@ def change_user_keys(geniuser, pubkey=None):
     None
   """
   assert_geniuser(geniuser)
-  
+
   if pubkey is not None:
     validations.validate_pubkey_string(pubkey)
-  
+
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
@@ -480,36 +457,33 @@ def change_user_keys(geniuser, pubkey=None):
       maindb.get_user(geniuser.username)
     except DoesNotExistError:
       raise InternalError(traceback.format_exc())
-    
+
     # Get a key pair from the keygen api if the user didn't supply their own pubkey.
     if pubkey is None:
       (pubkey, privkey) = keygen.generate_keypair()
     else:
-      privkey = None    
-    
+      privkey = None
+
     maindb.set_user_keys(geniuser, pubkey, privkey)
-    
+
     # Now we need to find all of the vessels the user has access to and set
     # them to have their user keys updated by the backend.
     vessel_list = maindb.get_vessels_accessible_by_user(geniuser)
     if vessel_list:
       vessels.flag_vessels_for_user_keys_sync(lockserver_handle, vessel_list)
-    
+
   finally:
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
 
 
-
-
-	
 def get_useable_ports():
   """
   <Purpose>
      Gets the allowed user port range
   <Arguments>
-	None
+  None
   <Exceptions>
    None
   <Side Effects>
@@ -518,9 +492,6 @@ def get_useable_ports():
     The allowed user port range which is globally defined in maindb.
   """
   return maindb.get_allowed_user_ports()
-
-
-
 
 
 @log_function_call
@@ -542,10 +513,10 @@ def change_user_email(geniuser, new_email):
     None
   """
   assert_geniuser(geniuser)
-  #validate its a real email.  The frontend should already
-  #checks for this but we validate again just in case.
+  # validate its a real email.  The frontend should already
+  # checks for this but we validate again just in case.
   validations.validate_email(new_email)
- 
+
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
@@ -564,9 +535,6 @@ def change_user_email(geniuser, new_email):
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-
-
-
 
 
 @log_function_call
@@ -588,11 +556,10 @@ def change_user_affiliation(geniuser, new_affiliation):
     None
   """
   assert_geniuser(geniuser)
-  #Determines if the new affiliation is valid.  The frontend should already
-  #checks for this but we validate again here just in case.
+  # Determines if the new affiliation is valid.  The frontend should already
+  # checks for this but we validate again here just in case.
   validations.validate_affiliation(new_affiliation)
- 
-  
+
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
@@ -611,9 +578,6 @@ def change_user_affiliation(geniuser, new_affiliation):
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-
-
-
 
 
 @log_function_call
@@ -656,9 +620,6 @@ def change_user_port(geniuser, new_port):
     lockserver.destroy_lockserver_handle(lockserver_handle)
 
 
-
-
-	
 @log_function_call_and_only_first_argument
 def change_user_password(geniuser, new_password):
   """
@@ -678,10 +639,10 @@ def change_user_password(geniuser, new_password):
     None
   """
   assert_geniuser(geniuser)
-  #Determines if the new password is strong enough.  The frontend should already
-  #check for this but we validate again here just in case.
+  # Determines if the new password is strong enough.  The frontend should already
+  # check for this but we validate again here just in case.
   validations.validate_password(new_password)
-  
+
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
@@ -702,9 +663,6 @@ def change_user_password(geniuser, new_password):
     lockserver.destroy_lockserver_handle(lockserver_handle)
 
 
-
-
-
 @log_function_call
 def regenerate_api_key(geniuser):
   """
@@ -721,7 +679,7 @@ def regenerate_api_key(geniuser):
     The new API key.
   """
   assert_geniuser(geniuser)
-  
+
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
@@ -734,17 +692,14 @@ def regenerate_api_key(geniuser):
       maindb.get_user(geniuser.username)
     except DoesNotExistError:
       raise InternalError(traceback.format_exc())
-    
+
     return maindb.regenerate_api_key(geniuser)
-    
+
   finally:
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
-    lockserver.destroy_lockserver_handle(lockserver_handle) 
+    lockserver.destroy_lockserver_handle(lockserver_handle)
 
-
-
-  
 
 @log_function_call
 def delete_private_key(geniuser):
@@ -763,7 +718,7 @@ def delete_private_key(geniuser):
     None
   """
   assert_geniuser(geniuser)
-  
+
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
@@ -778,16 +733,13 @@ def delete_private_key(geniuser):
       maindb.get_user(geniuser.username)
     except DoesNotExistError:
       raise InternalError(traceback.format_exc())
-    
+
     maindb.delete_user_private_key(geniuser)
-    
+
   finally:
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-
-
-
 
 
 @log_function_call_without_return
@@ -808,11 +760,8 @@ def get_private_key(geniuser):
     deleted it).
   """
   assert_geniuser(geniuser)
-  
+
   return geniuser.user_privkey
-
-
-
 
 
 @log_function_call
@@ -831,12 +780,9 @@ def get_donations(geniuser):
     A list of the donations made by geniuser.
   """
   assert_geniuser(geniuser)
-  
+
   # This is read-only, so not locking the user.
   return maindb.get_donations_by_user(geniuser)
-
-
-
 
 
 @log_function_call
@@ -856,12 +802,9 @@ def get_acquired_vessels(geniuser):
     user.
   """
   assert_geniuser(geniuser)
-  
+
   # This is read-only, so not locking the user.
   return maindb.get_acquired_vessels(geniuser)
-
-
-
 
 
 # @log_action is a decorator that records details of vessel-affecting
@@ -903,7 +846,7 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
-  
+
   try:
     # Make sure the user still exists now that we hold the lock. Also makes
     # sure that we see any changes made to the user before we obtained the lock.
@@ -911,12 +854,12 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
       geniuser = maindb.get_user(geniuser.username)
     except DoesNotExistError:
       raise InternalError(traceback.format_exc())
-    
+
     # Ensure the user is allowed to acquire these resources. This call will
     # raise an InsufficientUserResourcesError if the additional vessels would
     # cause the user to be over their limit.
     maindb.require_user_can_acquire_resources(geniuser, vesselcount)
-    
+
     if vesseltype == 'wan':
       acquired_list = vessels.acquire_wan_vessels(lockserver_handle, geniuser, vesselcount)
     elif vesseltype == 'lan':
@@ -927,16 +870,13 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
       acquired_list = vessels.acquire_rand_vessels(lockserver_handle, geniuser, vesselcount)
     else:
       raise ProgrammerError("Vessel type '%s' is not a valid type" % vesseltype)
-    
+
     return acquired_list
-    
+
   finally:
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-
-
-
 
 
 # @log_action is a decorator that records details of vessel-affecting
@@ -977,7 +917,7 @@ def acquire_specific_vessels(geniuser, vessel_list):
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
-  
+
   try:
     # Make sure the user still exists now that we hold the lock. Also makes
     # sure that we see any changes made to the user before we obtained the lock.
@@ -985,21 +925,18 @@ def acquire_specific_vessels(geniuser, vessel_list):
       geniuser = maindb.get_user(geniuser.username)
     except DoesNotExistError:
       raise InternalError(traceback.format_exc())
-    
+
     # Ensure the user is allowed to acquire these resources. This call will
     # raise an InsufficientUserResourcesError if the additional vessels would
     # cause the user to be over their limit.
     maindb.require_user_can_acquire_resources(geniuser, len(vessel_list))
-    
+
     return vessels.acquire_specific_vessels_best_effort(lockserver_handle, geniuser, vessel_list)
-    
+
   finally:
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-
-
-
 
 
 # @log_action is a decorator that records details of vessel-affecting
@@ -1037,7 +974,7 @@ def release_vessels(geniuser, vessel_list):
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
-  
+
   try:
     # Make sure the user still exists now that we hold the lock. Also makes
     # sure that we see any changes made to the user before we obtained the lock.
@@ -1045,16 +982,13 @@ def release_vessels(geniuser, vessel_list):
       geniuser = maindb.get_user(geniuser.username)
     except DoesNotExistError:
       raise InternalError(traceback.format_exc())
-    
+
     vessels.release_vessels(lockserver_handle, geniuser, vessel_list)
 
   finally:
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-
-
-
 
 
 @log_function_call
@@ -1082,14 +1016,11 @@ def release_all_vessels(geniuser):
 
   # Get a list of all vessels acquired by the user.
   vessel_list = maindb.get_acquired_vessels(geniuser)
-  
+
   if not vessel_list:
     raise InvalidRequestError("You have no vessels and so nothing to release.")
-  
+
   release_vessels(geniuser, vessel_list)
-  
-
-
 
 
 # @log_action is a decorator that records details of vessel-affecting
@@ -1129,7 +1060,7 @@ def renew_vessels(geniuser, vessel_list):
   # Lock the user.
   lockserver_handle = lockserver.create_lockserver_handle()
   lockserver.lock_user(lockserver_handle, geniuser.username)
-  
+
   try:
     # Make sure the user still exists now that we hold the lock. Also makes
     # sure that we see any changes made to the user before we obtained the lock.
@@ -1137,14 +1068,14 @@ def renew_vessels(geniuser, vessel_list):
       geniuser = maindb.get_user(geniuser.username)
     except DoesNotExistError:
       raise InternalError(traceback.format_exc())
-    
+
     # Ensure the user is not over their limit of acquired vessels due to
     # donations of theirs having gone offline. This call will raise an
     # InsufficientUserResourcesError if the user is currently over their
     # limit.
     vesselcount = 0
     maindb.require_user_can_acquire_resources(geniuser, vesselcount)
-    
+
     # The vessels.renew_vessels function is responsible for ensuring that the
     # vessels belong to this user. We let the other function do the check
     # because we want to hold locks on the vessels' nodes before checking.
@@ -1154,9 +1085,6 @@ def renew_vessels(geniuser, vessel_list):
     # Unlock the user.
     lockserver.unlock_user(lockserver_handle, geniuser.username)
     lockserver.destroy_lockserver_handle(lockserver_handle)
-
-
-
 
 
 @log_function_call
@@ -1184,17 +1112,14 @@ def renew_all_vessels(geniuser):
   # before we hold the lock. I'm not going to worry about this because it won't
   # lead to data integrity. At worst the user could get an error about not
   # being able to renew all vessels.
-    
+
   # Get a list of all vessels acquired by the user.
   vessel_list = maindb.get_acquired_vessels(geniuser)
-  
+
   if not vessel_list:
     raise InvalidRequestError("You have no vessels and so nothing to renew.")
-  
+
   renew_vessels(geniuser, vessel_list)
-
-
-
 
 
 # Not logging the function call for now.
@@ -1217,22 +1142,19 @@ def get_vessel_list(vesselhandle_list):
     A list of Vessel objects.
   """
   assert_list_of_str(vesselhandle_list)
-  
+
   vessel_list = []
-  
+
   for vesselhandle in vesselhandle_list:
     if len((vesselhandle.split(":"))) != 2:
       raise InvalidRequestError("Invalid vesselhandle: " + vesselhandle)
-    
+
     (nodeid, vesselname) = vesselhandle.split(":")
     # Raises DoesNotExistError if there is no such node/vessel.
     vessel = maindb.get_vessel(nodeid, vesselname)
     vessel_list.append(vessel)
-    
+
   return vessel_list
-
-
-  
 
 
 # Not logging the function call for now.
@@ -1258,31 +1180,28 @@ def get_vessel_infodict_list(vessel_list):
     A list of vessel infodicts.
   """
   infodict_list = []
-  
+
   for vessel in vessel_list:
     vessel_info = {}
-    
+
     vessel_info["node_id"] = maindb.get_node_identifier_from_vessel(vessel)
     node = maindb.get_node(vessel_info["node_id"])
-    
+
     vessel_info["node_ip"] = node.last_known_ip
     vessel_info["node_port"] = node.last_known_port
     vessel_info["vessel_id"] = vessel.name
-    
+
     vessel_info["handle"] = vessel_info["node_id"] + ":" + vessel.name
-    
+
     vessel_info["is_active"] = node.is_active
-    
+
     expires_in_timedelta = vessel.date_expires - datetime.datetime.now()
     # The timedelta object stores information in two parts: days and seconds.
     vessel_info["expires_in_seconds"] = (expires_in_timedelta.days * 3600 * 24) + expires_in_timedelta.seconds
-      
+
     infodict_list.append(vessel_info)
-    
+
   return infodict_list
-
-
-
 
 
 def get_total_vessel_credits(geniuser):
@@ -1302,7 +1221,7 @@ def get_total_vessel_credits(geniuser):
     of how many they currently have acquired.
   """
   assert_geniuser(geniuser)
-  
+
   return maindb.get_user_total_vessel_credits(geniuser)
 
 
@@ -1343,10 +1262,10 @@ def get_available_vessel_credits(geniuser):
     moment without exceeding the total number they are allowed to acquire.
   """
   assert_geniuser(geniuser)
-  
+
   max_allowed_vessels = maindb.get_user_total_vessel_credits(geniuser)
   acquired_vessel_count = len(maindb.get_acquired_vessels(geniuser))
-  
+
   if acquired_vessel_count >= max_allowed_vessels:
     return 0
   else:

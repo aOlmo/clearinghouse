@@ -41,41 +41,44 @@ def mock_get_logged_in_user(request):
                              usable_vessel_port='12345', free_vessel_credits=10)
   return geniuser
 
+
 def mock_acquire_vessels(geniuser, vesselcount, vesseltype):
   return ['test1', 'test2']
+
 
 def mock_acquire_vessels_throws_UnableToAcquireResourcesError(geniuser, vesselcount, vesseltype):
   raise UnableToAcquireResourcesError
 
+
 def mock_acquire_vessels_throws_InsufficientUserResourcesError(geniuser, vesselcount, vesseltype):
   raise InsufficientUserResourcesError
 
+
 c = Client()
-good_data = {'num':5, 'env':'rand'}
+good_data = {'num': 5, 'env': 'rand'}
 
 
 def main():
-  
   # Setup test environment
   testlib.setup_test_environment()
   testlib.setup_test_db()
-  
+
   try:
     login_test_user()
-    
+
     test_normal()
     test_interface_throws_UnableToAcquireResourcesError()
     test_interface_throws_InsufficientUserResourcesError()
     test_blank_POST_data()
     test_invalid_POST_data_invalid_num()
     test_invalid_POST_data_invalid_env()
-    
-    print "All tests passed."
-    
+
+    print
+    "All tests passed."
+
   finally:
     testlib.teardown_test_db()
     testlib.teardown_test_environment()
-
 
 
 def test_normal():
@@ -85,8 +88,8 @@ def test_normal():
   """
   interface.acquire_vessels = mock_acquire_vessels
   response = c.post('/html/get_resources', good_data, follow=True)
-  assert(response.status_code == 200)
-  assert(response.template[0].name == 'control/myvessels.html')
+  assert (response.status_code == 200)
+  assert (response.template[0].name == 'control/myvessels.html')
 
 
 def test_interface_throws_UnableToAcquireResourcesError():
@@ -103,11 +106,10 @@ def test_interface_throws_UnableToAcquireResourcesError():
   """
   interface.acquire_vessels = mock_acquire_vessels_throws_UnableToAcquireResourcesError
   response = c.post('/html/get_resources', good_data, follow=True)
-  
-  assert(response.status_code == 200)
-  assert(response.template[0].name == 'control/myvessels.html')
-  assert("Unable to acquire vessels at this time" in response.content)
 
+  assert (response.status_code == 200)
+  assert (response.template[0].name == 'control/myvessels.html')
+  assert ("Unable to acquire vessels at this time" in response.content)
 
 
 def test_interface_throws_InsufficientUserResourcesError():
@@ -117,12 +119,11 @@ def test_interface_throws_InsufficientUserResourcesError():
   """
   interface.acquire_vessels = mock_acquire_vessels_throws_InsufficientUserResourcesError
   response = c.post('/html/get_resources', good_data, follow=True)
-  
-  assert(response.status_code == 200)
-  assert(response.template[0].name == 'control/myvessels.html')
-  assert("Unable to acquire" in response.content)
-  assert("vessel credit" in response.content)
 
+  assert (response.status_code == 200)
+  assert (response.template[0].name == 'control/myvessels.html')
+  assert ("Unable to acquire" in response.content)
+  assert ("vessel credit" in response.content)
 
 
 def test_blank_POST_data():
@@ -132,11 +133,10 @@ def test_blank_POST_data():
   """
   interface.acquire_vessels = mock_acquire_vessels
   response = c.post('/html/get_resources', {}, follow=True)
-  
-  assert(response.status_code == 200)
-  assert(response.template[0].name == 'control/myvessels.html')
-  assert("This field is required" in response.content)
 
+  assert (response.status_code == 200)
+  assert (response.template[0].name == 'control/myvessels.html')
+  assert ("This field is required" in response.content)
 
 
 def test_invalid_POST_data_invalid_num():
@@ -145,13 +145,12 @@ def test_invalid_POST_data_invalid_num():
     Test behavior if we submit POST data with an invalid 'num' field.
   """
   interface.acquire_vessels = mock_acquire_vessels
-  test_data = {'num':-5, 'env':'rand'}
+  test_data = {'num': -5, 'env': 'rand'}
   response = c.post('/html/get_resources', test_data, follow=True)
-  
-  assert(response.status_code == 200)
-  assert(response.template[0].name == 'control/myvessels.html')
-  assert("Select a valid choice" in response.content)
 
+  assert (response.status_code == 200)
+  assert (response.template[0].name == 'control/myvessels.html')
+  assert ("Select a valid choice" in response.content)
 
 
 def test_invalid_POST_data_invalid_env():
@@ -160,13 +159,12 @@ def test_invalid_POST_data_invalid_env():
     Test behavior if we submit POST data with an invalid 'env' field.
   """
   interface.acquire_vessels = mock_acquire_vessels
-  test_data = {'num':5, 'env':'notvalid'}
+  test_data = {'num': 5, 'env': 'notvalid'}
   response = c.post('/html/get_resources', test_data, follow=True)
-  
-  assert(response.status_code == 200)
-  assert(response.template[0].name == 'control/myvessels.html')
-  assert("Select a valid choice" in response.content)
 
+  assert (response.status_code == 200)
+  assert (response.template[0].name == 'control/myvessels.html')
+  assert ("Select a valid choice" in response.content)
 
 
 # Creates a test user in the test db, and uses the test client to 'login',
@@ -174,12 +172,11 @@ def test_invalid_POST_data_invalid_env():
 def login_test_user():
   # uses the mock get_logged_in_user function that represents a logged in user
   interface.get_logged_in_user = mock_get_logged_in_user
-  
+
   user = DjangoUser.objects.create_user('tester', 'test@test.com', 'testpassword')
   user.save()
   c.login(username='tester', password='testpassword')
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
   main()

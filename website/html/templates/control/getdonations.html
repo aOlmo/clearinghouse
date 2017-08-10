@@ -6,7 +6,7 @@ Get Donations - {{ TESTBED }} {{ CLEARINGHOUSE }}
 
 {% block style %}
 {{ block.super }}
-<link href="{{ MEDIA_URL }}css/download.css" rel="stylesheet" type="text/css" />
+<link href="{{ MEDIA_URL }}css/download.css" rel="stylesheet" type="text/css"/>
 {% endblock style %}
 
 {% block script %}
@@ -20,14 +20,14 @@ Get Donations - {{ TESTBED }} {{ CLEARINGHOUSE }}
 {% endblock nav_getdonations %}
 
 {% block content %}
-	<div id="main">
-		<div id="middle">
-			<div id="downloadlink">
-				<p>Give this link to others so they can donate on your behalf:</p>
-				<a href="{% url 'installers' username %}">{{ domain }}{% url 'installers' username %}</a>
-			</div>
-			{% include "common/installers.html" %}
-		</div>
-	</div>
+<div id="main">
+    <div id="middle">
+        <div id="downloadlink">
+            <p>Give this link to others so they can donate on your behalf:</p>
+            <a href="{% url 'installers' username %}">{{ domain }}{% url 'installers' username %}</a>
+        </div>
+        {% include "common/installers.html" %}
+    </div>
+</div>
 
 {% endblock content %}

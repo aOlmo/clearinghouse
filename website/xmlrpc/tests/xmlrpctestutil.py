@@ -15,6 +15,7 @@ import xmlrpclib
 
 from django.test.client import Client
 
+
 class TestTransport(xmlrpclib.Transport):
   """Handles connections to XML-RPC server through Django test client."""
 

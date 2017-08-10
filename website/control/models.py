@@ -30,8 +30,6 @@ from django.contrib.auth.models import User as DjangoUser
 from clearinghouse.common.util import log
 
 
-
-
 # First, we want to register a signal. This page recommends putting this code
 # in models.py: http://docs.djangoproject.com/en/dev/topics/signals/
 
@@ -40,14 +38,12 @@ def _prepare_newly_created_db_connection(sender, **kwargs):
   from clearinghouse.common.api import maindb
   maindb.init_maindb()
 
+
 # Call init_maindb() on database connection creation. This is to help prevent
 # init_maindb() from accidentally not being called when it should be.
 import django.db.backends.signals
+
 django.db.backends.signals.connection_created.connect(_prepare_newly_created_db_connection)
-
-
-
-
 
 
 class GeniUser(DjangoUser):
@@ -68,13 +64,13 @@ class GeniUser(DjangoUser):
   # The text the user supplied which identifies the organization they are
   # affiliated with. 
   affiliation = models.CharField("Affiliation", max_length=200)
-  
+
   # The user's public key which they use for communicating with nodes.
   # Note that the key is stored as a string "e n" where e and n are
   # decimal numbers. Because of this, max_length != max bits in the key.
   # We index this field with custom sql. See the file sql/geniuser.sql.
   user_pubkey = models.CharField("GeniUser's public key", max_length=2048)
-  
+
   # The user's private key which they use for communicating with nodes.
   # This is not stored in the Key DB because the website needs access to it and
   # it is not used by us. The private key will only be stored when the the user
@@ -83,13 +79,13 @@ class GeniUser(DjangoUser):
   # Note that the key is stored as a string "d p q" where d, p, and q are
   # decimal numbers. Because of this, max_length != max bits in the key.
   user_privkey = models.CharField("GeniUser's private key [!]", max_length=4096, null=True)
-  
+
   # This is not a cryptographic key. This is an API key that we generate which
   # can be used by the user with the public SeattleGeni XML-RPC interface.
   # The purpose is to allow developers to use the XML-RPC interface without
   # requiring them to embed their passphrase in their source code. 
   api_key = models.CharField("API key", max_length=100, db_index=True)
-  
+
   # The public key new donations use to indicate the donation is by this user.
   # The corresponding private key is always stored in the Key DB and is
   # accessible using this public key. The user never sees their donor keys.
@@ -97,7 +93,7 @@ class GeniUser(DjangoUser):
   # decimal numbers. Because of this, max_length != max bits in the key.
   # We index this field with custom sql. See the file sql/geniuser.sql.
   donor_pubkey = models.CharField("Donor public Key", max_length=2048)
-  
+
   # The number of vessels the user is allowed to acquire regardless of whether
   # they have made donations. When the user makes donations, they still get
   # these free vessel credits, as well. This is stored in the database rather
@@ -105,12 +101,11 @@ class GeniUser(DjangoUser):
   # case and give extra free resources to. Unfortunately, "free" has more than
   # one meaning in English. This is more accurately "gratis_vessel_credits".
   free_vessel_credits = models.IntegerField("Free (gratis) vessel credits", db_index=True)
-  
+
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)
   date_modified = models.DateTimeField("Date modified in DB", auto_now=True, db_index=True)
-  
-  
+
   def __unicode__(self):
     """
     Produce a string representation of the GeniUser instance.
@@ -118,38 +113,36 @@ class GeniUser(DjangoUser):
     return "GeniUser:%s" % (self.username)
 
 
-
 class Experiment(models.Model):
   # Name of the Experiment
-  expe_name = models.CharField(max_length=30, default = None)
+  expe_name = models.CharField(max_length=30, default=None)
 
   # The user who submitted the form
-  geni_user = models.ForeignKey(GeniUser, db_index=True, default = None)
+  geni_user = models.ForeignKey(GeniUser, db_index=True, default=None)
 
   # Name of the researcher who carry out the experiment
-  researcher_name = models.CharField(max_length=30, default = None)
+  researcher_name = models.CharField(max_length=30, default=None)
 
   # Name and address of researcher's home institution
-  researcher_institution_name = models.CharField(max_length=30, default = None)
+  researcher_institution_name = models.CharField(max_length=30, default=None)
 
   # Email of the researcher
-  researcher_email = models.EmailField(default = None)
+  researcher_email = models.EmailField(default=None)
 
   # Postal/Mail address of the researcher
-  researcher_address = models.CharField(max_length=64, default = None)
+  researcher_address = models.CharField(max_length=64, default=None)
 
   # Email Address of the Researcher's IRB officer
-  irb_officer_email = models.EmailField( default = None)
+  irb_officer_email = models.EmailField(default=None)
 
   # The main goal of the experiment
-  goal = models.CharField(max_length=256, default = None)
+  goal = models.CharField(max_length=256, default=None)
 
   def __unicode__(self):
     """
     Produce a string representation of the GeniUser instance.
     """
     return "Experiment:%s" % (self.id)
-
 
 
 class Sensor(models.Model):
@@ -165,7 +158,7 @@ class Sensor(models.Model):
   # How frequently is this sensor data pulled/requested?
   frequency = models.IntegerField(default=None, blank=True)
 
-  #frequency unit
+  # frequency unit
   frequency_unit = models.CharField(max_length=512, default=None, blank=True)
 
   # Any level of frequency that we do not support?
@@ -174,7 +167,7 @@ class Sensor(models.Model):
   # How precise
   precision = models.IntegerField(default=None, blank=True)
 
-  #truncation
+  # truncation
   truncation = models.IntegerField(default=None, blank=True)
 
   # A level of precision for any of this sensor data that we do NOT support
@@ -209,7 +202,7 @@ class Battery(Sensor):
   battery_status = models.BooleanField(default=False)
 
   # Need technology of battery?
-  battery_technology = models.BooleanField(default=False)   
+  battery_technology = models.BooleanField(default=False)
 
 
 class Bluetooth(Sensor):
@@ -267,9 +260,6 @@ class Cellular(Sensor):
   cellular_signal_strengths = models.BooleanField(default=False)
 
 
-
-
-
 class Location(Sensor):
   """
     Model for Location
@@ -285,9 +275,6 @@ class Location(Sensor):
 
   # Need geocode?
   location_geocode = models.BooleanField(default=False)
-
-
-
 
 
 class Settings(Sensor):
@@ -322,9 +309,6 @@ class Settings(Sensor):
   settings_screen_tiemout = models.BooleanField(default=False)
 
 
-
-
-
 class ConcretSensor(Sensor):
   """
     Model for concret sensor
@@ -348,18 +332,12 @@ class ConcretSensor(Sensor):
   concretSensor_orientation = models.BooleanField(default=False)
 
 
-
-
-
 class Signal_strengths(Sensor):
   """
     Model for signal strengths
   """
   # Need signal strength?
   signal_strength = models.BooleanField(default=False)
-
-
-
 
 
 class Wifi(Sensor):
@@ -390,7 +368,6 @@ class Wifi(Sensor):
 
   # Need scan results?
   Wifi_scan_results = models.BooleanField(default=False)
-
 
 
 class Node(models.Model):
@@ -427,7 +404,7 @@ class Node(models.Model):
   # If they were deleted from the database, we wouldn't have the owner key to
   # be able to contact them if they came back online later.
   is_active = models.BooleanField(db_index=True)
-  
+
   # The node gets marked as broken if we detect that the state of the node
   # doesn't exactly match what we have in our database. By 'state', we don't
   # just mean the state being advertised (the user key of the extra vessel),
@@ -449,11 +426,10 @@ class Node(models.Model):
   # resources assigned to it, so the name needs to be known in order to do
   # things with those resources. 
   extra_vessel_name = models.CharField("Extra-vessel name", max_length=8, db_index=True)
-  
+
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)
   date_modified = models.DateTimeField("Date modified in DB", auto_now=True, db_index=True)
-
 
   def __unicode__(self):
     """
@@ -462,26 +438,22 @@ class Node(models.Model):
     return "Node:%s:%s:%d" % (self.node_identifier[:10].replace(" ", "_"), self.last_known_ip, self.last_known_port)
 
 
-
-
-
 class Donation(models.Model):
   """
   Defines the Donation model. A Donation record represents the resources a user
   has donated from a single node. 
   """
-  
+
   class Meta:
     # Only one record can have a given node and donor combination.
     unique_together = ("node", "donor")
 
-
   # The node that this donation is from.
   node = models.ForeignKey(Node, db_index=True)
-  
+
   # The user that is credited for this donation.
   donor = models.ForeignKey(GeniUser, db_index=True)
- 
+
   # This field will be used, if necessary, to indicate steps in the process of
   # setting up a donation's resources for use (which, for now, would be
   # creating vessels on the corresponding node using this donation's resources).
@@ -493,20 +465,16 @@ class Donation(models.Model):
   # is stored may change in the future and this field just serves to start
   # keeping track of the information for now. 
   resource_description_text = models.TextField("Resource description")
-  
+
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)
   date_modified = models.DateTimeField("Date modified in DB", auto_now=True, db_index=True)
-    
-    
+
   def __unicode__(self):
     """
     Produces a string representation of the Donation instance.
     """
     return "Donation:[%s]:[%s]" % (self.node, self.donor)
-
-
-
 
 
 class Vessel(models.Model):
@@ -520,48 +488,43 @@ class Vessel(models.Model):
     # Only one record can have a given node and vessel name combination.
     unique_together = ("node", "name")
 
-
   # The node that this vessel is on.
   node = models.ForeignKey(Node, db_index=True)
 
   # The name used to refer to the vessel when communicating with the nodemanager.
   name = models.CharField("Vessel name", max_length=50, db_index=True)
-  
+
   # If this vessel has been acquired by a user, this is the user who acquired
   # it. This will be a null/None value if the vessel is not currently acquired
   # by any user.
   acquired_by_user = models.ForeignKey(GeniUser, null=True, db_index=True)
-  
+
   # The date that the acquired_by_user acquired this vessel.
   date_acquired = models.DateTimeField("Date acquired", null=True, db_index=True)
-  
+
   # The date after which the vessel should be taken away from the user who has
   # acquired it.
   date_expires = models.DateTimeField("Date that acquisition expires", null=True, db_index=True)
-    
+
   # The vessel is marked as dirty if it needs to be reset, etc. before it can
   # be acquired.
   is_dirty = models.BooleanField(db_index=True)
-  
+
   # The vessel's user keys can change due to the user who acquired the vessel
   # changing their key or providing vessel access to other users. A value of
   # False here indicates that the user keys have changed since they were last
   # set on the vessel.
   user_keys_in_sync = models.BooleanField(db_index=True)
-    
+
   # Have the database keep track of when each record was created and modified.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)
   date_modified = models.DateTimeField("Date modified in DB", auto_now=True, db_index=True)
-    
-    
+
   def __unicode__(self):
     """
     Produces a string representation of the Vessel instance.
     """
     return "Vessel:[%s]:%s" % (self.node, self.name)
-
-
-
 
 
 class VesselPort(models.Model):
@@ -575,22 +538,17 @@ class VesselPort(models.Model):
     # Only one record can have a given vessel and port combination.
     unique_together = ("vessel", "port")
 
-
   # The vessel that this port record is in reference to.
   vessel = models.ForeignKey(Vessel, db_index=True)
-  
+
   # The port being represented.
   port = models.IntegerField("Port", db_index=True)
-
 
   def __unicode__(self):
     """
     Produces a string representation of the VesselPort instance.
     """
     return "VesselPort:[%s]:%s" % (self.vessel, self.port)
-
-
-
 
 
 class VesselUserAccessMap(models.Model):
@@ -601,28 +559,23 @@ class VesselUserAccessMap(models.Model):
   In the future when additional users can be added to a Vessel through
   SeattleGeni, the additional users would have records here. 
   """
-  
+
   class Meta:
     # Only one record can have a given vessel and user combination.
     unique_together = ("vessel", "user")
 
-
   vessel = models.ForeignKey(Vessel, db_index=True)
-  
+
   user = models.ForeignKey(GeniUser, db_index=True)
-  
+
   # Have the database keep track of when each record was created.
   date_created = models.DateTimeField("Date added to DB", auto_now_add=True, db_index=True)
-  
-  
+
   def __unicode__(self):
     """
     Produces a string representation of the VesselUserAccessMap instance.
     """
     return "VesselUserAccessMap:[%s]:[%s]" % (self.vessel, self.user)
-
-
-
 
 
 class ActionLogEvent(models.Model):
@@ -633,44 +586,41 @@ class ActionLogEvent(models.Model):
   """
   # The name used to refer to the type of action.
   function_name = models.CharField("Function type", max_length=50, db_index=True)
-  
+
   # A string representation of the second argument to the function if that
   # argument was not a vessel list.
   second_arg = models.CharField("Second arg", null=True, max_length=50)
-  
+
   # A string representation of the third argument to the function if that
   # argument was not a vessel list.
   third_arg = models.CharField("Third arg", null=True, max_length=50)
-  
+
   # If the owner_type is "user", this will be the user that performed the
   # action.
   user = models.ForeignKey(GeniUser, null=True, db_index=True)
-  
+
   # Whether the action was successful.
   was_successful = models.BooleanField(db_index=True)
-  
+
   # A status message, error message, or other relevant information.
   message = models.CharField("Message", null=True, max_length=1024)
-  
+
   # The number of affected vessels. This is actually redundant as it is just
   # the number of ActionLogVesselDetails records for this event. However, this
   # makes some admin-side display code easier.
   vessel_count = models.IntegerField("Vessel count", null=True, db_index=True)
-  
+
   # When the action was started.
   date_started = models.DateTimeField("Date started", db_index=True)
-  
+
   # The number of seconds it took for the action to be completed.
   completion_time = models.FloatField("Completion time (seconds)", db_index=True)
-  
+
   def __unicode__(self):
     """
     Produces a string representation of the ActionLogEvent instance.
     """
     return "ActionLogEvent:[%s]:[%s]" % (self.id, self.function_name)
-
-
-
 
 
 class ActionLogVesselDetails(models.Model):
@@ -684,7 +634,7 @@ class ActionLogVesselDetails(models.Model):
 
   # The node that this vessel is on.
   node = models.ForeignKey(Node, db_index=True)
-  
+
   # To know the ip or nat string despite the fact that this may change for the
   # node record itself.
   node_address = models.CharField("Node address", max_length=100, db_index=True)

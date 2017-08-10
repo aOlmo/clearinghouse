@@ -2,89 +2,93 @@
 
 {% comment %}
 <Program>
-  auto_register.html
+    auto_register.html
 
-<Author>
-  Originally by:
-  Gaetano Pressimone 2012
-  
-<Purpose>
-  Django template file for {{ TESTBED }} {{ CLEARINGHOUSE }}'s 'auto_register' page.  The page 
-  allows a visitor to create a {{ CLEARINGHOUSE }} account quickly if logging in
-  with a OpenID/OAuth account that has not yet been linked with a {{ TESTBED }} {{ CLEARINGHOUSE }}
-  account.
+    <Author>
+        Originally by:
+        Gaetano Pressimone 2012
 
-<Extends>
-  accounts/accounts_base.html
+        <Purpose>
+            Django template file for {{ TESTBED }} {{ CLEARINGHOUSE }}'s 'auto_register' page. The page
+            allows a visitor to create a {{ CLEARINGHOUSE }} account quickly if logging in
+            with a OpenID/OAuth account that has not yet been linked with a {{ TESTBED }} {{ CLEARINGHOUSE }}
+            account.
 
-<Stylesheet>
-  common.css
-  account.css
+            <Extends>
+                accounts/accounts_base.html
 
-<Scripts>
-  None
+                <Stylesheet>
+                    common.css
+                    account.css
 
-<Template Variables>
-  backend:
-		An OpenID/OAuth backend ex google,facebook etc.
-  error_msgs:
+                    <Scripts>
+                        None
 
-	username_form:
+                        <Template Variables>
+                            backend:
+                            An OpenID/OAuth backend ex google,facebook etc.
+                            error_msgs:
 
-{% endcomment %}
+                            username_form:
 
-{% block title %}
-Auto Register - {{ CLEARINGHOUSE }}
-{% endblock title %}
+                            {% endcomment %}
 
-{% block script %}
-{{ block.super }}
-<script type="text/javascript" src="{{MEDIA_URL}}scripts/auto_register.js" charset="utf-8"></script>
-{% endblock script %}
+                            {% block title %}
+                            Auto Register - {{ CLEARINGHOUSE }}
+                            {% endblock title %}
 
-{% block nav_register %}
-<td class="active">Auto Register</td>
-{% endblock nav_register %}
+                            {% block script %}
+                            {{ block.super }}
+                            <script type="text/javascript" src="{{MEDIA_URL}}scripts/auto_register.js"
+                                    charset="utf-8"></script>
+                            {% endblock script %}
 
-{% block content %}
-    {% csrf_token %}
-    <div id="main">
-		<div id="middle">		
-		  <div id="learn-about-seattle">
-		    This {{backend}} account is not linked with a Seattle Clearinghouse account so we're creating one for you.  Already a user? <a href="{% url 'login' %}">Login</a>
-		  </div>
-<form action="{% url 'auto_register' %}" method="post">{% csrf_token %}
- {% if username_form.errors %}
-		  <p class="warning2">
-		  Please correct the following:</p>
-		{% endif %}
-		  
-		{% if error_msgs %}
-		  <p class="warning">
-		    {{ error_msgs }}
-		    </br>
-		  </p>
-		{% endif %}
-<table class="login">
+                            {% block nav_register %}
+                            <td class="active">Auto Register</td>
+                            {% endblock nav_register %}
 
-	<tr>{% comment %}
-		<td class="key">Username</td>
-    <td class="value"><input type="text" name="username" id="id_username" value=""/></td>
-	{% endcomment %}
-    <td class="key">{{ username_form.username.label_tag }}</td>
-    <td class="value">{{ username_form.username }}</td>
-	  <td>{{username_form.username.errors}}</td>
-  </tr>
-  <tr>
-    <td class= "key"> </td>
-    <td class="value"> <input type="submit" value="Register" />
-			<div id="loading_indicator">
-			  <img src="{{ MEDIA_URL }}images/loading_indicator.gif"/>
-			</div>
-		</td>
-  </tr>
-  </table>
-</form>
-</div>
-</div>
-{% endblock %}
+                            {% block content %}
+                            {% csrf_token %}
+                            <div id="main">
+                                <div id="middle">
+                                    <div id="learn-about-seattle">
+                                        This {{backend}} account is not linked with a Seattle Clearinghouse account so
+                                        we're creating one for you. Already a user? <a
+                                            href="{% url 'login' %}">Login</a>
+                                    </div>
+                                    <form action="{% url 'auto_register' %}" method="post">{% csrf_token %}
+                                        {% if username_form.errors %}
+                                        <p class="warning2">
+                                            Please correct the following:</p>
+                                        {% endif %}
+
+                                        {% if error_msgs %}
+                                        <p class="warning">
+                                            {{ error_msgs }}
+                                            </br>
+                                        </p>
+                                        {% endif %}
+                                        <table class="login">
+
+                                            <tr>{% comment %}
+                                                <td class="key">Username</td>
+                                                <td class="value"><input type="text" name="username" id="id_username"
+                                                                         value=""/></td>
+                                                {% endcomment %}
+                                                <td class="key">{{ username_form.username.label_tag }}</td>
+                                                <td class="value">{{ username_form.username }}</td>
+                                                <td>{{username_form.username.errors}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="key"></td>
+                                                <td class="value"><input type="submit" value="Register"/>
+                                                    <div id="loading_indicator">
+                                                        <img src="{{ MEDIA_URL }}images/loading_indicator.gif"/>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endblock %}

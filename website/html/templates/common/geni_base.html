@@ -1,58 +1,61 @@
 {% comment %}
 <Program>
-  geni_base.html
+    geni_base.html
 
-<Author>
-  Originally by?:
-  Justin Samuel 2009
+    <Author>
+        Originally by?:
+        Justin Samuel 2009
 
-  Modified:
-  Gaetano Pressimone 2012
-  
-<Purpose>
-  Django template file which provides the base website look.
-  All pages extend this.
+        Modified:
+        Gaetano Pressimone 2012
 
-<Extends>
-  None
+        <Purpose>
+            Django template file which provides the base website look.
+            All pages extend this.
 
-<Stylesheet>
-  common.css
-  
+            <Extends>
+                None
 
-<Scripts>
-  None
+                <Stylesheet>
+                    common.css
 
-<Template Variables>
-  None
 
-{% endcomment %}
+                    <Scripts>
+                        None
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<title>{% block title %}{{ TESTBED }} {{ CLEARINGHOUSE }} using {{ TESTBED }}{% endblock title%}</title>
+                        <Template Variables>
+                            None
 
-  {% block style %}	
-	  <link href="{{ MEDIA_URL }}css/common.css" rel="stylesheet" type="text/css" />
-  {% endblock style %}
+                            {% endcomment %}
 
-  {% block script %}
-  {% endblock script %}
-	
-</head>
+                            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+                            "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+                            <html xmlns="http://www.w3.org/1999/xhtml">
+                            <head>
+                                <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+                                <title>{% block title %}{{ TESTBED }} {{ CLEARINGHOUSE }} using {{ TESTBED }}{% endblock
+                                    title%}</title>
 
-<body>
-  {% block header %}	
-	  <div id="header">
-  		<span id="logo"><a href="{% url 'profile' %}">{{ TESTBED }} {{ CLEARINGHOUSE }}</a></span>
-  		<span id="caption">Learn about <a href="{{ TESTBED_URL }}">{{ TESTBED }}</a></span>	
-  	</div>
-	{% endblock header%}	
+                                {% block style %}
+                                <link href="{{ MEDIA_URL }}css/common.css" rel="stylesheet" type="text/css"/>
+                                {% endblock style %}
 
-	{% block navigation %}{% endblock navigation %}
-	{% block content %}{% endblock content %}
+                                {% block script %}
+                                {% endblock script %}
 
-</body>
-</html>	
+                            </head>
+
+                            <body>
+                            {% block header %}
+                            <div id="header">
+                                <span id="logo"><a
+                                        href="{% url 'profile' %}">{{ TESTBED }} {{ CLEARINGHOUSE }}</a></span>
+                                <span id="caption">Learn about <a href="{{ TESTBED_URL }}">{{ TESTBED }}</a></span>
+                            </div>
+                            {% endblock header%}
+
+                            {% block navigation %}{% endblock navigation %}
+                            {% block content %}{% endblock content %}
+
+                            </body>
+                            </html>

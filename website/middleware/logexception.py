@@ -20,10 +20,10 @@ import traceback
 
 from clearinghouse.common.util import log
 
+
 class LogExceptionMiddleware(object):
-  
   def process_exception(self, request, exception):
     log.critical("An unhandled exception resulted from a request: " + traceback.format_exc())
-    
+
     # Returning None indicates that default exception handling should be done.
     return None

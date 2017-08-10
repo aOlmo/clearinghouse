@@ -54,3 +54,6 @@ docs/_build/
 
 # Migrations added by Django framework
 website/control/migrations/
+
+# Pycharm default folder
+.idea

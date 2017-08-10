@@ -2,131 +2,137 @@
 
 {% comment %}
 <Program>
-  login.html
+    login.html
 
-<Author>
-  Originally by?:
-  Justin Samuel 2009
+    <Author>
+        Originally by?:
+        Justin Samuel 2009
 
-  Modified:
-  Gaetano Pressimone 2012
-  
-<Purpose>
-  Django template file for {{ TESTBED }} {{ CLEARINGHOUSE }}'s 'login' page.  The page 
-  allows a visitor to login using OpenID/OAuth or with a {{ TESTBED }} {{ CLEARINGHOUSE }}
-  account.
+        Modified:
+        Gaetano Pressimone 2012
 
-<Extends>
-  accounts/accounts_base.html
+        <Purpose>
+            Django template file for {{ TESTBED }} {{ CLEARINGHOUSE }}'s 'login' page. The page
+            allows a visitor to login using OpenID/OAuth or with a {{ TESTBED }} {{ CLEARINGHOUSE }}
+            account.
 
-<Stylesheet>
-  common.css
-  account.css
+            <Extends>
+                accounts/accounts_base.html
 
-<Scripts>
-  login.js
-  jquery.js
+                <Stylesheet>
+                    common.css
+                    account.css
 
-<Template Variables>
-  messages:
-    Meaningful OpenID/OAuth error messages.
-  err:
-		Error message to display to the user.
-	
-  msg:
-    Generated message to display to the user.
+                    <Scripts>
+                        login.js
+                        jquery.js
 
-  form: 
-		User login form.  See AuthenticationForm in forms.py for more info.
-    .username:
-		.password: 
+                        <Template Variables>
+                            messages:
+                            Meaningful OpenID/OAuth error messages.
+                            err:
+                            Error message to display to the user.
 
-{% endcomment %}
+                            msg:
+                            Generated message to display to the user.
 
-{% block title %}
-Login - {{ CLEARINGHOUSE }}
-{% endblock title %}
-{% block script %}
-{{ block.super }}
+                            form:
+                            User login form. See AuthenticationForm in forms.py for more info.
+                            .username:
+                            .password:
 
-<script type="text/javascript" src="{{ MEDIA_URL}}scripts/login.js" charset="utf-8"></script>
-<script src="https://browserid.org/include.js" type="text/javascript"></script>
-{% endblock script %}
+                            {% endcomment %}
 
-{% block nav_login %}
-<td class="active">Login</td>
-{% endblock nav_login %}
+                            {% block title %}
+                            Login - {{ CLEARINGHOUSE }}
+                            {% endblock title %}
+                            {% block script %}
+                            {{ block.super }}
 
-{% block content %}
+                            <script type="text/javascript" src="{{ MEDIA_URL}}scripts/login.js"
+                                    charset="utf-8"></script>
+                            <script src="https://browserid.org/include.js" type="text/javascript"></script>
+                            {% endblock script %}
 
-	<div id="main">
-		<div id="middle">
-		  <div id="learn-about-seattle">
-		    New to {{ TESTBED }}? We suggest you first
-		    <a href="{{ TESTBED_URL }}">learn about {{ TESTBED }}</a>
-		    before using the {{ CLEARINGHOUSE }}, a resource sharing website.
-		  </div>
-		
-		  <form method="post" action="{% url 'login' %}">{% csrf_token %}
-		  {% if err %}
-		  <p class="warning2">{{ err }}</p><br/>
-		  {% endif %}
-      {% if messages %}
-        {% for msg in messages %}
-          <p class="warning2">{{ msg.message }} ({{ msg.extra_tags }})</p>
-        {% endfor %}
-      {% endif %}
-		  {% if msg %}
-		  <p class="message">{{ msg }}</p><br/>
-		  {% endif %}
-		
-		  <table class="login">
-		    <tr>
-		      <td class="key"> {{ form.username.label_tag }} </td>
-		      <td class="value"> {{ form.username }} </td>
-		    </tr>
-		    <tr>
-		      <td class="key"> {{ form.password.label_tag }} </td>
-		      <td class="value"> {{ form.password }} </td>
-		    </tr>
-		    <tr>
-		      <td class="key"></td>
-		      <td class="value"><input type="submit" value="Login" /> </td>
-		      <input type="hidden" name="next" value="{{ next }}" />
-		      <input type="hidden" name="jsenabled" value="false" id="jsenabled" />
-		
-		    </tr>
-			<tr>
-				<td class="key"> Login with...</td>
-				<td class="value">
-					{% for type, backends in social_auth.backends.items %}
-						{% for type in backends %}
-							{% if type == "facebook"%}
-								<a href="{% url 'socialauth_begin' 'facebook' %}">
-								<img src="{{ MEDIA_URL }}images/Facebook-icon.png" alt="Login with Facebook" /></a>
-							{% endif %}
-							{% if type == "google"%}
-								<a href="{% url 'socialauth_begin' 'google' %}">
-								<img src="{{ MEDIA_URL }}images/google-icon.png" alt="Login with Google" /></a>
-							{% endif %}
-							{% if type == "github"%}
-								<a href="{% url 'socialauth_begin' 'github' %}">
-								<img src="{{ MEDIA_URL }}images/github-icon.png" alt="Login with Github" /></a>
-							{% endif %}
-							{% if type == "live"%}
-								<a href="{% url 'socialauth_begin' 'live' %}">
-								<img src="{{ MEDIA_URL }}images/windows-icon.png" alt="Login with Windows Live" /></a>
-							{% endif %}
-							{% if type == "yahoo"%}
-								<a href="{% url 'socialauth_begin' 'yahoo' %}">
-								<img src="{{ MEDIA_URL }}images/yahoo-icon.png" alt="Login with Yahoo" /></a>
-							{% endif %}
-						{% endfor %}
-					{% endfor %}
-				</td>
-			</tr>
-		  </table>
-		  </form>
-	</div>
-	</div>
-{% endblock content %}
+                            {% block nav_login %}
+                            <td class="active">Login</td>
+                            {% endblock nav_login %}
+
+                            {% block content %}
+
+                            <div id="main">
+                                <div id="middle">
+                                    <div id="learn-about-seattle">
+                                        New to {{ TESTBED }}? We suggest you first
+                                        <a href="{{ TESTBED_URL }}">learn about {{ TESTBED }}</a>
+                                        before using the {{ CLEARINGHOUSE }}, a resource sharing website.
+                                    </div>
+
+                                    <form method="post" action="{% url 'login' %}">{% csrf_token %}
+                                        {% if err %}
+                                        <p class="warning2">{{ err }}</p><br/>
+                                        {% endif %}
+                                        {% if messages %}
+                                        {% for msg in messages %}
+                                        <p class="warning2">{{ msg.message }} ({{ msg.extra_tags }})</p>
+                                        {% endfor %}
+                                        {% endif %}
+                                        {% if msg %}
+                                        <p class="message">{{ msg }}</p><br/>
+                                        {% endif %}
+
+                                        <table class="login">
+                                            <tr>
+                                                <td class="key"> {{ form.username.label_tag }}</td>
+                                                <td class="value"> {{ form.username }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="key"> {{ form.password.label_tag }}</td>
+                                                <td class="value"> {{ form.password }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="key"></td>
+                                                <td class="value"><input type="submit" value="Login"/></td>
+                                                <input type="hidden" name="next" value="{{ next }}"/>
+                                                <input type="hidden" name="jsenabled" value="false" id="jsenabled"/>
+
+                                            </tr>
+                                            <tr>
+                                                <td class="key"> Login with...</td>
+                                                <td class="value">
+                                                    {% for type, backends in social_auth.backends.items %}
+                                                    {% for type in backends %}
+                                                    {% if type == "facebook"%}
+                                                    <a href="{% url 'socialauth_begin' 'facebook' %}">
+                                                        <img src="{{ MEDIA_URL }}images/Facebook-icon.png"
+                                                             alt="Login with Facebook"/></a>
+                                                    {% endif %}
+                                                    {% if type == "google"%}
+                                                    <a href="{% url 'socialauth_begin' 'google' %}">
+                                                        <img src="{{ MEDIA_URL }}images/google-icon.png"
+                                                             alt="Login with Google"/></a>
+                                                    {% endif %}
+                                                    {% if type == "github"%}
+                                                    <a href="{% url 'socialauth_begin' 'github' %}">
+                                                        <img src="{{ MEDIA_URL }}images/github-icon.png"
+                                                             alt="Login with Github"/></a>
+                                                    {% endif %}
+                                                    {% if type == "live"%}
+                                                    <a href="{% url 'socialauth_begin' 'live' %}">
+                                                        <img src="{{ MEDIA_URL }}images/windows-icon.png"
+                                                             alt="Login with Windows Live"/></a>
+                                                    {% endif %}
+                                                    {% if type == "yahoo"%}
+                                                    <a href="{% url 'socialauth_begin' 'yahoo' %}">
+                                                        <img src="{{ MEDIA_URL }}images/yahoo-icon.png"
+                                                             alt="Login with Yahoo"/></a>
+                                                    {% endif %}
+                                                    {% endfor %}
+                                                    {% endfor %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endblock content %}

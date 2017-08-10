@@ -32,7 +32,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 
-#Used to display meaningful OpenID/OAuth error messages to the user
+# Used to display meaningful OpenID/OAuth error messages to the user
 from django.contrib.messages.api import get_messages
 from django.shortcuts import render_to_response, redirect
 from social_auth.utils import setting
@@ -61,6 +61,7 @@ from clearinghouse.website import settings
 # cleaner way of doing this. We rely in the backup made by the safe module to
 # reload type here.
 import safe
+
 __builtins__['type'] = safe._type
 
 from clearinghouse.website import settings
@@ -79,15 +80,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 from seattle.repyportability import *
+
 add_dy_support(locals())
 
 rsa = dy_import_module("rsa.r2py")
-
-
-
-
-
-
 
 
 class LoggedInButFailedGetGeniUserError(Exception):
@@ -102,9 +98,6 @@ class LoggedInButFailedGetGeniUserError(Exception):
   """
 
 
-
-
-
 def _state_key_file_to_publickey_string(key_file_name):
   """
   Read a public key file from the the state keys directory and return it in
@@ -114,14 +107,8 @@ def _state_key_file_to_publickey_string(key_file_name):
   return rsa.rsa_publickey_to_string(rsa.rsa_file_to_publickey(fullpath))
 
 
-
-
-
 # The key used as the state key for new donations.
 ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonation.publickey")
-
-
-
 
 
 def error(request):
@@ -144,17 +131,14 @@ def error(request):
   <Returns>
     An HTTP response object that represents the error page.
   """
-  #Retrieve information which caused an error
+  # Retrieve information which caused an error
   messages = get_messages(request)
-  info =''
+  info = ''
   try:
     user = _validate_and_get_geniuser(request)
     return profile(request, info, info, messages)
   except:
-    return _show_login(request, 'accounts/login.html', {'messages' : messages})
-
-
-
+    return _show_login(request, 'accounts/login.html', {'messages': messages})
 
 
 @login_required
@@ -175,15 +159,12 @@ def associate_error(request):
   <Returns>
     An HTTP response object that represents the associate_error page.
   """
-  info=''
+  info = ''
   error_msg = "Whoops, this account is already linked to another Seattle Clearninghouse user."
   return profile(request, info, error_msg)
 
 
-
-
-
-def auto_register(request,backend=None,error_msgs=''):
+def auto_register(request, backend=None, error_msgs=''):
   """
   <Purpose>
   Part of the SOCIAL_AUTH_PIPELINE whose order is mapped in settings.py.  If
@@ -213,17 +194,16 @@ def auto_register(request,backend=None,error_msgs=''):
       username = username_form.cleaned_data['username']
       try:
         interface.get_user_without_password(username)
-        error_msgs ='That username is already in use.'
+        error_msgs = 'That username is already in use.'
       except DoesNotExistError:
         request.session['saved_username'] = request.POST['username']
         backend = request.session[name]['backend']
         return redirect('socialauth_complete', backend=backend)
   name = setting('SOCIAL_AUTH_PARTIAL_PIPELINE_KEY', 'partial_pipeline')
-  backend=request.session[name]['backend']
-  return render_to_response('accounts/auto_register.html', {'backend' : backend, 'error_msgs' : error_msgs, 'username_form' : username_form}, RequestContext(request))
-
-
-
+  backend = request.session[name]['backend']
+  return render_to_response('accounts/auto_register.html',
+                            {'backend': backend, 'error_msgs': error_msgs, 'username_form': username_form},
+                            RequestContext(request))
 
 
 @log_function_call_without_return
@@ -263,49 +243,49 @@ def profile(request, info="", error_msg="", messages=""):
 
   if request.method == 'POST':
     if 'affiliation' in request.POST:
-       affiliation_form = forms.gen_edit_user_form(('affiliation',), request.POST, instance=user)
-       if affiliation_form.is_valid():
-         new_affiliation = affiliation_form.cleaned_data['affiliation']
-         interface.change_user_affiliation(user, new_affiliation)
-         info ="Affiliation has been successfully changed to %s." % (user.affiliation)
+      affiliation_form = forms.gen_edit_user_form(('affiliation',), request.POST, instance=user)
+      if affiliation_form.is_valid():
+        new_affiliation = affiliation_form.cleaned_data['affiliation']
+        interface.change_user_affiliation(user, new_affiliation)
+        info = "Affiliation has been successfully changed to %s." % (user.affiliation)
     elif 'email' in request.POST:
-       email_form = forms.gen_edit_user_form(('email',), request.POST, instance=user)
-       if email_form.is_valid():
-         new_email = email_form.cleaned_data['email']
-         interface.change_user_email(user, new_email)
-         info ="Email has been successfully changed to %s." % (user.email)
+      email_form = forms.gen_edit_user_form(('email',), request.POST, instance=user)
+      if email_form.is_valid():
+        new_email = email_form.cleaned_data['email']
+        interface.change_user_email(user, new_email)
+        info = "Email has been successfully changed to %s." % (user.email)
     elif 'password1' in request.POST:
-       password_form = forms.EditUserPasswordForm( request.POST, instance=user)
-       if password_form.is_valid():
-         new_password = password_form.cleaned_data['password1']
-         interface.change_user_password(user, new_password)
-         info ="Password has been successfully changed"
+      password_form = forms.EditUserPasswordForm(request.POST, instance=user)
+      if password_form.is_valid():
+        new_password = password_form.cleaned_data['password1']
+        interface.change_user_password(user, new_password)
+        info = "Password has been successfully changed"
 
   username = user.username
   affiliation = user.affiliation
   email = user.email
   port = user.usable_vessel_port
   has_privkey = user.user_privkey != None
-  #currently not used, needed if editing user port is allowed
-  #port_range = interface.get_useable_ports()
-  #port_range_min = port_range[0]
-  #port_range_max = port_range[-1]
+  # currently not used, needed if editing user port is allowed
+  # port_range = interface.get_useable_ports()
+  # port_range_min = port_range[0]
+  # port_range_max = port_range[-1]
 
   return render_to_response('control/profile.html',
-                            {'email_form' : email_form,
-                             'affiliation_form' : affiliation_form,
-                             'password_form' : password_form,
-                             'username' : username,
-                             'affiliation' : affiliation,
-                             'email' : email,
-                             'port' : port,
-                             'api_key' : user.api_key,
-                             'has_privkey' : has_privkey,
-                             #'port_range_min' : port_range_min,
-                             #'port_range_max' : port_range_max,
-                             'info' : info,
-                             'error_msg' : error_msg,
-                             'messages' : messages},
+                            {'email_form': email_form,
+                             'affiliation_form': affiliation_form,
+                             'password_form': password_form,
+                             'username': username,
+                             'affiliation': affiliation,
+                             'email': email,
+                             'port': port,
+                             'api_key': user.api_key,
+                             'has_privkey': has_privkey,
+                             # 'port_range_min' : port_range_min,
+                             # 'port_range_max' : port_range_max,
+                             'info': info,
+                             'error_msg': error_msg,
+                             'messages': messages},
                             context_instance=RequestContext(request))
 
 
@@ -321,7 +301,7 @@ def register(request):
   page_top_errors = []
   if request.method == 'POST':
 
-    #TODO: what if the form data isn't in the POST request? we need to check for this.
+    # TODO: what if the form data isn't in the POST request? we need to check for this.
     form = forms.GeniUserCreationForm(request.POST, request.FILES)
     # Calling the form's is_valid() function causes all form "clean_..." methods to be checked.
     # If this succeeds, then the form input data is validated per field-specific cleaning checks. (see forms.py)
@@ -352,62 +332,56 @@ def register(request):
           page_top_errors.append(str(err))
         else:
           return _show_login(request, 'accounts/login.html',
-                             {'msg' : "Username %s has been successfully registered." % (user.username)})
+                             {'msg': "Username %s has been successfully registered." % (user.username)})
   else:
     form = forms.GeniUserCreationForm()
   return render_to_response('accounts/register.html',
-          {'form' : form, 'page_top_errors' : page_top_errors},
-          context_instance=RequestContext(request))
-
-
-
+                            {'form': form, 'page_top_errors': page_top_errors},
+                            context_instance=RequestContext(request))
 
 
 def _show_login(request, ltemplate, template_dict, form=None):
-    """
-    <Purpose>
-        Show the GENI login form
+  """
+  <Purpose>
+      Show the GENI login form
 
-    <Arguments>
-        request:
-            An HTTP request object to use to populate the form
+  <Arguments>
+      request:
+          An HTTP request object to use to populate the form
 
-        ltemplate:
-           The login template name to use for the login form. Right now
-           this can be one of 'accounts/simplelogin.html' and
-           'accounts/login.html'. They provide different ways of visualizing
-           the login page.
+      ltemplate:
+         The login template name to use for the login form. Right now
+         this can be one of 'accounts/simplelogin.html' and
+         'accounts/login.html'. They provide different ways of visualizing
+         the login page.
 
-        template_dict:
-           The dictionary of arguments to pass to the template
+      template_dict:
+         The dictionary of arguments to pass to the template
 
-        form:
-           Either None or the AuthenticationForm to use as a 'form' argument
-           to ltemplate. If form is None, a fresh AuthenticationForm() will be
-           created and used.
+      form:
+         Either None or the AuthenticationForm to use as a 'form' argument
+         to ltemplate. If form is None, a fresh AuthenticationForm() will be
+         created and used.
 
-    <Exceptions>
-        None.
+  <Exceptions>
+      None.
 
-    <Side Effects>
-        None.
+  <Side Effects>
+      None.
 
-    <Returns>
-        An HTTP response object that represents the login page on
-        success.
-    """
-    if form == None:
-        # initial page load
-        form = AuthenticationForm()
-        # set test cookie, but only once -- remove it on login
-        #if not request.session.test_cookie_worked():
-        request.session.set_test_cookie()
-    template_dict['form'] = form
-    return render_to_response(ltemplate, template_dict,
-            context_instance=RequestContext(request))
-
-
-
+  <Returns>
+      An HTTP response object that represents the login page on
+      success.
+  """
+  if form == None:
+    # initial page load
+    form = AuthenticationForm()
+    # set test cookie, but only once -- remove it on login
+    # if not request.session.test_cookie_worked():
+    request.session.set_test_cookie()
+  template_dict['form'] = form
+  return render_to_response(ltemplate, template_dict,
+                            context_instance=RequestContext(request))
 
 
 def login(request):
@@ -425,15 +399,15 @@ def login(request):
 
     if not request.session.test_cookie_worked():
       request.session.set_test_cookie()
-      return _show_login(request, ltemplate, {'err' : "Please enable your cookies and try again."}, form)
+      return _show_login(request, ltemplate, {'err': "Please enable your cookies and try again."}, form)
 
     if request.POST.has_key('jsenabled') and request.POST['jsenabled'] == 'false':
-      return _show_login(request, ltemplate, {'err' : "Please enable javascript and try again."}, form)
+      return _show_login(request, ltemplate, {'err': "Please enable javascript and try again."}, form)
 
     try:
       interface.login_user(request, request.POST['username'], request.POST['password'])
     except DoesNotExistError:
-      return _show_login(request, ltemplate, {'err' : "Wrong username or password."}, form)
+      return _show_login(request, ltemplate, {'err': "Wrong username or password."}, form)
 
     # only clear out the cookie if we actually authenticate and login ok
     request.session.delete_test_cookie()
@@ -444,16 +418,10 @@ def login(request):
   return _show_login(request, ltemplate, {})
 
 
-
-
-
 def logout(request):
   interface.logout_user(request)
   # TODO: We should redirect straight to login page
   return HttpResponseRedirect(reverse("profile"))
-
-
-
 
 
 @login_required
@@ -464,18 +432,12 @@ def help(request):
     return _show_failed_get_geniuser_page(request)
 
   return render_to_response('control/help.html', {'username': user.username},
-          context_instance=RequestContext(request))
-
-
-
+                            context_instance=RequestContext(request))
 
 
 def accounts_help(request):
   return render_to_response('accounts/help.html', {},
-          context_instance=RequestContext(request))
-
-
-
+                            context_instance=RequestContext(request))
 
 
 @login_required
@@ -498,16 +460,13 @@ def mygeni(request):
 
   # total_vessel_credits, percent_total_used, avail_vessel_credits
   return request_ro_response('control/mygeni.html',
-                            {'username' : user.username,
-                             'total_vessel_credits' : total_vessel_credits,
-                             'used_vessel_credits' : num_acquired_vessels,
-                             'percent_total_used' : percent_total_used,
-                             'avail_vessel_credits' : avail_vessel_credits,
-                             'over_vessel_credits' : over_vessel_credits},
-                            context_instance=RequestContext(request))
-
-
-
+                             {'username': user.username,
+                              'total_vessel_credits': total_vessel_credits,
+                              'used_vessel_credits': num_acquired_vessels,
+                              'percent_total_used': percent_total_used,
+                              'avail_vessel_credits': avail_vessel_credits,
+                              'over_vessel_credits': over_vessel_credits},
+                             context_instance=RequestContext(request))
 
 
 @login_required
@@ -535,7 +494,7 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
   my_max_vessels = interface.get_available_vessel_credits(user)
   my_free_vessel_credits = interface.get_free_vessel_credits_amount(user)
   my_total_vessel_credits = interface.get_total_vessel_credits(user)
-
+  
   for vessel in my_vessels:
     if vessel["expires_in_seconds"] <= 0:
       # We shouldn't ever get here, but just in case, let's handle it.
@@ -548,22 +507,19 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
 
   # return the used resources page constructed from a template
   return render_to_response('control/myvessels.html',
-                            {'username' : user.username,
-                             'num_vessels' : len(my_vessels),
-                             'my_vessels' : my_vessels,
-                             'sh_vessels' : shvessels,
-                             'get_form' : get_form,
-                             'action_summary' : action_summary,
-                             'action_detail' : action_detail,
-                             'my_donations' : len(my_donations),
-                             'my_max_vessels' : my_max_vessels,
-                             'free_vessel_credits' : my_free_vessel_credits,
-                             'total_vessel_credits' : my_total_vessel_credits,
-                             'remove_summary' : remove_summary},
-                        context_instance=RequestContext(request))
-
-
-
+                            {'username': user.username,
+                             'num_vessels': len(my_vessels),
+                             'my_vessels': my_vessels,
+                             'sh_vessels': shvessels,
+                             'get_form': get_form,
+                             'action_summary': action_summary,
+                             'action_detail': action_detail,
+                             'my_donations': len(my_donations),
+                             'my_max_vessels': my_max_vessels,
+                             'free_vessel_credits': my_free_vessel_credits,
+                             'total_vessel_credits': my_total_vessel_credits,
+                             'remove_summary': remove_summary},
+                            context_instance=RequestContext(request))
 
 
 @login_required
@@ -576,12 +532,9 @@ def getdonations(request):
   domain = "https://" + request.get_host()
 
   return render_to_response('control/getdonations.html',
-                            {'username' : user.username,
-                             'domain' : domain},
+                            {'username': user.username,
+                             'domain': domain},
                             context_instance=RequestContext(request))
-
-
-
 
 
 @login_required
@@ -612,7 +565,7 @@ def get_resources(request):
       action_summary = "Unable to acquire vessels at this time."
       if str(err) == 'Acquiring NAT vessels is currently disabled. ':
         link = """<a href="{{ TESTBED_URL }}}blog">blog</a>"""
-        action_detail += str(err) + 'Please check our '+ link  +' to see when we have re-enabled NAT vessels.'
+        action_detail += str(err) + 'Please check our ' + link + ' to see when we have re-enabled NAT vessels.'
       else:
         action_detail += str(err)
       keep_get_form = True
@@ -628,9 +581,6 @@ def get_resources(request):
   else:
     # return a My Vessels page with the updated vessels/vessel acquire details/errors
     return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
-
-
-
 
 
 @login_required
@@ -670,10 +620,6 @@ def del_resource(request):
   return myvessels(request, remove_summary=remove_summary)
 
 
-
-
-
-
 @login_required
 def del_all_resources(request):
   try:
@@ -693,10 +639,6 @@ def del_all_resources(request):
     remove_summary = "Unable to release all vessels: " + str(err)
 
   return myvessels(request, remove_summary=remove_summary)
-
-
-
-
 
 
 @login_required
@@ -740,9 +682,6 @@ def renew_resource(request):
   return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
 
 
-
-
-
 @login_required
 def renew_all_resources(request):
   try:
@@ -769,9 +708,6 @@ def renew_all_resources(request):
   return myvessels(request, False, action_summary=action_summary, action_detail=action_detail)
 
 
-
-
-
 @login_required
 def change_key(request):
   try:
@@ -781,8 +717,8 @@ def change_key(request):
   info = ""
   if request.method == 'GET':
     return render_to_response('control/change_key.html',
-                              {'username' : user.username,
-                               'error_msg' : ""},
+                              {'username': user.username,
+                               'error_msg': ""},
                               context_instance=RequestContext(request))
 
   # This is a POST, so figure out if a file was uploaded or if we are supposed
@@ -797,7 +733,6 @@ def change_key(request):
     if file is None:
       msg = "You didn't select a public key file to upload."
       return profile(request, info, msg)
-
 
     if file.size == 0 or file.size > forms.MAX_PUBKEY_UPLOAD_SIZE:
       msg = "Invalid file uploaded. The file size limit is "
@@ -818,9 +753,6 @@ def change_key(request):
     return profile(request, msg)
 
 
-
-
-
 @login_required
 def api_info(request):
   try:
@@ -830,9 +762,9 @@ def api_info(request):
 
   if request.method == 'GET':
     return render_to_response('control/api_info.html',
-                              {'username' : user.username,
-                               'api_key' : user.api_key,
-                               'msg' : ""},
+                              {'username': user.username,
+                               'api_key': user.api_key,
+                               'msg': ""},
                               context_instance=RequestContext(request))
 
   # This is a POST, so it should be generation of an API key.
@@ -844,10 +776,7 @@ def api_info(request):
   msg = "Your API key has been regenerated. Your old one will no longer work."
   msg += " You should update any places you are using the API key"
   msg += " (e.g. in programs using the XML-RPC client)."
-  return profile(request,msg)
-
-
-
+  return profile(request, msg)
 
 
 @log_function_call
@@ -867,9 +796,6 @@ def del_priv(request):
   return profile(request, msg)
 
 
-
-
-
 @log_function_call
 @login_required
 def priv_key(request):
@@ -880,11 +806,8 @@ def priv_key(request):
 
   response = HttpResponse(user.user_privkey, content_type='text/plain')
   response['Content-Disposition'] = 'attachment; filename=' + \
-          str(user.username) + '.privatekey'
+                                    str(user.username) + '.privatekey'
   return response
-
-
-
 
 
 @log_function_call
@@ -897,11 +820,8 @@ def pub_key(request):
 
   response = HttpResponse(user.user_pubkey, content_type='text/plain')
   response['Content-Disposition'] = 'attachment; filename=' + \
-            str(user.username) + '.publickey'
+                                    str(user.username) + '.publickey'
   return response
-
-
-
 
 
 def download(request, username):
@@ -920,13 +840,10 @@ def download(request, username):
   # same installer is downloaded from the Google Play store for all users.)
   # The URL is escaped twice (ask Akos why) and inserted in the referrer
   # information in the URL.
-  #templatedict['android_installer_link'] = urllib.quote(urllib.quote(domain,safe=''),safe='')
+  # templatedict['android_installer_link'] = urllib.quote(urllib.quote(domain,safe=''),safe='')
 
   return render_to_response('download/installers.html', templatedict,
-          context_instance=RequestContext(request))
-
-
-
+                            context_instance=RequestContext(request))
 
 
 def build_android_installer(request, username):
@@ -964,9 +881,6 @@ def build_android_installer(request, username):
   return HttpResponseRedirect(installer_url)
 
 
-
-
-
 def build_win_installer(request, username):
   """
   <Purpose>
@@ -1000,9 +914,6 @@ def build_win_installer(request, username):
 
   installer_url = return_value
   return HttpResponseRedirect(installer_url)
-
-
-
 
 
 def build_linux_installer(request, username):
@@ -1040,9 +951,6 @@ def build_linux_installer(request, username):
   return HttpResponseRedirect(installer_url)
 
 
-
-
-
 def build_mac_installer(request, username):
   """
   <Purpose>
@@ -1077,6 +985,7 @@ def build_mac_installer(request, username):
   installer_url = return_value
   return HttpResponseRedirect(installer_url)
 
+
 @login_required
 def registerexperiment(request):
   """
@@ -1095,46 +1004,43 @@ def registerexperiment(request):
   except LoggedInButFailedGetGeniUserError:
     return _show_failed_get_geniuser_page(request)
 
-
   page_top_errors = []
   username = user.username
-  ret =['aaaaa'] #test list
+  ret = ['aaaaa']  # test list
   from django.db import connection
   from django.apps import apps
 
-  
   tables = connection.introspection.table_names()
   seen_models = connection.introspection.installed_models(tables)
   for model in apps.get_models():
-      if model._meta.proxy:
-          continue
+    if model._meta.proxy:
+      continue
 
-      table = model._meta.db_table
-      if table not in tables:
-          continue
+    table = model._meta.db_table
+    if table not in tables:
+      continue
 
-      columns = [field.column for field in model._meta.fields]
-      ret.append((table, columns))
-      
+    columns = [field.column for field in model._meta.fields]
+    ret.append((table, columns))
+
   if request.method == 'POST':
 
-      # create a form instance and populate it with data from the request:
-      
-    r_form = forms.RegisterExperimentForm(request.POST)#glabal data form
-    battery_form = forms.BatteryForm(request.POST, prefix = 'battery') #form for each sensor.
-    bluetooth_form = forms.BluetoothForm(request.POST, prefix = 'bluetooth') #form for each sensor.
-    cellular_form = forms.CellularForm(request.POST, prefix = 'cellular') #form for each sensor.
-    location_form = forms.LocationForm(request.POST, prefix = 'location') #form for each sensor.
-    settings_form = forms.SettingsForm(request.POST, prefix = 'settings') #form for each sensor.
-    sensor_form = forms.SensorForm(request.POST, prefix = 'sensor') #form for each sensor.
-    signalstrength_form = forms.SignalStrengthForm(request.POST, prefix = 'signalstrength') #form for each sensor.
-    wifi_form = forms.WifiForm(request.POST, prefix = 'wifi') #form for each sensor.
+    # create a form instance and populate it with data from the request:
 
+    r_form = forms.RegisterExperimentForm(request.POST)  # glabal data form
+    battery_form = forms.BatteryForm(request.POST, prefix='battery')  # form for each sensor.
+    bluetooth_form = forms.BluetoothForm(request.POST, prefix='bluetooth')  # form for each sensor.
+    cellular_form = forms.CellularForm(request.POST, prefix='cellular')  # form for each sensor.
+    location_form = forms.LocationForm(request.POST, prefix='location')  # form for each sensor.
+    settings_form = forms.SettingsForm(request.POST, prefix='settings')  # form for each sensor.
+    sensor_form = forms.SensorForm(request.POST, prefix='sensor')  # form for each sensor.
+    signalstrength_form = forms.SignalStrengthForm(request.POST, prefix='signalstrength')  # form for each sensor.
+    wifi_form = forms.WifiForm(request.POST, prefix='wifi')  # form for each sensor.
 
-    if r_form.is_valid(): #if r_form is valid save the data
+    if r_form.is_valid():  # if r_form is valid save the data
       ret.append("valid1")
-      
-      geni_user = user #foreign key of the experiment
+
+      geni_user = user  # foreign key of the experiment
       expe_name = r_form.cleaned_data['expe_name']
       res_name = r_form.cleaned_data['researcher_name']
       res_address = r_form.cleaned_data['researcher_address']
@@ -1146,24 +1052,25 @@ def registerexperiment(request):
       try:
         # we should never error here, since we've already finished validation at this point.
         # but, just to be safe...
-        experiment = interface.register_experiment(geni_user,expe_name,res_name,res_address,res_email,irb, irb_email, goal)
+        experiment = interface.register_experiment(geni_user, expe_name, res_name, res_address, res_email, irb,
+                                                   irb_email, goal)
       except ValidationError, err:
         page_top_errors.append(str(err))
       else:
-        #Evreything went good so far
-        #check every sensor form.
-        
+        # Evreything went good so far
+        # check every sensor form.
+
         if battery_form.is_valid():
-          if battery_form.is_required('battery'):#check if the researcher wants to use this sensor
-          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+          if battery_form.is_required('battery'):  # check if the researcher wants to use this sensor
+            # CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
             if_battery_present = battery_form.is_required('if_battery_present')
             battery_health = battery_form.is_required('battery_health')
             battery_level = battery_form.is_required('battery_level')
             battery_plug_type = battery_form.is_required('battery_plug_type')
             battery_status = battery_form.is_required('battery_status')
             battery_technology = battery_form.is_required('battery_technology')
-            
-            #CHECK GENERAL ATRIBUTES
+
+            # CHECK GENERAL ATRIBUTES
             battery_frequency = battery_form.cleaned_data['frequency']
             battery_frequency_unit = battery_form.cleaned_data['frequency_unit']
             battery_frequency_other = battery_form.cleaned_data['frequency_other']
@@ -1172,13 +1079,13 @@ def registerexperiment(request):
             battery_precision_other = battery_form.cleaned_data['precision_other']
             battery_goal = battery_form.cleaned_data['goal']
 
-            if battery_frequency == None: #if the user doesnt set frequency
-              battery_frequency = 0 #we set it to 0
-              if battery_frequency_other == '':#if he doesnt provide any other informatio either
-                page_top_errors.append("Please select the frequency in the battery sensor")#We set an error
+            if battery_frequency == None:  # if the user doesnt set frequency
+              battery_frequency = 0  # we set it to 0
+              if battery_frequency_other == '':  # if he doesnt provide any other informatio either
+                page_top_errors.append("Please select the frequency in the battery sensor")  # We set an error
 
             if battery_truncation == None:
-              if  battery_precision == 'truncate':
+              if battery_precision == 'truncate':
                 page_top_errors.append("Please select the truncation decimals in the battery sensor")
               else:
                 battery_truncation = 0
@@ -1192,7 +1099,11 @@ def registerexperiment(request):
 
             if page_top_errors == []:
               try:
-                battery = interface.register_sensor('battery',experiment,battery_frequency,battery_frequency_unit,battery_frequency_other,battery_precision,battery_truncation, battery_precision_other,battery_goal,[if_battery_present,battery_health,battery_level,battery_plug_type,battery_status,battery_technology])
+                battery = interface.register_sensor('battery', experiment, battery_frequency, battery_frequency_unit,
+                                                    battery_frequency_other, battery_precision, battery_truncation,
+                                                    battery_precision_other, battery_goal,
+                                                    [if_battery_present, battery_health, battery_level,
+                                                     battery_plug_type, battery_status, battery_technology])
               except ValidationError, err:
                 page_top_errors.append(str(err))
 
@@ -1202,18 +1113,17 @@ def registerexperiment(request):
         else:
           page_top_errors.append("Battery form is not valid")
 
-      
-        #save data into bluetooth model
+        # save data into bluetooth model
         if bluetooth_form.is_valid():
-          if bluetooth_form.is_required('bluetooth'):#check if the researcher wants to use this sensor
-          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+          if bluetooth_form.is_required('bluetooth'):  # check if the researcher wants to use this sensor
+            # CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
             bluetooth_state = bluetooth_form.is_required('bluetooth_state')
             bluetooth_is_discovering = bluetooth_form.is_required('bluetooth_is_discovering')
             scan_mode = bluetooth_form.is_required('scan_mode')
             local_address = bluetooth_form.is_required('local_address')
             local_name = bluetooth_form.is_required('local_name')
-            
-            #CHECK GENERAL ATRIBUTES
+
+            # CHECK GENERAL ATRIBUTES
             bluetooth_frequency = bluetooth_form.cleaned_data['frequency']
             bluetooth_frequency_unit = bluetooth_form.cleaned_data['frequency_unit']
             bluetooth_frequency_other = bluetooth_form.cleaned_data['frequency_other']
@@ -1225,17 +1135,17 @@ def registerexperiment(request):
               bluetooth_frequency = 0
               if bluetooth_frequency_other == '':
                 page_top_errors.append("Please select the frequency in the bluetooth sensor")
-            if bluetooth_precision == 'truncate'and bluetooth_truncation == None:
+            if bluetooth_precision == 'truncate' and bluetooth_truncation == None:
               page_top_errors.append("Please select the truncation decimals in the bluetooth sensor")
 
 
         else:
           page_top_errors.append("Bluetooth form is not valid")
 
-        #save data into cellular model
+        # save data into cellular model
         if cellular_form.is_valid():
-          if cellular_form.is_required('cellular'):#check if the researcher wants to use this sensor
-          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+          if cellular_form.is_required('cellular'):  # check if the researcher wants to use this sensor
+            # CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
             network_roaming = cellular_form.is_required('network_roaming')
             cellID = cellular_form.is_required('cellID')
             location_area_code = cellular_form.is_required('location_area_code')
@@ -1246,8 +1156,8 @@ def registerexperiment(request):
             network_type = cellular_form.is_required('network_type')
             service_state = cellular_form.is_required('service_state')
             signal_strengths = cellular_form.is_required('signal_strengths')
-            
-            #CHECK GENERAL ATRIBUTES
+
+            # CHECK GENERAL ATRIBUTES
             cellular_frequency = cellular_form.cleaned_data['frequency']
             cellular_frequency_unit = cellular_form.cleaned_data['frequency_unit']
             cellular_frequency_other = cellular_form.cleaned_data['frequency_other']
@@ -1259,25 +1169,24 @@ def registerexperiment(request):
               cellular_frequency = 0
               if cellular_frequency_other == '':
                 page_top_errors.append("Please select the frequency in the cellular sensor")
-            if cellular_precision == 'truncate'and cellular_truncation == None:
+            if cellular_precision == 'truncate' and cellular_truncation == None:
               page_top_errors.append("Please select the truncation decimals in the cellular sensor")
 
 
         else:
           page_top_errors.append("Cellular form is not valid")
 
-      
-        #save data into location model
+        # save data into location model
         if location_form.is_valid():
-          if location_form.is_required('location'):#check if the researcher wants to use this sensor
-          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+          if location_form.is_required('location'):  # check if the researcher wants to use this sensor
+            # CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
             location_providers = location_form.is_required('location_providers')
             location_provider_enabled = location_form.is_required('location_provider_enabled')
             location_data = location_form.is_required('location_data')
             last_known_location = location_form.is_required('last_known_location')
             geocode = location_form.is_required('geocode')
-            
-            #CHECK GENERAL ATRIBUTES
+
+            # CHECK GENERAL ATRIBUTES
             location_frequency = location_form.cleaned_data['frequency']
             location_frequency_unit = location_form.cleaned_data['frequency_unit']
             location_frequency_other = location_form.cleaned_data['frequency_other']
@@ -1289,18 +1198,17 @@ def registerexperiment(request):
               location_frequency = 0
               if location_frequency_other == '':
                 page_top_errors.append("Please select the frequency in the location sensor")
-            if location_precision == 'truncate'and location_truncation == None:
+            if location_precision == 'truncate' and location_truncation == None:
               page_top_errors.append("Please select the truncation decimals in the location sensor")
 
 
         else:
           page_top_errors.append("Location form is not valid")
 
-
-        #save data into settings model
+        # save data into settings model
         if settings_form.is_valid():
-          if settings_form.is_required('settings'):#check if the researcher wants to use this sensor
-          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+          if settings_form.is_required('settings'):  # check if the researcher wants to use this sensor
+            # CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
             airplane_mode = settings_form.is_required('airplane_mode')
             ringer_silent_mode = settings_form.is_required('ringer_silent_mode')
             screen_on = settings_form.is_required('screen_on')
@@ -1310,8 +1218,8 @@ def registerexperiment(request):
             ringer_volume = settings_form.is_required('ringer_volume')
             screen_brightness = settings_form.is_required('screen_brightness')
             screen_timeout = settings_form.is_required('screen_timeout')
-            
-            #CHECK GENERAL ATRIBUTES
+
+            # CHECK GENERAL ATRIBUTES
             settings_frequency = settings_form.cleaned_data['frequency']
             settings_frequency_unit = settings_form.cleaned_data['frequency_unit']
             settings_frequency_other = settings_form.cleaned_data['frequency_other']
@@ -1323,26 +1231,25 @@ def registerexperiment(request):
               settings_frequency = 0
               if settings_frequency_other == '':
                 page_top_errors.append("Please select the frequency in the settings sensor")
-            if settings_precision == 'truncate'and settings_truncation == None:
+            if settings_precision == 'truncate' and settings_truncation == None:
               page_top_errors.append("Please select the truncation decimals in the settings sensor")
 
 
         else:
           page_top_errors.append("Settings form is not valid")
 
-      
-        #save data into sensor model
+        # save data into sensor model
         if sensor_form.is_valid():
-          if sensor_form.is_required('sensor'):#check if the researcher wants to use this sensor
-          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+          if sensor_form.is_required('sensor'):  # check if the researcher wants to use this sensor
+            # CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
             sensor_data = sensor_form.is_required('sensor_data')
             sensors_accuracy = sensor_form.is_required('sensors_accuracy')
             light = sensor_form.is_required('light')
             accelerometer = sensor_form.is_required('accelerometer')
             magnetometer = sensor_form.is_required('magnetometer')
-            orientation = sensor_form.is_required('orientation') 
-            
-            #CHECK GENERAL ATRIBUTES
+            orientation = sensor_form.is_required('orientation')
+
+            # CHECK GENERAL ATRIBUTES
             sensor_frequency = sensor_form.cleaned_data['frequency']
             sensor_frequency_unit = sensor_form.cleaned_data['frequency_unit']
             sensor_frequency_other = sensor_form.cleaned_data['frequency_other']
@@ -1354,21 +1261,20 @@ def registerexperiment(request):
               sensor_frequency = 0
               if sensor_frequency_other == '':
                 page_top_errors.append("Please select the frequency in the sensor sensor")
-            if sensor_precision == 'truncate'and sensor_truncation == None:
+            if sensor_precision == 'truncate' and sensor_truncation == None:
               page_top_errors.append("Please select the truncation decimals in the sensor sensor")
 
 
         else:
           page_top_errors.append("Sensor form is not valid")
 
-      
-        #save data into signalstrenght model
+        # save data into signalstrenght model
         if signalstrength_form.is_valid():
-          if signalstrength_form.is_required('signalstrength'):#check if the researcher wants to use this sensor
-          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+          if signalstrength_form.is_required('signalstrength'):  # check if the researcher wants to use this sensor
+            # CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
             signal_strengths = signalstrength_form.is_required('signal_strengths')
-            
-            #CHECK GENERAL ATRIBUTES
+
+            # CHECK GENERAL ATRIBUTES
             signalstrength_frequency = signalstrength_form.cleaned_data['frequency']
             signalstrength_frequency_unit = signalstrength_form.cleaned_data['frequency_unit']
             signalstrength_frequency_other = signalstrength_form.cleaned_data['frequency_other']
@@ -1380,26 +1286,25 @@ def registerexperiment(request):
               signalstrength_frequency = 0
               if signalstrength_frequency_other == '':
                 page_top_errors.append("Please select the frequency in the signalstrength sensor")
-            if signalstrength_precision == 'truncate'and signalstrength_truncation == None:
+            if signalstrength_precision == 'truncate' and signalstrength_truncation == None:
               page_top_errors.append("Please select the truncation decimals in the signalstrength sensor")
 
 
         else:
           page_top_errors.append("Signalstrength form is not valid")
 
-      
-        #save data into wifi model
+        # save data into wifi model
         if wifi_form.is_valid():
-          if wifi_form.is_required('wifi'):#check if the researcher wants to use this sensor
-          #CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
+          if wifi_form.is_required('wifi'):  # check if the researcher wants to use this sensor
+            # CHECK WHAT EXACTLY THE USER WANTS TO USE FROM THIS SENSOR
             wifi_state = wifi_form.is_required('wifi_state')
             ip_address = wifi_form.is_required('ip_address')
             link_speed = wifi_form.is_required('link_speed')
             supplicant_state = wifi_form.is_required('supplicant_state')
             ssid = wifi_form.is_required('ssid')
             rssi = wifi_form.is_required('rssi')
-            
-            #CHECK GENERAL ATRIBUTES
+
+            # CHECK GENERAL ATRIBUTES
             wifi_frequency = wifi_form.cleaned_data['frequency']
             wifi_frequency_unit = wifi_form.cleaned_data['frequency_unit']
             wifi_frequency_other = wifi_form.cleaned_data['frequency_other']
@@ -1411,41 +1316,40 @@ def registerexperiment(request):
               wifi_frequency = 0
               if wifi_frequency_other == '':
                 page_top_errors.append("Please select the frequency in the wifi sensor")
-            if wifi_precision == 'truncate'and wifi_truncation == None:
+            if wifi_precision == 'truncate' and wifi_truncation == None:
               page_top_errors.append("Please select the truncation decimals in the wifi sensor")
-                
+
 
         else:
           page_top_errors.append("Wifi form is not valid")
 
-        if page_top_errors == []: #all data have been saved succesfully
+        if page_top_errors == []:  # all data have been saved succesfully
           return HttpResponseRedirect(reverse("help"))
-        
-        
-    else: #if r_form is not valid
+
+
+    else:  # if r_form is not valid
       page_top_errors.append("Basic information of the experiment is not valid")
-      
-    
-   
-   
+
+
+
+
   # if a GET (or any other method) we'll create a blank form
   else:
-      r_form = forms.RegisterExperimentForm()
-      battery_form = forms.BatteryForm(prefix = 'battery') #form for each sensor
-      bluetooth_form = forms.BluetoothForm(prefix = 'bluetooth') #form for each sensor
-      cellular_form = forms.CellularForm(prefix = 'cellular') #form for each sensor
-      location_form = forms.LocationForm(prefix = 'location') #form for each sensor
-      settings_form = forms.SettingsForm(prefix = 'settings') #form for each sensor
-      sensor_form = forms.SensorForm(prefix = 'sensor') #form for each sensor
-      signalstrength_form = forms.SignalStrengthForm(prefix = 'signalstrength') #form for each sensor
-      wifi_form = forms.WifiForm(prefix = 'wifi') #form for each sensor
+    r_form = forms.RegisterExperimentForm()
+    battery_form = forms.BatteryForm(prefix='battery')  # form for each sensor
+    bluetooth_form = forms.BluetoothForm(prefix='bluetooth')  # form for each sensor
+    cellular_form = forms.CellularForm(prefix='cellular')  # form for each sensor
+    location_form = forms.LocationForm(prefix='location')  # form for each sensor
+    settings_form = forms.SettingsForm(prefix='settings')  # form for each sensor
+    sensor_form = forms.SensorForm(prefix='sensor')  # form for each sensor
+    signalstrength_form = forms.SignalStrengthForm(prefix='signalstrength')  # form for each sensor
+    wifi_form = forms.WifiForm(prefix='wifi')  # form for each sensor
 
-
-
-  return render(request, 'control/registerexperiment.html', {'username' : username,'battery_form': battery_form, 'bluetooth_form': bluetooth_form, 'cellular_form': cellular_form, 'location_form': location_form, 'settings_form': settings_form, 'sensor_form': sensor_form, 'signalstrength_form': signalstrength_form, 'wifi_form': wifi_form, 'r_form': r_form, 'ret': ret, 'page_top_errors':page_top_errors})
- 
-
-
+  return render(request, 'control/registerexperiment.html',
+                {'username': username, 'battery_form': battery_form, 'bluetooth_form': bluetooth_form,
+                 'cellular_form': cellular_form, 'location_form': location_form, 'settings_form': settings_form,
+                 'sensor_form': sensor_form, 'signalstrength_form': signalstrength_form, 'wifi_form': wifi_form,
+                 'r_form': r_form, 'ret': ret, 'page_top_errors': page_top_errors})
 
 
 def _build_installer(username, platform):
@@ -1502,15 +1406,9 @@ def _build_installer(username, platform):
   return True, installer_url
 
 
-
-
-
 def donations_help(request, username):
-  return render_to_response('download/help.html', {'username' : username},
-          context_instance=RequestContext(request))
-
-
-
+  return render_to_response('download/help.html', {'username': username},
+                            context_instance=RequestContext(request))
 
 
 def _validate_and_get_geniuser(request):
@@ -1522,22 +1420,16 @@ def _validate_and_get_geniuser(request):
   return user
 
 
-
-
-
 @log_function_call_without_return
 @login_required
 def new_auto_register_user(request):
   msg = "Your account has been succesfully created. "
   msg += "If you would like to login without OpenID/OAuth please change your password now."
-  return profile(request,msg)
-
-
-
+  return profile(request, msg)
 
 
 def _show_failed_get_geniuser_page(request):
   err = "Sorry, we can't display the page you requested. "
   err += "If you are logged in as an administrator, you'll need to logout, and login with a Seattle Clearinghouse account. "
   err += "If you aren't logged in as an administrator, then this is a bug. Please contact us!"
-  return _show_login(request, 'accounts/login.html', {'err' : err})
+  return _show_login(request, 'accounts/login.html', {'err': err})

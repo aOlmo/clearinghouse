@@ -57,11 +57,11 @@ def rpc_handler(request):
     response.write(dispatcher._marshaled_dispatch(request.raw_post_data))
   else:
     response.write("<b>This is the SeattleGeni XML-RPC Service.</b><br>")
-    response.write("Please see <a href=" + SEATTLECLEARINGHOUSE_XMLRPC_API_DOC_URL + ">" + SEATTLECLEARINGHOUSE_XMLRPC_API_DOC_URL + "</a> for more information.")
+    response.write(
+      "Please see <a href=" + SEATTLECLEARINGHOUSE_XMLRPC_API_DOC_URL + ">" + SEATTLECLEARINGHOUSE_XMLRPC_API_DOC_URL + "</a> for more information.")
 
   response['Content-length'] = str(len(response.content))
   return response
-
 
 
 # All methods in the PublicXMLRPCFunctions class will be available as xmlrpc functions.
