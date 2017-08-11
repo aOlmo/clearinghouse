@@ -133,7 +133,8 @@ def _state_key_file_to_publickey_string(key_file_name):
 
 
 # The key used as the state key for new donations.
-ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonation.publickey")
+ACCEPTDONATIONS_STATE_PUBKEY = \
+  _state_key_file_to_publickey_string("acceptdonation.publickey")
 
 
 
@@ -142,9 +143,9 @@ ACCEPTDONATIONS_STATE_PUBKEY = _state_key_file_to_publickey_string("acceptdonati
 def error(request):
   """
   <Purpose>
-    If a OpenID/OAuth backend itself has an error(not a user or Seattle Clearinghouse's fault)
-    a user will get redirected here.  This can happen if the backend rejects the user or from
-    user cancelation.
+    If a OpenID/OAuth backend itself has an error(not a user or Seattle
+    Clearinghouse's fault) a user will get redirected here.  This can happen if
+    the backend rejects the user or from user cancelation.
 
   <Arguments>
     request:
@@ -176,8 +177,8 @@ def error(request):
 def associate_error(request):
   """
   <Purpose>
-    If an error occured during the OpenId/OAuth association process a user will get
-    redirected here.
+    If an error occured during the OpenId/OAuth association process a user will
+    get redirected here.
   <Arguments>
     request:
       An HTTP request object.
@@ -191,7 +192,8 @@ def associate_error(request):
     An HTTP response object that represents the associate_error page.
   """
   info=''
-  error_msg = "Whoops, this account is already linked to another Seattle Clearninghouse user."
+  error_msg = "Whoops, this account is already linked to another Seattle " \
+              "Clearninghouse user."
   return profile(request, info, error_msg)
 
 
@@ -235,7 +237,17 @@ def auto_register(request,backend=None,error_msgs=''):
         return redirect('socialauth_complete', backend=backend)
   name = setting('SOCIAL_AUTH_PARTIAL_PIPELINE_KEY', 'partial_pipeline')
   backend=request.session[name]['backend']
-  return render_to_response('accounts/auto_register.html', {'backend' : backend, 'error_msgs' : error_msgs, 'username_form' : username_form}, RequestContext(request))
+
+
+  values_to_render = {
+    'backend': backend,
+    'error_msgs': error_msgs,
+    'username_form': username_form,
+  }
+
+  return render_to_response('accounts/auto_register.html',
+                            values_to_render,
+                            RequestContext(request))
 
 
 
@@ -278,7 +290,8 @@ def profile(request, info="", error_msg="", messages=""):
 
   if request.method == 'POST':
     if 'affiliation' in request.POST:
-       affiliation_form = forms.gen_edit_user_form(('affiliation',), request.POST, instance=user)
+       affiliation_form = forms.gen_edit_user_form(('affiliation',),
+                                                   request.POST, instance=user)
        if affiliation_form.is_valid():
          new_affiliation = affiliation_form.cleaned_data['affiliation']
          interface.change_user_affiliation(user, new_affiliation)
@@ -338,9 +351,11 @@ def register(request):
 
     #TODO: what if the form data isn't in the POST request? we need to check for this.
     form = forms.GeniUserCreationForm(request.POST, request.FILES)
-    # Calling the form's is_valid() function causes all form "clean_..." methods to be checked.
-    # If this succeeds, then the form input data is validated per field-specific cleaning checks. (see forms.py)
-    # However, we still need to do some checks which aren't doable from inside the form class.
+    # Calling the form's is_valid() function causes all form "clean_..." methods
+    # to be checked. If this succeeds, then the form input data is validated per
+    # field-specific cleaning checks. (see forms.py)However, we still need to do
+    # some checks which aren't doable from inside the form class.
+
     if form.is_valid():
       username = form.cleaned_data['username']
       password = form.cleaned_data['password1']
@@ -360,14 +375,15 @@ def register(request):
       # only proceed with registration if there are no validation errors
       if page_top_errors == []:
         try:
-          # we should never error here, since we've already finished validation at this point.
-          # but, just to be safe...
+          # we should never error here, since we've already finished validation
+          # at this point, but, just to be safe...
           user = interface.register_user(username, password, email, affiliation, pubkey)
         except ValidationError, err:
           page_top_errors.append(str(err))
         else:
           return _show_login(request, 'accounts/login.html',
-                             {'msg' : "Username %s has been successfully registered." % (user.username)})
+                             {'msg': "Username %s has "
+                                     "been successfully registered." % (user.username)})
   else:
     form = forms.GeniUserCreationForm()
   return render_to_response('accounts/register.html',
@@ -440,10 +456,12 @@ def login(request):
 
     if not request.session.test_cookie_worked():
       request.session.set_test_cookie()
-      return _show_login(request, ltemplate, {'err' : "Please enable your cookies and try again."}, form)
+      return _show_login(request, ltemplate,
+                         {'err' : "Please enable your cookies and try again."}, form)
 
     if request.POST.has_key('jsenabled') and request.POST['jsenabled'] == 'false':
-      return _show_login(request, ltemplate, {'err' : "Please enable javascript and try again."}, form)
+      return _show_login(request, ltemplate,
+                         {'err' : "Please enable javascript and try again."}, form)
 
     try:
       interface.login_user(request, request.POST['username'], request.POST['password'])
@@ -526,7 +544,8 @@ def mygeni(request):
 
 
 @login_required
-def myvessels(request, get_form=False, action_summary="", action_detail="", remove_summary=""):
+def myvessels(request, get_form=False, action_summary="", action_detail="",
+              remove_summary=""):
 
   try:
     user = _validate_and_get_geniuser(request)
@@ -580,7 +599,8 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
     }
 
   # return the used resources page constructed from a template
-  return render_to_response('control/myvessels.html', values_to_render, context_instance=RequestContext(request))
+  return render_to_response('control/myvessels.html', values_to_render,
+                            context_instance=RequestContext(request))
 
 
 
@@ -611,9 +631,16 @@ def getdonations(request):
   except:
     linux = "Failed to build installer."
 
+  values_to_render = {
+    'username': user.username,
+    'domain': domain,
+    'android': android,
+    'mac': mac,
+    'linux': linux
+  }
+
   return render_to_response('control/getdonations.html',
-                            {'username':user.username,
-                             'domain':domain, 'android':android, 'mac':mac, 'linux':linux},
+                            values_to_render,
                             context_instance=RequestContext(request))
 
 
@@ -663,12 +690,14 @@ def get_resources(request):
       action_summary = "Unable to acquire vessels at this time."
       if str(err) == 'Acquiring NAT vessels is currently disabled. ':
         link = """<a href="{{ TESTBED_URL }}}blog">blog</a>"""
-        action_detail += str(err) + 'Please check our '+ link  +' to see when we have re-enabled NAT vessels.'
+        action_detail += str(err) + 'Please check our '+ link  + \
+                         ' to see when we have re-enabled NAT vessels.'
       else:
         action_detail += str(err)
       keep_get_form = True
     except InsufficientUserResourcesError:
-      action_summary = "Unable to acquire vessels: you do not have enough vessel credits to fulfill this request."
+      action_summary = "Unable to acquire vessels: you do not have enough vessel " \
+                       "credits to fulfill this request."
       keep_get_form = True
   else:
     keep_get_form = True
@@ -708,7 +737,8 @@ def del_resource(request):
     # convert handle to vessel
     vessel_to_release = interface.get_vessel_list(vessel_handle)
   except DoesNotExistError:
-    remove_summary = "Unable to remove vessel. The vessel you are trying to remove does not exist."
+    remove_summary = "Unable to remove vessel. " \
+                     "The vessel you are trying to remove does not exist."
   except InvalidRequestError, err:
     remove_summary = "Unable to remove vessel. " + str(err)
   else:
@@ -774,7 +804,8 @@ def renew_resource(request):
     vessel_handle_list = [request.POST['handle']]
     vessel_to_renew = interface.get_vessel_list(vessel_handle_list)
   except DoesNotExistError:
-    action_summary = "Unable to renew vessel: The vessel you are trying to delete does not exist."
+    action_summary = "Unable to renew vessel: " \
+                     "The vessel you are trying to delete does not exist."
   except InvalidRequestError, err:
     action_summary = "Unable to renew vessel."
     action_detail += str(err)
@@ -971,7 +1002,8 @@ def download(request, username):
   # same installer is downloaded from the Google Play store for all users.)
   # The URL is escaped twice (ask Akos why) and inserted in the referrer
   # information in the URL.
-  #templatedict['android_installer_link'] = urllib.quote(urllib.quote(domain,safe=''),safe='')
+  # templatedict['android_installer_link'] = \
+  #         urllib.quote(urllib.quote(domain,safe=''),safe='')
 
   return render_to_response('download/installers.html', templatedict,
           context_instance=RequestContext(request))
@@ -1132,8 +1164,8 @@ def check_sensor_values(form_name, form, page_top_errors, specific_checkboxes):
   """
   <Purpose>
     Complements "save_sensor__values" function.
-    Checks if the common sensor values have been correctly filled by the user. In the event these
-    were not, an error message would be prompted.
+    Checks if the common sensor values have been correctly filled by the user.
+    In the event these were not, an error message would be prompted.
 
   <Arguments>
     form_name:
@@ -1189,19 +1221,24 @@ def check_sensor_values(form_name, form, page_top_errors, specific_checkboxes):
         else:
           common_sensor_vals[item] = val
 
-    if common_sensor_vals['frequency'] == None:  # if the user doesnt set frequency
-      common_sensor_vals['frequency'] = 0  # we set it to 0
-      if common_sensor_vals['frequency_other'] == '':  # if he doesnt provide any other information either
-        page_top_errors.append("Please select the frequency in the " + sensor_name + " sensor")  # We set an error
+    # If the user doesnt set frequency we set it to 0 and if he does not
+    # provide any other information either, we set an error
+    if common_sensor_vals['frequency'] == None:
+      common_sensor_vals['frequency'] = 0
+      if common_sensor_vals['frequency_other'] == '':
+        page_top_errors.append("Please select the frequency in the " +
+                               sensor_name + " sensor")
 
     if common_sensor_vals['truncation'] == None:
       if common_sensor_vals['precision'] == 'truncate':
-        page_top_errors.append("Please select the truncation decimals for the " + sensor_name + " sensor")
+        page_top_errors.append("Please select the truncation decimals for the " +
+                               sensor_name + " sensor")
       else:
         common_sensor_vals['truncation'] = 0
 
     if common_sensor_vals['goal'] == '':
-      page_top_errors.append("Please explain the goal of using the " + sensor_name + " sensor")
+      page_top_errors.append("Please explain the goal of using the " +
+                             sensor_name + " sensor")
 
     if specific_checkboxes[form_name]:
       # Delete the Yes/No checkbox temporarily
@@ -1220,8 +1257,8 @@ def check_sensor_values(form_name, form, page_top_errors, specific_checkboxes):
 def save_sensor_values(form_name, form, page_top_errors, specific_checkboxes, experiment):
   """
   <Purpose>
-    Checks if the values input by the user in the registerexperiment form are correct for
-    a specific sensor whose values are passed via reference.
+    Checks if the values input by the user in the registerexperiment form are
+    correct for a specific sensor whose values are passed via reference.
 
   <Arguments>
     form_name:
@@ -1293,10 +1330,11 @@ def save_sensor_values(form_name, form, page_top_errors, specific_checkboxes, ex
 def registerexperiment(request):
   """
   <Purpose>
-      Initializes all variables for each sensor and shows the Experiment Registration form
+      Initializes all variables for each sensor and shows the Experiment
+      Registration form
   <Returns>
-      An HTTP response object that represents the experiment registration page on
-      success. The user is redirected to the viewexperiments frunction.
+      An HTTP response object that represents the experiment registration page
+      on success. The user is redirected to the viewexperiments frunction.
   """
   # Obtain the context from the HTTP request.
   context_instance = RequestContext(request)
@@ -1324,7 +1362,8 @@ def registerexperiment(request):
   # Below we create and assign dynamically each sensor's checkboxes
   # to finally store them all in a dictionary of dictionaries.
 
-  sensors = ["battery", "bluetooth", "cellular", "location", "settings", "concreteSensor", "signalStrength", "wifi"]
+  sensors = ["battery", "bluetooth", "cellular", "location", "settings",
+             "concreteSensor", "signalStrength", "wifi"]
 
   # First get all vars from each sensor class
   battery_vars = vars(Battery())
@@ -1350,8 +1389,9 @@ def registerexperiment(request):
 
   for sensor_name in sensors:
     for item in eval(sensor_name + "_vars"):
-      # For each of the sensors we only get those vars that contain the same name as the class.
-      # We can do this due to the fact that each var for each class starts with the name of that class
+      # For each of the sensors we only get those vars that contain the same name
+      # as the class. We can do this due to the fact that each var for each class
+      # starts with the name of that class
       if sensor_name in item:
         eval(sensor_name + "_sensor_checkboxes")[item] = False
 
@@ -1412,7 +1452,8 @@ def registerexperiment(request):
           specific_checkboxes = sensor_name + "_sensor_checkboxes"
           form = sensor_name + "_form"
 
-          check_sensor_values(sensor_name, eval(form), page_top_errors, all_sensor_checkboxes[sensor_name])
+          check_sensor_values(sensor_name, eval(form), page_top_errors,
+                              all_sensor_checkboxes[sensor_name])
 
         # Only save the contents of the forms if there are no errors
         if page_top_errors == []:
@@ -1426,7 +1467,8 @@ def registerexperiment(request):
             specific_checkboxes = sensor_name + "_sensor_checkboxes"
             form = sensor_name + "_form"
 
-            save_sensor_values(sensor_name, eval(form), page_top_errors, all_sensor_checkboxes[sensor_name], experiment)
+            save_sensor_values(sensor_name, eval(form), page_top_errors,
+                               all_sensor_checkboxes[sensor_name], experiment)
 
         # If all data have been saved succesfully,
         # redirect to the viewexperiments page
@@ -1438,16 +1480,17 @@ def registerexperiment(request):
    
   # if a GET (or any other method) we'll create a blank form
   else:
+      # These are the forms for each one of the sensors
       r_form = forms.RegisterExperimentForm()
       details_form = forms.DetailsForm(prefix='details')
-      battery_form = forms.BatteryForm(prefix='battery') #form for each sensor
-      bluetooth_form = forms.BluetoothForm(prefix='bluetooth') #form for each sensor
-      cellular_form = forms.CellularForm(prefix='cellular') #form for each sensor
-      location_form = forms.LocationForm(prefix='location') #form for each sensor
-      settings_form = forms.SettingsForm(prefix='settings') #form for each sensor
-      concreteSensor_form = forms.SensorForm(prefix='sensor') #form for each sensor
-      signalStrength_form = forms.SignalStrengthForm(prefix='signalStrength') #form for each sensor
-      wifi_form = forms.WifiForm(prefix='wifi') #form for each sensor
+      battery_form = forms.BatteryForm(prefix='battery')
+      bluetooth_form = forms.BluetoothForm(prefix='bluetooth')
+      cellular_form = forms.CellularForm(prefix='cellular')
+      location_form = forms.LocationForm(prefix='location')
+      settings_form = forms.SettingsForm(prefix='settings')
+      concreteSensor_form = forms.SensorForm(prefix='sensor')
+      signalStrength_form = forms.SignalStrengthForm(prefix='signalStrength')
+      wifi_form = forms.WifiForm(prefix='wifi')
 
   values_to_render = {
     'username': username,
@@ -1483,7 +1526,8 @@ def viewexperiments(request):
 
   context_instance = RequestContext(request)
 
-  sensors = ["battery", "bluetooth", "cellular", "location", "settings", "concreteSensor", "signalStrength", "wifi"]
+  sensors = ["battery", "bluetooth", "cellular", "location", "settings",
+             "concreteSensor", "signalStrength", "wifi"]
 
   try:
     user = _validate_and_get_geniuser(request)
@@ -1515,11 +1559,14 @@ def viewexperiments(request):
       name_list = "None"
 
     ret.append([experiment.experiment_name, name_list, experiment.id])
-    
-    
-  
-  return render(request, 'control/viewexperiments.html', {'username' : username, 
-            'page_top_errors' : page_top_errors, 'ret':ret})
+
+  values_to_render = {
+    'username': username,
+    'page_top_errors': page_top_errors,
+    'ret': ret
+  }
+
+  return render(request, 'control/viewexperiments.html', values_to_render)
 
 
 def delete_experiment(request, exp_id):
@@ -1692,7 +1739,8 @@ def _validate_and_get_geniuser(request):
 @login_required
 def new_auto_register_user(request):
   msg = "Your account has been succesfully created. "
-  msg += "If you would like to login without OpenID/OAuth please change your password now."
+  msg += "If you would like to login without OpenID/OAuth please change " \
+         "your password now."
   return profile(request,msg)
 
 
@@ -1701,6 +1749,8 @@ def new_auto_register_user(request):
 
 def _show_failed_get_geniuser_page(request):
   err = "Sorry, we can't display the page you requested. "
-  err += "If you are logged in as an administrator, you'll need to logout, and login with a Seattle Clearinghouse account. "
-  err += "If you aren't logged in as an administrator, then this is a bug. Please contact us!"
+  err += "If you are logged in as an administrator, you'll need to logout, " \
+         "and login with a Seattle Clearinghouse account. "
+  err += "If you aren't logged in as an administrator, then this is a bug. " \
+         "Please contact us!"
   return _show_login(request, 'accounts/login.html', {'err' : err})

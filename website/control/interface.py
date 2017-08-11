@@ -127,7 +127,8 @@ def register_user(username, password, email, affiliation, pubkey=None):
     donor_pubkey = backend.generate_key(keydescription)
 
     # Create the user record.
-    geniuser = maindb.create_user(username, password, email, affiliation, pubkey, privkey, donor_pubkey)
+    geniuser = maindb.create_user(username, password, email, affiliation,
+                                  pubkey, privkey, donor_pubkey)
 
   finally:
     # Unlock the user.
@@ -205,7 +206,10 @@ def register_sensor(sensor_name, experiment, **kwargs):
   # There's no need of validation with the Boolean fields.
   # Neither integer fields need it
 
-  for field in ["frequency_unit", "precision", "frequency_other", "precision_other", "goal"]:
+  fields_to_validate = \
+    ["frequency_unit", "precision", "frequency_other", "precision_other", "goal"]
+
+  for field in fields_to_validate:
     validations.validate_register_experiment_field(kwargs[field])
 
   sensor = maindb.create_sensor(sensor_name, experiment, **kwargs)
@@ -845,13 +849,17 @@ def acquire_vessels(geniuser, vesselcount, vesseltype):
     maindb.require_user_can_acquire_resources(geniuser, vesselcount)
 
     if vesseltype == 'wan':
-      acquired_list = vessels.acquire_wan_vessels(lockserver_handle, geniuser, vesselcount)
+      acquired_list = vessels.acquire_wan_vessels(lockserver_handle, geniuser,
+                                                  vesselcount)
     elif vesseltype == 'lan':
-      acquired_list = vessels.acquire_lan_vessels(lockserver_handle, geniuser, vesselcount)
+      acquired_list = vessels.acquire_lan_vessels(lockserver_handle, geniuser,
+                                                  vesselcount)
     elif vesseltype == 'nat':
-      acquired_list = vessels.acquire_nat_vessels(lockserver_handle, geniuser, vesselcount)
+      acquired_list = vessels.acquire_nat_vessels(lockserver_handle, geniuser,
+                                                  vesselcount)
     elif vesseltype == 'rand':
-      acquired_list = vessels.acquire_rand_vessels(lockserver_handle, geniuser, vesselcount)
+      acquired_list = vessels.acquire_rand_vessels(lockserver_handle, geniuser,
+                                                   vesselcount)
     else:
       raise ProgrammerError("Vessel type '%s' is not a valid type" % vesseltype)
 
@@ -915,7 +923,8 @@ def acquire_specific_vessels(geniuser, vessel_list):
     # cause the user to be over their limit.
     maindb.require_user_can_acquire_resources(geniuser, len(vessel_list))
 
-    return vessels.acquire_specific_vessels_best_effort(lockserver_handle, geniuser, vessel_list)
+    return vessels.acquire_specific_vessels_best_effort(lockserver_handle,
+                                                        geniuser, vessel_list)
 
   finally:
     # Unlock the user.
@@ -1181,7 +1190,8 @@ def get_vessel_infodict_list(vessel_list):
 
     expires_in_timedelta = vessel.date_expires - datetime.datetime.now()
     # The timedelta object stores information in two parts: days and seconds.
-    vessel_info["expires_in_seconds"] = (expires_in_timedelta.days * 3600 * 24) + expires_in_timedelta.seconds
+    vessel_info["expires_in_seconds"] = \
+      (expires_in_timedelta.days * 3600 * 24) + expires_in_timedelta.seconds
 
     infodict_list.append(vessel_info)
 

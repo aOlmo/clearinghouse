@@ -158,8 +158,9 @@ class Experiment(models.Model):
 class Sensor(models.Model):
   """
   It is an Sensor abstract class so we can inherit in the child classes.
-  Abstract base classes are useful when you want to put some common information into a number of other models.
-  This class is defining the general Sensor data as the frequency, precision, goal...
+  Abstract base classes are useful when you want to put some common information
+  into a number of other models. This class is defining the general Sensor data
+  as the frequency, precision, goal...
   """
 
   # This model will not be used to create any database table.
@@ -190,7 +191,8 @@ class Sensor(models.Model):
   goal = models.CharField(max_length=512, default=None, blank=True)
 
   # Which experiment requests this sensor?
-  experiment = models.ForeignKey(Experiment, db_index=True, default=None, on_delete=models.CASCADE)
+  experiment = models.ForeignKey(Experiment, db_index=True, default=None,
+                                 on_delete=models.CASCADE)
 
 
 
@@ -278,7 +280,8 @@ class Cellular(Sensor):
   # Need the radio technology or network type currently in use on the device?
   cellular_network_type = models.BooleanField(default=False)
 
-  # Need the state of cellular service: including emergency call only, in service, out of service, or power off
+  # Need the state of cellular service: including emergency call only,
+  # in service, out of service, or power off
   cellular_service_state = models.BooleanField(default=False)
 
   # Need the signal strength?
@@ -365,7 +368,8 @@ class ConcreteSensor(Sensor):
   # Need sensors data?
   concreteSensor = models.BooleanField(default=False)
 
-  # Get the most recently recorded data for the accelerometer, magnetometer and orientation sensors.
+  # Get the most recently recorded data for the accelerometer, magnetometer and
+  # orientation sensors.
   concreteSensor_sensor_data = models.BooleanField(default=False)
 
   # Need sensors accuracy?
@@ -459,17 +463,20 @@ class Node(models.Model):
   node_identifier = models.CharField("Node identifier", max_length=2048)
 
   # The IP address the nodemanager was last known to be accessible through.
-  last_known_ip = models.CharField("Last known nodemanager IP address or NAT string", max_length=100, db_index=True)
+  last_known_ip = models.CharField("Last known nodemanager IP address or NAT string",
+                                   max_length=100, db_index=True)
 
   # The port the nodemanager was last known to be accessible through. 
   last_known_port = models.IntegerField("Last known nodemanager port", db_index=True)
 
   # The version of seattle the node was last known to be running. 
-  last_known_version = models.CharField("Last known version", max_length=64, blank=True, db_index=True)
+  last_known_version = models.CharField("Last known version", max_length=64,
+                                        blank=True, db_index=True)
 
   # The last time the node could be contacted.
   # This is set to the current time when the node object is first created.
-  date_last_contacted = models.DateTimeField("Last date successfully contacted", auto_now_add=True, db_index=True)
+  date_last_contacted = models.DateTimeField("Last date successfully contacted",
+                                             auto_now_add=True, db_index=True)
 
   # The node gets marked as not active when it becomes inaccessible. Nodes are
   # never deleted from the database no matter how long they have been inactive.
@@ -508,7 +515,8 @@ class Node(models.Model):
     """
     Produces a string representation of the Node instance.
     """
-    return "Node:%s:%s:%d" % (self.node_identifier[:10].replace(" ", "_"), self.last_known_ip, self.last_known_port)
+    return "Node:%s:%s:%d" % (self.node_identifier[:10].replace(" ", "_"),
+                              self.last_known_ip, self.last_known_port)
 
 
 
@@ -584,7 +592,8 @@ class Vessel(models.Model):
   
   # The date after which the vessel should be taken away from the user who has
   # acquired it.
-  date_expires = models.DateTimeField("Date that acquisition expires", null=True, db_index=True)
+  date_expires = models.DateTimeField("Date that acquisition expires", null=True,
+                                      db_index=True)
     
   # The vessel is marked as dirty if it needs to be reset, etc. before it can
   # be acquired.

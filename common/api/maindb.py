@@ -44,7 +44,8 @@ from clearinghouse.common.exceptions import *
 from clearinghouse.common.util import log
 
 from clearinghouse.common.util.decorators import log_function_call
-from clearinghouse.common.util.decorators import log_function_call_and_only_first_argument
+from clearinghouse.common.util.decorators \
+  import log_function_call_and_only_first_argument
 
 from clearinghouse.common.util.assertions import *
 
@@ -160,7 +161,8 @@ def init_maindb():
 
 
 @log_function_call_and_only_first_argument
-def create_user(username, password, email, affiliation, user_pubkey, user_privkey, donor_pubkey):
+def create_user(username, password, email, affiliation, user_pubkey,
+                user_privkey, donor_pubkey):
   """
   <Purpose>
     Create a new clearinghouse user in the database. This user will be able to
@@ -532,7 +534,8 @@ def set_user_password(geniuser, new_password):
 
 
 @log_function_call
-def create_node(node_identifier, last_known_ip, last_known_port, last_known_version, is_active, owner_pubkey, extra_vessel_name):
+def create_node(node_identifier, last_known_ip, last_known_port,
+                last_known_version, is_active, owner_pubkey, extra_vessel_name):
   """
   <Purpose>
     Create a new node record in the database. A node lock should be held before
@@ -906,7 +909,8 @@ def get_user(username, allow_inactive=False):
     raise DoesNotExistError("No such user.")
     
   except django.core.exceptions.MultipleObjectsReturned:
-    raise InternalError("Multiple records returned when looking up a user by username.")
+    raise InternalError("Multiple records returned when looking up a user "
+                        "by username.")
 
   return geniuser
 
@@ -1008,7 +1012,8 @@ def get_donor(donor_pubkey):
     raise DoesNotExistError("No user exists with the specified donor_pubkey.")
     
   except django.core.exceptions.MultipleObjectsReturned:
-    raise InternalError("Multiple records returned when looking up a user by donor_pubkey.")
+    raise InternalError("Multiple records returned when looking up a user by "
+                        "donor_pubkey.")
 
   return geniuser
 
@@ -1145,10 +1150,12 @@ def get_node(node_identifier):
     node = Node.objects.get(node_identifier=node_identifier)
     
   except django.core.exceptions.ObjectDoesNotExist:
-    raise DoesNotExistError("There is no node with the node identifier: " + str(node_identifier))
+    raise DoesNotExistError("There is no node with the node identifier: " +
+                            str(node_identifier))
     
   except django.core.exceptions.MultipleObjectsReturned:
-    raise InternalError("Multiple records returned when looking up a node by node identifier.")
+    raise InternalError("Multiple records returned when looking up a node by "
+                        "node identifier.")
   
   return node
 
@@ -1391,14 +1398,17 @@ def get_vessel(node_identifier, vesselname):
   assert_str(vesselname)
 
   try:
-    vessel = Vessel.objects.get(node__node_identifier=node_identifier, name=vesselname)
+    vessel = Vessel.objects.get(node__node_identifier=node_identifier,
+                                name=vesselname)
     
   except django.core.exceptions.ObjectDoesNotExist:
     raise DoesNotExistError("There is no vessel with the node identifier: " + 
-                            str(node_identifier) + " and vessel name: " + vesselname)
+                            str(node_identifier) + " and vessel name: " +
+                            vesselname)
     
   except django.core.exceptions.MultipleObjectsReturned:
-    raise InternalError("Multiple records returned when looking up a vessel by node identifier and vessel name.")
+    raise InternalError("Multiple records returned when looking up a vessel "
+                        "by node identifier and vessel name.")
   
   return vessel
 
@@ -1455,7 +1465,8 @@ def _get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(port):
   # Using order_by('?') is the QuerySet way of saying ORDER BY RAND().
   queryset = queryset.order_by('?')
   
-  log.debug("There are " + str(queryset.count()) + " available NAT and non-NAT node vessels on port " + str(port))
+  log.debug("There are " + str(queryset.count()) +
+            " available NAT and non-NAT node vessels on port " + str(port))
 
   return queryset
 
@@ -1472,7 +1483,8 @@ def _get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(port):
   
   queryset = queryset.exclude(node__last_known_ip__startswith=NAT_STRING_PREFIX)
   
-  log.debug("There are " + str(queryset.count()) + " available non-NAT node vessels on port " + str(port))
+  log.debug("There are " + str(queryset.count()) +
+            " available non-NAT node vessels on port " + str(port))
 
   return queryset
 
@@ -1489,7 +1501,8 @@ def _get_queryset_of_all_available_vessels_for_a_port_only_nat_nodes(port):
   
   queryset = queryset.filter(node__last_known_ip__startswith=NAT_STRING_PREFIX)
   
-  log.debug("There are " + str(queryset.count()) + " available NAT node vessels on port " + str(port))
+  log.debug("There are " + str(queryset.count()) +
+            " available NAT node vessels on port " + str(port))
 
   return queryset
 
@@ -1524,13 +1537,17 @@ def get_available_rand_vessels(geniuser, vesselcount):
   # We return more vessels than were asked for. This gives some room for some
   # of the vessels to be inaccessible or already acquired by the time they are
   # attempted to be acquired by the client code.
-  returnvesselcount = GET_AVAILABLE_VESSELS_MULTIPLIER * vesselcount + GET_AVAILABLE_VESSELS_ADDER
+  returnvesselcount = GET_AVAILABLE_VESSELS_MULTIPLIER * vesselcount + \
+                      GET_AVAILABLE_VESSELS_ADDER
   
-  allvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(geniuser.usable_vessel_port)
+  allvesselsqueryset = \
+    _get_queryset_of_all_available_vessels_for_a_port_include_nat_nodes(geniuser.usable_vessel_port)
    
   if allvesselsqueryset.count() < vesselcount:
-    message = "Requested " + str(vesselcount) + " rand vessels, but we only have " + str(allvesselsqueryset.count())
-    message += " vessels with port " + str(geniuser.usable_vessel_port) + " available." 
+    message = "Requested " + str(vesselcount) + \
+              " rand vessels, but we only have " + str(allvesselsqueryset.count())
+    message += " vessels with port " + str(geniuser.usable_vessel_port) + \
+               " available."
     raise UnableToAcquireResourcesError(message)
   
   return list(allvesselsqueryset[:returnvesselcount])
@@ -1565,15 +1582,18 @@ def get_available_nat_vessels(geniuser, vesselcount):
   # We return more vessels than were asked for. This gives some room for some
   # of the vessels to be inaccessible or already acquired by the time they are
   # attempted to be acquired by the client code.
-  returnvesselcount = GET_AVAILABLE_VESSELS_MULTIPLIER * vesselcount + GET_AVAILABLE_VESSELS_ADDER
+  returnvesselcount = GET_AVAILABLE_VESSELS_MULTIPLIER * vesselcount + \
+                      GET_AVAILABLE_VESSELS_ADDER
   
-  natvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port_only_nat_nodes(geniuser.usable_vessel_port)
+  natvesselsqueryset = \
+    _get_queryset_of_all_available_vessels_for_a_port_only_nat_nodes(geniuser.usable_vessel_port)
    
   if natvesselsqueryset.count() < vesselcount:
     #COMMENT this out when NAT acquistion feature is re-enabled  /* ADDED Aug 06, 2012 by GP */
     message = 'Acquiring NAT vessels is currently disabled. '
     #UNCOMMENT this when NAT acquistion feature is re-enabled
-    #message = "Requested " + str(vesselcount) + " nat vessels, but we only have " + str(natvesselsqueryset.count())
+    #message = "Requested " + str(vesselcount) +
+    # " nat vessels, but we only have " + str(natvesselsqueryset.count())
     #message += " vessels with port " + str(geniuser.usable_vessel_port) + " available." 
     raise UnableToAcquireResourcesError(message)
   
@@ -1609,12 +1629,14 @@ def get_available_wan_vessels(geniuser, vesselcount):
   # We return more vessels than were asked for. This gives some room for some
   # of the vessels to be inaccessible or already acquired by the time they are
   # attempted to be acquired by the client code.
-  returnvesselcount = GET_AVAILABLE_VESSELS_MULTIPLIER * vesselcount + GET_AVAILABLE_VESSELS_ADDER
+  returnvesselcount = GET_AVAILABLE_VESSELS_MULTIPLIER * vesselcount + \
+                      GET_AVAILABLE_VESSELS_ADDER
   
   vessellist = []
   includedsubnets = []
   
-  nonnatvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(geniuser.usable_vessel_port)
+  nonnatvesselsqueryset = \
+    _get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(geniuser.usable_vessel_port)
    
   # Note: it would be more efficient to have the sql query return vessels
   # in unique subnets, but we would have to be very careful that the UNIQUE
@@ -1641,8 +1663,10 @@ def get_available_wan_vessels(geniuser, vesselcount):
       break 
 
   if len(vessellist) < vesselcount:
-    message = "Requested " + str(vesselcount) + " wan vessels, but we only have vessels with port "
-    message += str(geniuser.usable_vessel_port) + " available on " + str(len(includedsubnets)) + " subnets." 
+    message = "Requested " + str(vesselcount) + \
+              " wan vessels, but we only have vessels with port "
+    message += str(geniuser.usable_vessel_port) + " available on " + \
+               str(len(includedsubnets)) + " subnets."
     raise UnableToAcquireResourcesError(message)
   
   return vessellist
@@ -1742,11 +1766,13 @@ def get_available_lan_vessels_by_subnet(geniuser, vesselcount):
   subnetlist = _get_subnet_list()
 
   if len(subnetlist) == 0:
-    raise UnableToAcquireResourcesError("No subnets exist with at least " + str(vesselcount) + " active nodes")
+    raise UnableToAcquireResourcesError("No subnets exist with at least " +
+                                        str(vesselcount) + " active nodes")
   
   subnets_vessels_list = []
   
-  nonnatvesselsqueryset = _get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(geniuser.usable_vessel_port)
+  nonnatvesselsqueryset = \
+    _get_queryset_of_all_available_vessels_for_a_port_exclude_nat_nodes(geniuser.usable_vessel_port)
   
   for subnet in subnetlist:
     lanvesselsqueryset = nonnatvesselsqueryset.filter(node__last_known_ip__startswith=subnet + '.')
@@ -1760,7 +1786,8 @@ def get_available_lan_vessels_by_subnet(geniuser, vesselcount):
 
   if len(subnets_vessels_list) == 0:
     message = "No subnets exist with at least " + str(vesselcount)
-    message += " active nodes that have a vessel available on port " + str(geniuser.usable_vessel_port)
+    message += " active nodes that have a vessel available on port " + \
+               str(geniuser.usable_vessel_port)
     raise UnableToAcquireResourcesError(message)
   
   return subnets_vessels_list
@@ -1838,7 +1865,7 @@ def get_user_total_vessel_credits(geniuser):
   <Returns>
     The user's total number of vessel credits.
   """
-  return get_user_free_vessel_credits(geniuser) + get_user_vessel_credits_from_donations(geniuser) 
+  return get_user_free_vessel_credits(geniuser) + get_user_vessel_credits_from_donations(geniuser)
   
 
 
@@ -1878,9 +1905,10 @@ def require_user_can_acquire_resources(geniuser, requested_vessel_count):
   max_allowed_vessels = get_user_total_vessel_credits(geniuser)
   
   if requested_vessel_count + acquired_vessel_count > max_allowed_vessels:
-    raise InsufficientUserResourcesError("Requested " + str(requested_vessel_count) + 
-                                         " vessels, already acquired " + str(acquired_vessel_count) + 
-                                         ", max allowed is " + str(max_allowed_vessels))
+    raise InsufficientUserResourcesError(
+      "Requested " + str(requested_vessel_count) +
+      " vessels, already acquired " + str(acquired_vessel_count) +
+      ", max allowed is " + str(max_allowed_vessels))
 
 
 
