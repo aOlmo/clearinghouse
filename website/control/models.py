@@ -30,8 +30,6 @@ from django.contrib.auth.models import User as DjangoUser
 from clearinghouse.common.util import log
 
 
-
-
 # First, we want to register a signal. This page recommends putting this code
 # in models.py: http://docs.djangoproject.com/en/dev/topics/signals/
 
@@ -159,9 +157,9 @@ class Experiment(models.Model):
 
 class Sensor(models.Model):
   """
-  It is an Sensor abstact class so we can inherit in the child classes.
+  It is an Sensor abstract class so we can inherit in the child classes.
   Abstract base classes are useful when you want to put some common information into a number of other models.
-  This class is defining the general Sensor data as the frequency, precission, goal...
+  This class is defining the general Sensor data as the frequency, precision, goal...
   """
 
   # This model will not be used to create any database table.

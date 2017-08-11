@@ -24,10 +24,9 @@ def custom_social_auth_user(*args, **kwargs):
     try:
         return social_auth_user(*args, **kwargs)
     except AuthException:
-    	 return HttpResponseRedirect('associate_error')      
+        return HttpResponseRedirect('associate_error')
     
-def custom_create_user(backend, details, response, uid, username, user=None, *args,
-                **kwargs):
+def custom_create_user(backend, details, response, uid, username, user=None, *args, **kwargs):
     """Create user. Depends on get_username pipeline."""
     if user:
         return {'user': user}

@@ -1107,18 +1107,19 @@ def get_donations_by_user(geniuser, include_inactive_and_broken=False):
     A list of Donation objects.
   """
   assert_geniuser(geniuser)
-  
+
   queryset = Donation.objects.filter(donor=geniuser)
-  if not include_inactive_and_broken:
-    queryset = queryset.filter(node__is_active=True)
-    queryset = queryset.filter(node__is_broken=False)
-  
+
+  ## TODO: The errors seem to be here in these commented lines
+
+  # if not include_inactive_and_broken:
+  #   queryset = queryset.filter(node__is_active=True)
+  #   queryset = queryset.filter(node__is_broken=False)
+
   # Let's return it as a list() rather than a django QuerySet.
   # Using list() causes the QuerySet to be converted to a list, which also
   # means the query is executed (no lazy loading).
   return list(queryset)
-
-
 
 
 

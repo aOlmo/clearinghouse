@@ -527,6 +527,7 @@ def mygeni(request):
 
 @login_required
 def myvessels(request, get_form=False, action_summary="", action_detail="", remove_summary=""):
+
   try:
     user = _validate_and_get_geniuser(request)
   except LoggedInButFailedGetGeniUserError:
@@ -537,6 +538,8 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
     get_form = None
   elif get_form is False:
     get_form = forms.gen_get_form(user)
+
+  # pdb.set_trace()
 
   # shared vessels that are used by others but which belong to this user (TODO)
   shvessels = []
@@ -561,21 +564,23 @@ def myvessels(request, get_form=False, action_summary="", action_detail="", remo
       minutes = vessel["expires_in_seconds"] / 60 % 60
       vessel["expires_in"] = "%dd %dh %dm" % (days, hours, minutes)
 
+  values_to_render = {
+      'username': user.username,
+      'num_vessels': len(my_vessels),
+      'my_vessels': my_vessels,
+      'sh_vessels': shvessels,
+      'get_form': get_form,
+      'action_summary': action_summary,
+      'action_detail': action_detail,
+      'my_donations': len(my_donations),
+      'my_max_vessels': my_max_vessels,
+      'free_vessel_credits': my_free_vessel_credits,
+      'total_vessel_credits': my_total_vessel_credits,
+      'remove_summary': remove_summary
+    }
+
   # return the used resources page constructed from a template
-  return render_to_response('control/myvessels.html',
-                            {'username' : user.username,
-                             'num_vessels' : len(my_vessels),
-                             'my_vessels' : my_vessels,
-                             'sh_vessels' : shvessels,
-                             'get_form' : get_form,
-                             'action_summary' : action_summary,
-                             'action_detail' : action_detail,
-                             'my_donations' : len(my_donations),
-                             'my_max_vessels' : my_max_vessels,
-                             'free_vessel_credits' : my_free_vessel_credits,
-                             'total_vessel_credits' : my_total_vessel_credits,
-                             'remove_summary' : remove_summary},
-                        context_instance=RequestContext(request))
+  return render_to_response('control/myvessels.html', values_to_render, context_instance=RequestContext(request))
 
 
 
@@ -607,8 +612,8 @@ def getdonations(request):
     linux = "Failed to build installer."
 
   return render_to_response('control/getdonations.html',
-                            {'username' : user.username,
-                             'domain' : domain, 'android' : android, 'mac' : mac, 'linux' : linux},
+                            {'username':user.username,
+                             'domain':domain, 'android':android, 'mac':mac, 'linux':linux},
                             context_instance=RequestContext(request))
 
 
@@ -1360,8 +1365,7 @@ def registerexperiment(request):
 
   page_top_errors = []
   username = user.username
-  ret =['testA'] #test list
-
+  ret = []  # test list
 
   # If we submit the form:
   if request.method == 'POST':
@@ -1446,7 +1450,7 @@ def registerexperiment(request):
       wifi_form = forms.WifiForm(prefix='wifi') #form for each sensor
 
   values_to_render = {
-    'username' : username,
+    'username': username,
     'battery_form': battery_form,
     'bluetooth_form': bluetooth_form,
     'cellular_form': cellular_form,
@@ -1544,10 +1548,11 @@ def viewdonations(request):
 
   username = user.username
   my_donations = interface.get_donations(user)
-  lent = "AA"
 
-  return render(request, 'control/viewdonations.html', {'username' : username, 
-            'my_donations' : my_donations, 'lent' : lent})
+  return render(request, 'control/viewdonations.html', {
+    'username': username,
+    'my_donations': my_donations
+  })
 
 
 
@@ -1651,13 +1656,13 @@ def download_installers_page(request, build_id):
         step = False
 
   return render(request, 'get_donations.html',
-      {
-        'build_id': build_id,
-        'installers': installer_links,
-        'share_url': share_url,
-        'step': step,
-        'user_built': user_built,
-      })
+                  {
+                  'build_id': build_id,
+                  'installers': installer_links,
+                  'share_url': share_url,
+                  'step': step,
+                  'user_built': user_built,
+                  })
 
 
 
