@@ -143,29 +143,30 @@ def register_experiment(**kwargs):
   <Purpose>
     Creates a experiment record with the specified information.
   <Arguments>
-    geni_user
-    experiment_name
-    researcher_name
-    researcher_address
-    researcher_email
-    irb_name
-    irb_email
-    experiment_goal
+    **kwargs which contains:
+      geni_user
+      experiment_name
+      researcher_name
+      researcher_address
+      researcher_email
+      irb_name
+      irb_email
+      experiment_goal
   <Exceptions>
     ValidationError
       If any of the arguments contains invalid values or if the username is the
       same as the password.
   <Returns>
-    Experiment instance (our Experiment model) corresponding to the
-    new
+    Experiment instance (from our Experiment model) corresponding to the
+    new registered experiment.
     """
+
   # If the frontend code that called this function wants to know which field
   # is invalid, it must call the validation functions itself before making the
   # call to register_experiment().
   # These will raise a ValidationError if any of the fields are invalid.
   # These ensure that the data is of the correct type (e.g. a string) as well as
   # that we like the content of the variable.
-
   for item in kwargs:
     if item != "geni_user":
       validations.validate_register_experiment_field(kwargs[item])
@@ -180,21 +181,22 @@ def register_sensor(sensor_name, experiment, **kwargs):
   <Purpose>
     Creates a sensor record with the specified information.
   <Arguments>
-    experiment,
-    frequency,
-    frequency_unit,
-    frequency_other,
-    precision,
-    truncation,
-    precision_other,
-    goal,
-    list of attributes of each sensor.
+    sensor_name:
+      Name of the sensor itself
+    experiment:
+      Experiment instance
+    **kwargs which contains:
+      List of general attributes of the sensor (from the Sensor class):
+        All of these values are the general Sensor attributes
+      goal:
+        Why the sensor has been chosen
+      List of specific attributes of the sensor itself.
   <Exceptions>
     ValidationError
       If any of the arguments contains invalid values or if the username is the
       same as the password.
   <Returns>
-    Batter instance
+    Sensor instance with the specified data from the arguments.
   """
   # If the frontend code that called this function wants to know which field
   # is invalid, it must call the validation functions itself before making the
@@ -222,8 +224,9 @@ def get_user_for_installers(username):
   """
   <Purpose>
     Gets the user record corresponding to the given username.
-    IMPORTANT: Used ONLY FOR getting the user object for downloading/building installers.
-               Do NOT use for any other purpose, as this function does not validate passwords.
+    IMPORTANT: Used ONLY FOR getting the user object for downloading/building
+        installers.Do NOT use for any other purpose, as this function does
+        not validate passwords.
   <Arguments>
     username
       The username (must be a string).
@@ -1265,3 +1268,4 @@ def get_available_vessel_credits(geniuser):
     return 0
   else:
     return max_allowed_vessels - acquired_vessel_count
+  

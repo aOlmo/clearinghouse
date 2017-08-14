@@ -118,13 +118,17 @@ class GeniUser(DjangoUser):
 
 
 class Experiment(models.Model):
+  """
+    This class will store all registered experiments.
+  """
+
   # Name of the Experiment
   experiment_name = models.CharField(max_length=50, default=None)
 
   # The user who submitted the form
   geni_user = models.ForeignKey(GeniUser, db_index=True, default=None)
 
-  # Name of the researcher who carry out the experiment
+  # Name of the researcher who carries out the experiment
   researcher_name = models.CharField(max_length=50, default=None)
 
   # Postal/Mail address of the researcher
@@ -157,15 +161,14 @@ class Experiment(models.Model):
 
 class Sensor(models.Model):
   """
-  It is an Sensor abstract class so we can inherit in the child classes.
-  Abstract base classes are useful when you want to put some common information
-  into a number of other models. This class is defining the general Sensor data
-  as the frequency, precision, goal...
+  This is the Sensor abstract class where all sensors will inherit from.
+
+  Therefore This model will not be used to create any database table.
+  Instead, when it is used as a base class for other models, its fields
+  will be added to those of the child class. This class is defining the
+  general Sensor data such as the frequency or the precission.
   """
 
-  # This model will not be used to create any database table.
-  # Instead, when it is used as a base class for other models,
-  # its fields will be added to those of the child class.
   class meta:
      abstract = True
 
@@ -175,16 +178,18 @@ class Sensor(models.Model):
   #frequency unit
   frequency_unit = models.CharField(max_length=512, default=None, blank=True)
 
-  # Any level of frequency that we do not support?
+  # If there is any other that we currently do not support, we let the
+  # user comment on that and we will get his feedback thanks to this variable
   frequency_other = models.CharField(max_length=512, default=None, blank=True)
 
   # How precise truncation/full
   precision = models.CharField(max_length=512, default=None, blank=True)
 
-  #truncation
+  # Truncation
   truncation = models.IntegerField(default=None, blank=True)
 
-  # A level of precision for any of this sensor data that we do NOT support
+  # If there was any other precision which we do not support,
+  # we will ask the user to write it down in this field.
   precision_other = models.CharField(max_length=512, default=None, blank=True)
 
   # What will the sensor data be used for?
@@ -194,14 +199,23 @@ class Sensor(models.Model):
   experiment = models.ForeignKey(Experiment, db_index=True, default=None,
                                  on_delete=models.CASCADE)
 
+  def show_name(self):
+    """
+    Produce a string representation of the instance.
+    """
+    return self.__class__.__name__
 
 
 class Battery(Sensor):
   """
-  Model for Battery
+  This is the model for the Battery sensor.
+
+  In this model we will store all specific attributes from a Battery sensor.
+  All attributes are set initially to false in order to let the researcher choose
+  those which wants to gather information from.
   """
 
-  # If battery present?
+  # Is battery present?
   if_battery_present = models.BooleanField(default=False)
 
   # Need health status of battery?
@@ -219,18 +233,18 @@ class Battery(Sensor):
   # Need technology of battery?
   battery_technology = models.BooleanField(default=False)   
 
-  def show_name(self):
-    """
-    Produce a string representation of the instance.
-    """
-    return "Battery"
 
 
 class Bluetooth(Sensor):
   """
-  Model for Bluetooth
+  This is the model for Bluetooth sensor.
+
+  We will store all the specific Bluetooth attributes. All attributes are
+  initially set to false in order to let the researcher choose those which wants
+  to gather information from.
   """
-  # If bluetooth is enabled?
+
+  # Is bluetooth is enabled?
   bluetooth_state = models.BooleanField(default=False)
 
   # If the local Bluetooth adapter is currently in device discovery process?
@@ -245,17 +259,18 @@ class Bluetooth(Sensor):
   # Need visible device name?
   bluetooth_local_name = models.BooleanField(default=False)
 
-  def show_name(self):
-    """
-    Produce a string representation of the instance.
-    """
-    return "Bluetooth"
+
 
 
 class Cellular(Sensor):
   """
-    Model for Cellular
+  This is the model for the Cellular sensor.
+
+  We will store all the specific Cellular attributes. All attributes are
+  initially set to false in order to let the researcher choose those which
+  wants to gather information from.
   """
+
   # Need to check if the device is roaming on the current network?
   cellular_network_roaming = models.BooleanField(default=False)
 
@@ -287,18 +302,18 @@ class Cellular(Sensor):
   # Need the signal strength?
   cellular_signal_strengths = models.BooleanField(default=False)
 
-  def show_name(self):
-    """
-    Produce a string representation of the instance.
-    """
-    return "Cellular"
 
 
 
 class Location(Sensor):
   """
-    Model for Location
+  This is the model for the Location sensor.
+
+  We will store all the specific Location attributes. All attributes are
+  initially set to false in order to let the researcher choose those which
+  wants to gather information from.
   """
+
   # Need location providers, including network, GPS, passive?
   location_providers = models.BooleanField(default=False)
 
@@ -314,62 +329,60 @@ class Location(Sensor):
   # Need geocode?
   location_geocode = models.BooleanField(default=False)
 
-  def show_name(self):
-    """
-    Produce a string representation of the instance.
-    """
-    return "Location"
-
 
 
 class Settings(Sensor):
   """
-    Model for Settings
+  This is the model for the Settings sensor.
+
+  We will store all the specific Settings attributes. All attributes are
+  initially set to false in order to let the researcher choose those which
+  wants to gather information from.
   """
+
   # Need airplane mode?
   settings_airplane_mode = models.BooleanField(default=False)
 
-  # Need ringer_silent_mode?
+  # Need to know if the ringer is in silent mode?
   settings_ringer_silent_mode = models.BooleanField(default=False)
 
-  # Need screen on?
+  # Need to know if screen is on?
   settings_screen_on = models.BooleanField(default=False)
 
-  # Need max_media_volume?
+  # Need max_media_volume value?
   settings_max_media_volume = models.BooleanField(default=False)
 
-  # Need max_ringer_volume?
+  # Need max_ringer_volume value?
   settings_max_ringer_volume = models.BooleanField(default=False)
 
-  # Need media_volume?
+  # Need media_volume value?
   settings_media_volume = models.BooleanField(default=False)
 
-  # Need ringer_volume?
+  # Need ringer_volume value?
   settings_ringer_volume = models.BooleanField(default=False)
 
-  # Need screen brightness?
+  # Need screen brightness value?
   settings_screen_brightness = models.BooleanField(default=False)
 
-  # Need screen timeout?
+  # Need screen timeout value?
   settings_screen_timeout = models.BooleanField(default=False)
-
-  def show_name(self):
-    """
-    Produce a string representation of the instance.
-    """
-    return "Settings"
 
 
 
 class ConcreteSensor(Sensor):
   """
-    Model for Concrete Sensor
+    This is the model for the light, accelerometer, magnetometer
+    and orientation sensors.
+
+    All attributes are initially set to false in order to let the researcher
+    choose those which wants to gather information from.
   """
+
   # Need sensors data?
   concreteSensor = models.BooleanField(default=False)
 
-  # Get the most recently recorded data for the accelerometer, magnetometer and
-  # orientation sensors.
+  # Get the most recently recorded data for the accelerometer,
+  # magnetometer and orientation sensors.
   concreteSensor_sensor_data = models.BooleanField(default=False)
 
   # Need sensors accuracy?
@@ -387,33 +400,27 @@ class ConcreteSensor(Sensor):
   # Need most recently received orientation value?
   concreteSensor_orientation = models.BooleanField(default=False)
 
-  def show_name(self):
-    """
-    Produce a string representation of the instance.
-    """
-    return "Concrete Sensor"
 
 
 
 class SignalStrength(Sensor):
   """
-    Model for signal strengths
+  This model will store the Signal Strength sensor data
   """
   # Need signal strength?
   signalStrength_signal_strength = models.BooleanField(default=False)
 
 
-  def show_name(self):
-    """
-    Produce a string representation of the instance.
-    """
-    return "Signal strength"
-
 
 class Wifi(Sensor):
   """
-    Model for wifi
+  This is the model for the Wifi sensor.
+
+  This will store all specific attributes from the Wifi sensor. All attributes
+  are initially set to false in order to let the researcher choose those which
+  wants to gather information from.
   """
+
   # Need wifi state?
   wifi_state = models.BooleanField(default=False)
 
@@ -439,11 +446,6 @@ class Wifi(Sensor):
   # Need scan results?
   wifi_scan_results = models.BooleanField(default=False)
 
-  def show_name(self):
-    """
-    Produce a string representation of the instance.
-    """
-    return "Wifi"
 
 
 class Node(models.Model):
